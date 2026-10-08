@@ -1,0 +1,19 @@
+Excel runtime P2 dropdown coverage date: 2026-10-08
+Workbook: DEV\Mega_Pipes_Quotation_DEV.xlsm
+
+Validation sources resolved in real Excel:
+- B21 Product: =ProductList
+- B22 Family: =FamilyList
+- B23 Basis: =BasisList
+- B24 Size: =Sizes_HSAW_OD
+- B25 Thickness: =WT_HSAW
+- B26 Grade: =Grades_HSAW
+- B27 External coating: =ExternalCoatingList
+- B28 Internal coating: =InternalCoatingList
+- B30 Quantity unit: Metres,MT,Nos
+
+- Valid HSAW OD size request: accepted
+- Active size named range refreshed after request: PASS
+- Temporary workbook and request CSV: removed
+
+RESULT: PASS

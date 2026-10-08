@@ -84,6 +84,7 @@ Public Sub RequestNewSize(ByVal family As String, ByVal basis As String, _
         CStr(sizeMm) & "," & CsvValue(notes) & "," & CsvValue(Environ$("USERNAME")) & "," & _
         Format$(Now, "yyyy-mm-dd hh:nn:ss")
     Close #fileNumber
+    SetupQuoteLineDropdowns
 End Sub
 
 Public Function IsSizeWithinRange(ByVal family As String, ByVal basis As String, _
@@ -113,7 +114,8 @@ Private Sub BuildHelperList(ByVal listName As String, ByVal tableName As String,
     outputRow = HELPER_FIRST_ROW
     For Each rowObject In sourceTable.ListRows
         value = Trim$(CStr(rowObject.Range.Cells(1, sourceTable.ListColumns(columnName).Index).Value))
-        If Len(value) > 0 And (Len(filterValue) = 0 Or StrComp(value, filterValue, vbTextCompare) = 0) Then
+        If Len(value) > 0 And (Len(filterValue) = 0 Or StrComp(value, filterValue, vbTextCompare) = 0) _
+            And Not HelperValueExists(masterSheet, helperColumn, outputRow - 1, value) Then
             masterSheet.Cells(outputRow, helperColumn).Value = value
             outputRow = outputRow + 1
         End If
@@ -126,6 +128,18 @@ Private Sub BuildHelperList(ByVal listName As String, ByVal tableName As String,
     On Error GoTo 0
     ThisWorkbook.Names.Add Name:=listName, RefersTo:="=" & helperRange.Address(External:=True)
 End Sub
+
+Private Function HelperValueExists(ByVal sheetObject As Worksheet, ByVal helperColumn As Long, _
+                                  ByVal lastRow As Long, ByVal value As String) As Boolean
+    Dim rowNumber As Long
+    If lastRow < HELPER_FIRST_ROW Then Exit Function
+    For rowNumber = HELPER_FIRST_ROW To lastRow
+        If StrComp(CStr(sheetObject.Cells(rowNumber, helperColumn).Value), value, vbTextCompare) = 0 Then
+            HelperValueExists = True
+            Exit Function
+        End If
+    Next rowNumber
+End Function
 
 Private Sub BuildSizeHelperList(ByVal family As String, ByVal basis As String, ByVal helperColumn As Long)
     Dim tableObject As ListObject
