@@ -1,0 +1,13 @@
+Excel runtime style test date: 2026-10-08
+Workbook: DEV\Mega_Pipes_Quotation_DEV.xlsm
+
+- modTheme embedded after reopen: PASS
+- VBE compile command: EXECUTED
+- ApplySheetTheme QUOTE!A1 color: 7884319
+- ApplySheetTheme COSTING!A1 color: 7884319
+- HexToLong("1F4E78"): 7884319
+- Temporary competitor row highlight: 13431551
+- HexToLong("FFF2CC"): 13431551
+- Temporary competitor marker cleared before save: YES
+
+RESULT: PASS
