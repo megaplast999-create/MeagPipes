@@ -9,6 +9,7 @@
 | 10:07 | P0 VBA import and compile | PASS: six source modules imported into DEV; VBE compile command executed; `SetupQuoteHeader` confirmed embedded | `TESTS\excel_runtime_p1_20261008.txt` | Run P1 runtime workflow |
 | 10:09 | P1 header and quote-line smoke test | PASS: four validations, customer lookup, distinct local serials, new quote defaults, and draft line insertion verified in Excel without saving test edits | `TESTS\excel_runtime_p1_20261008.txt` | Implement and test shared-folder sequence, full line validation, and P2 dropdown coverage |
 | 11:15 | P2 style module | PASS: `modTheme` imported and compiled; `ApplySheetTheme` applied to QUOTE and COSTING; hex colors and temporary competitor-row yellow highlighting verified in real Excel | `TESTS\excel_runtime_style_20261008.txt` | Commit `p2-style`, then implement P2 quote-line dropdown and validation engine |
+| 11:22 | P2 quote-line engine | PASS: family/basis size lists, family-filtered WT/grade lists, unit validation, range-checked size request CSV, and master-backed quote-line validation verified in real Excel | `TESTS\excel_runtime_p2_20261008.txt` | Continue with Add Size UI, coating-dependent lists, and full P2 acceptance coverage |
 
 ## Constraints
 

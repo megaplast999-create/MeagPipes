@@ -22,6 +22,12 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
     If UCase$(Trim$(basis)) <> "OD" And UCase$(Trim$(basis)) <> "ID" Then
         Err.Raise vbObjectError + 1304, "AddQuoteLine", "Basis must be OD or ID."
     End If
+    ValidateProductFamily productId, family
+    ValidateSize family, basis, sizeMm
+    ValidateThickness family, thicknessMm
+    ValidateGrade family, gradeId
+    ValidateQuantityUnit quantityUnit
+    ValidatePlant plantId
 
     Set lineObject = tableObject.ListRows.Add
     With lineObject.Range
@@ -39,4 +45,72 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
         .Cells(1, tableObject.ListColumns("PlantID").Index).Value = plantId
         .Cells(1, tableObject.ListColumns("Status").Index).Value = "DRAFT"
     End With
+End Sub
+
+Private Sub ValidateProductFamily(ByVal productId As String, ByVal family As String)
+    Dim tableObject As ListObject
+    Dim rowObject As ListRow
+    Set tableObject = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblProducts")
+    For Each rowObject In tableObject.ListRows
+        If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("ProductID").Index).Value), productId, vbTextCompare) = 0 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+    Next rowObject
+    Err.Raise vbObjectError + 1305, "ValidateProductFamily", "Product and family do not match an active master row."
+End Sub
+
+Private Sub ValidateSize(ByVal family As String, ByVal basis As String, ByVal sizeMm As Double)
+    Dim tableObject As ListObject
+    Dim rowObject As ListRow
+    Set tableObject = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblSizes")
+    For Each rowObject In tableObject.ListRows
+        If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Basis").Index).Value), basis, vbTextCompare) = 0 _
+            And Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("SizeMM").Index).Value) - sizeMm) < 0.0001 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+    Next rowObject
+    Err.Raise vbObjectError + 1306, "ValidateSize", "Size is not available for the selected family and basis."
+End Sub
+
+Private Sub ValidateThickness(ByVal family As String, ByVal thicknessMm As Double)
+    Dim tableObject As ListObject
+    Dim rowObject As ListRow
+    Set tableObject = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblThickness")
+    For Each rowObject In tableObject.ListRows
+        If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
+            And Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("ThicknessMM").Index).Value) - thicknessMm) < 0.0001 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+    Next rowObject
+    Err.Raise vbObjectError + 1307, "ValidateThickness", "Thickness is not available for the selected family."
+End Sub
+
+Private Sub ValidateGrade(ByVal family As String, ByVal gradeId As String)
+    Dim tableObject As ListObject
+    Dim rowObject As ListRow
+    Set tableObject = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblGrades")
+    For Each rowObject In tableObject.ListRows
+        If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("GradeID").Index).Value), gradeId, vbTextCompare) = 0 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+    Next rowObject
+    Err.Raise vbObjectError + 1308, "ValidateGrade", "Grade is not available for the selected family."
+End Sub
+
+Private Sub ValidateQuantityUnit(ByVal quantityUnit As String)
+    Select Case UCase$(Trim$(quantityUnit))
+        Case "METRES", "MT", "NOS"
+        Case Else
+            Err.Raise vbObjectError + 1309, "ValidateQuantityUnit", "Unit must be Metres, MT, or Nos."
+    End Select
+End Sub
+
+Private Sub ValidatePlant(ByVal plantId As String)
+    Dim tableObject As ListObject
+    Dim rowObject As ListRow
+    Set tableObject = ThisWorkbook.Worksheets("PLANTS").ListObjects("tblPlants")
+    For Each rowObject In tableObject.ListRows
+        If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("PlantID").Index).Value), plantId, vbTextCompare) = 0 _
+            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+    Next rowObject
+    Err.Raise vbObjectError + 1310, "ValidatePlant", "Plant is not available in the active plant master."
 End Sub

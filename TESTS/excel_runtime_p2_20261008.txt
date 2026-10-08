@@ -1,0 +1,18 @@
+Excel runtime P2 test date: 2026-10-08
+Workbook: DEV\Mega_Pipes_Quotation_DEV.xlsm
+
+Dependent validation setup:
+- Size validation for HSAW/ID: =Sizes_HSAW_ID
+- Thickness validation for HSAW: =WT_HSAW
+- Grade validation for HSAW: =Grades_HSAW
+- Quantity unit validation: Metres,MT,Nos
+
+Quote-line validation:
+- HSAW OD 3000 outside allowed range: rejected
+- HSAW OD 1600 inside allowed range: accepted
+- Valid size request row: added to local master and request CSV in temporary workbook
+- Valid quote line: inserted with status DRAFT
+- Temporary workbook and request CSV: removed without saving test data
+
+Embedded P2 components: 24
+RESULT: PASS
