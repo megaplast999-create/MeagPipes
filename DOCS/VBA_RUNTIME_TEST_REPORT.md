@@ -4,6 +4,43 @@
 
 **P1 DEV CHECKPOINT: PASS**
 
+**P3 CHECKPOINT: BLOCKED**
+
+### Latest P3 mode verification
+
+On 2026-10-08, `modMath`, `modPricing`, and `modSelfTest` were backed up,
+re-imported, and compiled in the DEV workbook. The shared engine now
+explicitly supports CURRENT and LEGACY contracts. `RunP3GoldenTests` produced
+passing evidence:
+
+- LEGACY total: `178657900`
+- CURRENT contract total: `154499250`
+- Tolerance: `<1`
+- Python tests: `9 passed`
+
+This does not claim full quote-line orchestration or P1/P2 regression. No
+commit or phase tag has been created.
+
+### Quote-line orchestration
+
+`AddQuoteLine` now builds `QuoteLineInput`, loads `RateInput`, calls the
+shared `CalcLine`, and writes available calculated fields back to
+`tblQuoteLines`. The integrated runtime evidence covers CURRENT ID/Metres,
+CURRENT MT, CURRENT Nos, CURRENT active OD, LEGACY line 1, and the full
+four-line LEGACY fixture. The table has no columns for trailers or individual
+coating/financial components; those remain in `LineResult` and are not
+silently mapped to unrelated columns.
+
+The active OD runtime case uses OD `1219`. Calculated OD `1243` remains
+covered by the ID-basis case. The P2 invalid-master guard and direct
+`CalcLine` invalid-geometry guard both pass in test-only wrappers.
+
+P3 source modules were imported into the DEV workbook and the VBE compile
+command was executed. A qualified call to `modSelfTest.RunP3GoldenTests`
+does not return a result; Excel enters VBE break mode and no
+`TESTS\vba_p3_golden_20261008.txt` evidence file is produced. P3 is not
+claimed as passed and no phase tag or commit was created.
+
 The initial Excel/VBA checkpoint was blocked by Trust Center settings. After
 approved AccessVBOM and trusted-location changes, Excel 16.0 was opened
 through pywin32, the project reported 23 components, six drifted source

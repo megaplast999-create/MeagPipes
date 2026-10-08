@@ -1,0 +1,212 @@
+Attribute VB_Name = "modSelfTest"
+Option Explicit
+
+Public Sub RunP3GoldenTests()
+    Dim outputPath As String
+    Dim fileNumber As Integer
+    Dim legacyTotal As Variant
+    Dim currentTotal As Variant
+    Dim legacyExpected As Variant
+    Dim currentExpected As Variant
+    Dim legacyDifference As Variant
+    Dim currentDifference As Variant
+    Dim errorNumber As Long
+    Dim errorDescription As String
+    Dim index As Long
+
+    On Error GoTo TestError
+    outputPath = TestsPath() & Application.PathSeparator & "vba_p3_golden_20261008.txt"
+    legacyExpected = CDec(178657900)
+    currentExpected = CDec(154499250)
+    legacyTotal = P3GoldenTotal(True)
+    currentTotal = P3GoldenTotal(False)
+    legacyDifference = CDec(legacyTotal) - legacyExpected
+    currentDifference = CDec(currentTotal) - currentExpected
+
+    fileNumber = FreeFile
+    Open outputPath For Output As #fileNumber
+    Print #fileNumber, "P3 VBA golden test date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+    Print #fileNumber, "TOLERANCE=<1"
+    Print #fileNumber, "INTERMEDIATE_DIAGNOSTICS:"
+    For index = 0 To 3
+        WriteGoldenLine fileNumber, True, index
+        WriteGoldenLine fileNumber, False, index
+    Next index
+    Print #fileNumber, "LEGACY:"
+    Print #fileNumber, "Expected total=" & CStr(legacyExpected)
+    Print #fileNumber, "Actual total=" & CStr(legacyTotal)
+    Print #fileNumber, "Difference=" & CStr(legacyDifference)
+    Print #fileNumber, "Result=" & IIf(Abs(CDbl(legacyDifference)) < 1, "PASS", "FAIL")
+    Print #fileNumber, "CURRENT:"
+    Print #fileNumber, "Expected total=" & CStr(currentExpected)
+    Print #fileNumber, "Actual total=" & CStr(currentTotal)
+    Print #fileNumber, "Difference=" & CStr(currentDifference)
+    Print #fileNumber, "Result=" & IIf(Abs(CDbl(currentDifference)) < 1, "PASS", "FAIL")
+    Print #fileNumber, "RESULT=" & IIf(Abs(CDbl(legacyDifference)) < 1 And _
+        Abs(CDbl(currentDifference)) < 1, "PASS", "FAIL")
+    Close #fileNumber
+    Exit Sub
+TestError:
+    errorNumber = Err.Number
+    errorDescription = Err.Description
+    WriteGoldenFailure outputPath, errorNumber, errorDescription
+    Err.Raise errorNumber, "RunP3GoldenTests", errorDescription
+End Sub
+
+Private Sub WriteGoldenLine(ByVal fileNumber As Integer, _
+                            ByVal legacy As Boolean, _
+                            ByVal index As Long)
+    Dim result As LineResult
+    Dim expectedPerM As Variant
+    Dim quantities As Variant
+    Dim modeName As String
+    Dim pre As Variant
+    Dim ext As Variant
+    Dim intc As Variant
+    Dim massMt As Variant
+    Dim expectedLineValue As Variant
+
+    result = P3GoldenLine(legacy, index)
+    quantities = Array(2000, 350, 500, 4400)
+    If legacy Then
+        modeName = "LEGACY"
+        expectedPerM = Choose(index + 1, 22681, 23914, 24748, 25580)
+    Else
+        modeName = "CURRENT"
+        expectedPerM = Choose(index + 1, 19628, 20865, 21489, 22090)
+    End If
+    pre = CDec(SettingValue("DefaultSteelRate")) + CDec(SettingValue("DefaultGradeExtra"))
+    pre = pre + pre * CDec(SettingValue("DefaultYieldPct")) / CDec(100)
+    pre = pre + CDec(SettingValue("DefaultConversion")) + _
+        CDec(SettingValue("DefaultTesting")) + CDec(SettingValue("DefaultMargin"))
+    massMt = CDec(result.MassPerM) / CDec(1000)
+    If legacy Then
+        ext = CDec(500) * CDec(3.14) * CDec(result.od) / _
+            CDec(1000) / massMt
+        intc = CDec(275) * CDec(3.14) * CDec(result.od) / _
+            CDec(1000) / massMt
+    Else
+        ext = CDec(500) * WorksheetFunction.PI() * CDec(result.od) / _
+            CDec(1000) / CDec(result.MassPerM)
+        intc = CDec(275) * WorksheetFunction.PI() * CDec(result.ID) / _
+            CDec(1000) / CDec(result.MassPerM)
+    End If
+    expectedLineValue = CDec(expectedPerM) * CDec(quantities(index))
+
+    Print #fileNumber, "LINE=" & CStr(index + 1) & " MODE=" & modeName
+    Print #fileNumber, "OD=" & CStr(result.od) & " ID=" & CStr(result.ID) & " WT=8.4"
+    Print #fileNumber, "MassKgPerM=" & CStr(result.MassPerM)
+    Print #fileNumber, "MassMtPerM=" & CStr(massMt)
+    Print #fileNumber, "Metres=" & CStr(result.Metres) & " MT=" & CStr(result.MT)
+    Print #fileNumber, "Pipes=" & CStr(result.Pipes) & " Trailers=" & CStr(result.Trailers)
+    Print #fileNumber, "Pre=" & CStr(pre)
+    Print #fileNumber, "External=" & CStr(ext)
+    Print #fileNumber, "Internal=" & CStr(intc)
+    Print #fileNumber, "Freight=" & CStr(result.FreightPerMT)
+    Print #fileNumber, "Financial=" & CStr(result.FCperMT)
+    Print #fileNumber, "BarePerM=" & CStr(result.BarePerM)
+    Print #fileNumber, "ExtPerM=" & CStr(result.ExtPerM)
+    Print #fileNumber, "IntPerM=" & CStr(result.IntPerM)
+    Print #fileNumber, "FreightPerM=" & CStr(result.FreightPerM)
+    Print #fileNumber, "TotalPerM=" & CStr(result.TotalPerM)
+    Print #fileNumber, "TotalPerMT=" & CStr(result.TotalPerMT)
+    Print #fileNumber, "LineValue=" & CStr(result.LineValue)
+    Print #fileNumber, "ExpectedTotalPerM=" & CStr(expectedPerM) & _
+        " Difference=" & CStr(CDec(result.TotalPerM) - CDec(expectedPerM))
+    Print #fileNumber, "ExpectedLineValue=" & CStr(expectedLineValue) & _
+        " Difference=" & CStr(CDec(result.LineValue) - expectedLineValue)
+End Sub
+
+Public Function ProjectRootPath() As String
+    Dim workbookPath As String
+    Dim separatorPosition As Long
+
+    workbookPath = ThisWorkbook.Path
+    separatorPosition = InStrRev(workbookPath, Application.PathSeparator)
+    If separatorPosition <= 1 Then
+        Err.Raise vbObjectError + 1810, "ProjectRootPath", _
+            "Unable to derive the project root from ThisWorkbook.Path: " & workbookPath
+    End If
+    ProjectRootPath = Left$(workbookPath, separatorPosition - 1)
+End Function
+
+Public Function TestsPath() As String
+    Dim testPath As String
+
+    testPath = ProjectRootPath() & Application.PathSeparator & "TESTS"
+    If Len(Dir$(testPath, vbDirectory)) = 0 Then
+        Err.Raise vbObjectError + 1811, "TestsPath", _
+            "TESTS directory not found: " & testPath
+    End If
+    TestsPath = testPath
+End Function
+
+Private Sub WriteGoldenFailure(ByVal outputPath As String, _
+                               ByVal errorNumber As Long, _
+                               ByVal errorDescription As String)
+    Dim fileNumber As Integer
+
+    If Len(outputPath) = 0 Then Exit Sub
+    On Error Resume Next
+    fileNumber = FreeFile
+    Open outputPath For Output As #fileNumber
+    If Err.Number = 0 Then
+        Print #fileNumber, "P3 VBA golden test date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+        Print #fileNumber, "RESULT=FAIL"
+        Print #fileNumber, "ERROR_NUMBER=" & CStr(errorNumber)
+        Print #fileNumber, "ERROR_DESCRIPTION=" & errorDescription
+        Close #fileNumber
+    End If
+    On Error GoTo 0
+End Sub
+
+Public Function RunP3InvalidGeometryTest() As String
+    Dim lineData As QuoteLineInput
+    Dim rates As RateInput
+    Dim result As LineResult
+
+    On Error GoTo ExpectedFailure
+
+    With lineData
+        .Basis = "ID"
+        .SizeMM = CDec(10)
+        .WT = CDec(8)
+        .Qty = CDec(1)
+        .Unit = "Metres"
+        .PipeLen = CDec(12)
+        .PerTrailer = CDec(4)
+        .HasExt = False
+        .HasInt = False
+    End With
+
+    LoadDefaultRateInput rates, False
+    rates.TripRate = CDec(98000)
+    result = CalcLine(lineData, rates, False)
+    RunP3InvalidGeometryTest = "FAIL: CalcLine returned a result for invalid geometry."
+    Exit Function
+
+ExpectedFailure:
+    RunP3InvalidGeometryTest = "PASS: " & Err.Description
+End Function
+
+Public Function RunP3InvalidMasterGuardTest() As String
+    Dim grades As ListObject
+    Dim plants As ListObject
+    Dim gradeId As String
+    Dim plantId As String
+
+    On Error GoTo ExpectedFailure
+
+    Set grades = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblGrades")
+    Set plants = ThisWorkbook.Worksheets("PLANTS").ListObjects("tblPlants")
+    gradeId = CStr(grades.ListRows(1).Range.Cells(1, grades.ListColumns("GradeID").Index).Value)
+    plantId = CStr(plants.ListRows(1).Range.Cells(1, plants.ListColumns("PlantID").Index).Value)
+
+    AddQuoteLine "P3-INVALID-MASTER", "P02", "HSAW", "ID", _
+        10, 8.4, gradeId, 1, "Metres", 12, plantId
+    RunP3InvalidMasterGuardTest = "FAIL: P2 accepted an invalid master combination."
+    Exit Function
+
+ExpectedFailure:
+    RunP3InvalidMasterGuardTest = "PASS: " & Err.Description
+End Function

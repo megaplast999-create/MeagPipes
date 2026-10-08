@@ -62,10 +62,18 @@ def quantity_conversion(
     return metres, pipe_count, metres * mass_mt_per_m
 
 
-def coating_cost_per_mt(rate_rs_per_m2: float, diameter_mm: float, mass_kg_per_m: float) -> float:
+def coating_cost_per_mt(
+    rate_rs_per_m2: float,
+    diameter_mm: float,
+    mass_kg_per_m: float,
+    *,
+    legacy_mode: bool = False,
+) -> float:
     if rate_rs_per_m2 < 0 or diameter_mm <= 0 or mass_kg_per_m <= 0:
         raise CalculationError("coating rate, diameter, and mass are invalid")
-    return rate_rs_per_m2 * pi * diameter_mm / 1000 / mass_kg_per_m
+    mass = mass_kg_per_m / 1000 if legacy_mode else mass_kg_per_m
+    pi_value = 3.14 if legacy_mode else pi
+    return rate_rs_per_m2 * pi_value * diameter_mm / 1000 / mass
 
 
 def freight_per_mt(
@@ -75,11 +83,15 @@ def freight_per_mt(
     mass_mt_per_m: float,
     pipes_per_trailer: float,
     handling_rs_per_mt: float,
+    *,
+    legacy_mode: bool = False,
 ) -> tuple[int, float]:
     if min(trip_rate, metres, pipe_length_m, mass_mt_per_m, pipes_per_trailer) <= 0:
         raise CalculationError("freight inputs must be positive")
-    trailers = ceil((metres / pipe_length_m) / pipes_per_trailer)
-    freight = roundup(trip_rate * trailers / (metres * mass_mt_per_m)) + handling_rs_per_mt
+    fractional_trailers = (metres / pipe_length_m) / pipes_per_trailer
+    trailers = ceil(fractional_trailers)
+    freight_trailers = fractional_trailers if legacy_mode else trailers
+    freight = roundup(trip_rate * freight_trailers / (metres * mass_mt_per_m)) + handling_rs_per_mt
     return trailers, freight
 
 

@@ -12,11 +12,39 @@ Audit date: 2026-10-07
   `CUSTOMERS`, `PLANTS`, `DISTANCE_CACHE`, and `QUOTE_LOG`.
 - The workbook includes a START Form Control drawing and an embedded
   `Workbook_Open` signature.
+
+## P3 checkpoint
+
+The reusable P3 source modules `modMath`, `modPricing`, and `modSelfTest` are
+present in the DEV source and embedded project. The explicit CURRENT/LEGACY
+calculation golden gate is passed. The calculation engine must not advance to
+quote-line orchestration or later phases until the remaining regression gates
+are completed.
 - A temporary Excel lock file (`DEV/~$Mega_Pipes_Quotation_DEV.xlsm`) was
   present during the audit; it is not a project deliverable and indicates that
   Excel may have had the workbook open.
 - No worksheet formulas or worksheet data-validation records were found in the
   package audit.
+
+### P3 calculation mode decision
+
+The shared calculation engine now explicitly supports CURRENT and LEGACY
+contracts through `RateInput.legacyMode`. CURRENT remains authoritative for
+new quotations. LEGACY reproduces the original reference workbook's MT/m
+coating basis, 3.14 circumference constant, common OD coating circumference,
+and fractional freight quantity.
+
+The mode-specific golden run passed in real Excel:
+
+- LEGACY: `178657900`
+- CURRENT contract: `154499250`
+
+Evidence is in `TESTS\vba_p3_golden_20261008.txt`. Full quote-line
+orchestration is now wired through `AddQuoteLine` and verified for the
+current ID/Metres, active OD/Metres, MT, Nos, and legacy fixture cases.
+Calculated OD `1243` remains covered by the ID-basis case. Invalid master
+inputs are rejected by P2, while direct invalid geometry is rejected by
+`CalcLine`.
 
 ## Existing VBA modules
 

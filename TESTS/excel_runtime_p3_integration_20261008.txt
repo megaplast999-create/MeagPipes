@@ -1,0 +1,17 @@
+Excel P3 integration test date: 2026-10-08
+Workbook opened: PASS
+CURRENT ID METRES PASS {'CalculatedODMM': 1243.0, 'CalculatedIDMM': 1226.0, 'MassKgPerM': 255.75553836, 'Metres': 2000.0, 'PipeCount': 167.0, 'WeightMT': 511.51107672, 'UnitPrice': 19628.0, 'PriceUnit': 'Metres', 'LineTotal': 39256000.0, 'Status': 'CALCULATED'}
+CURRENT ACTIVE OD METRES PASS {'CalculatedODMM': 1219.0, 'CalculatedIDMM': 1202.2, 'MassKgPerM': 250.78377996, 'Metres': 2000.0, 'PipeCount': 167.0, 'WeightMT': 501.56755992, 'UnitPrice': 19288.0, 'PriceUnit': 'Metres', 'LineTotal': 38576000.0, 'Status': 'CALCULATED'}
+CURRENT MT PASS {'CalculatedODMM': 1243.0, 'CalculatedIDMM': 1226.0, 'MassKgPerM': 255.75553836, 'Metres': 39.099837540659856, 'PipeCount': 4.0, 'WeightMT': 10.0, 'UnitPrice': 78523.0, 'PriceUnit': 'MT', 'LineTotal': 785230.0, 'Status': 'CALCULATED'}
+CURRENT NOS PASS {'CalculatedODMM': 1243.0, 'CalculatedIDMM': 1226.0, 'MassKgPerM': 255.75553836, 'Metres': 60.0, 'PipeCount': 5.0, 'WeightMT': 15.3453323016, 'UnitPrice': 20859.0, 'PriceUnit': 'Metres', 'LineTotal': 1251540.0, 'Status': 'CALCULATED'}
+LEGACY PASS {'CalculatedODMM': 1243.0, 'CalculatedIDMM': 1226.0, 'MassKgPerM': 255.75553836, 'Metres': 2000.0, 'PipeCount': 167.0, 'WeightMT': 511.51107672, 'UnitPrice': 22681.0, 'PriceUnit': 'Metres', 'LineTotal': 45362000.0, 'Status': 'CALCULATED'}
+FULL LEGACY LINE 1 PASS {'CalculatedODMM': 1243.0, 'CalculatedIDMM': 1226.0, 'MassKgPerM': 255.75553836, 'Metres': 2000.0, 'PipeCount': 167.0, 'WeightMT': 511.51107672, 'UnitPrice': 22681.0, 'PriceUnit': 'Metres', 'LineTotal': 45362000.0, 'Status': 'CALCULATED'}
+FULL LEGACY LINE 2 PASS {'CalculatedODMM': 1317.0, 'CalculatedIDMM': 1300.0, 'MassKgPerM': 271.08512676, 'Metres': 350.0, 'PipeCount': 30.0, 'WeightMT': 94.879794366, 'UnitPrice': 23914.0, 'PriceUnit': 'Metres', 'LineTotal': 8369900.0, 'Status': 'CALCULATED'}
+FULL LEGACY LINE 3 PASS {'CalculatedODMM': 1367.0, 'CalculatedIDMM': 1350.0, 'MassKgPerM': 281.44295676, 'Metres': 500.0, 'PipeCount': 42.0, 'WeightMT': 140.72147838, 'UnitPrice': 24748.0, 'PriceUnit': 'Metres', 'LineTotal': 12374000.0, 'Status': 'CALCULATED'}
+FULL LEGACY LINE 4 PASS {'CalculatedODMM': 1417.0, 'CalculatedIDMM': 1400.0, 'MassKgPerM': 291.80078676, 'Metres': 4400.0, 'PipeCount': 367.0, 'WeightMT': 1283.923461744, 'UnitPrice': 25580.0, 'PriceUnit': 'Metres', 'LineTotal': 112552000.0, 'Status': 'CALCULATED'}
+FULL LEGACY TOTAL=178657900.0 EXPECTED=178657900 PASS
+DIRECT CalcLine INVALID GEOMETRY PASS: PASS: Inner diameter must be greater than twice wall thickness.
+P2 INVALID MASTER GUARD: PASS (verified by existing AddQuoteLine validation; COM error boundary recorded separately)
+CALCULATED_FIELDS PASS
+P2 INVALID MASTER GUARD DIRECT TEST: PASS: Size is not available for the selected family and basis.
+DIRECT CalcLine INVALID GEOMETRY TEST: PASS: Inner diameter must be greater than twice wall thickness.

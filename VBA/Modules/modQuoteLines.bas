@@ -4,10 +4,18 @@ Option Explicit
 Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVal family As String, _
     ByVal basis As String, ByVal sizeMm As Double, ByVal thicknessMm As Double, _
     ByVal gradeId As String, ByVal quantity As Double, ByVal quantityUnit As String, _
-    ByVal pipeLengthM As Double, ByVal plantId As String)
+    ByVal pipeLengthM As Double, ByVal plantId As String, _
+    Optional ByVal legacyMode As Boolean = False, _
+    Optional ByVal priceByMT As Boolean = False, _
+    Optional ByVal manualFC As Variant, _
+    Optional ByVal tripRate As Variant)
 
     Dim tableObject As ListObject
     Dim lineObject As ListRow
+    Dim lineData As QuoteLineInput
+    Dim rates As RateInput
+    Dim result As LineResult
+    Dim hasCoating As Boolean
     Set tableObject = ThisWorkbook.Worksheets("QUOTE_LINES").ListObjects("tblQuoteLines")
 
     If Len(Trim$(quoteId)) = 0 Or Len(Trim$(productId)) = 0 Or Len(Trim$(family)) = 0 Or Len(Trim$(gradeId)) = 0 Then
@@ -44,6 +52,68 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
         .Cells(1, tableObject.ListColumns("PipeLengthM").Index).Value = pipeLengthM
         .Cells(1, tableObject.ListColumns("PlantID").Index).Value = plantId
         .Cells(1, tableObject.ListColumns("Status").Index).Value = "DRAFT"
+    End With
+
+    On Error GoTo CalculationError
+
+    hasCoating = (InStr(1, productId, "02", vbTextCompare) > 0 Or _
+                  InStr(1, productId, "04", vbTextCompare) > 0)
+    With lineData
+        .Basis = basis
+        .SizeMM = sizeMm
+        .WT = thicknessMm
+        .Qty = quantity
+        .Unit = quantityUnit
+        .PipeLen = pipeLengthM
+        .PerTrailer = CDec(4)
+        .HasExt = hasCoating
+        .HasInt = hasCoating
+    End With
+
+    LoadDefaultRateInput rates, legacyMode
+    rates.ExtRate = CDec(500)
+    rates.IntRate = CDec(275)
+    If IsMissing(tripRate) Then
+        rates.TripRate = CDec(SettingValue("TripRateManual"))
+    Else
+        rates.TripRate = CDec(tripRate)
+    End If
+    If legacyMode Then
+        If IsMissing(manualFC) Then
+            rates.ManualFC = CDec(SettingValue("DefaultFinancialPct"))
+        Else
+            rates.ManualFC = CDec(manualFC)
+        End If
+    End If
+
+    result = CalcLine(lineData, rates, priceByMT)
+    WriteCalculatedQuoteLine lineObject, tableObject, result, priceByMT
+    Exit Sub
+
+CalculationError:
+    On Error Resume Next
+    lineObject.Delete
+    On Error GoTo 0
+    Err.Raise Err.Number, "AddQuoteLine", Err.Description
+End Sub
+
+Private Sub WriteCalculatedQuoteLine(ByVal lineObject As ListRow, _
+                                     ByVal tableObject As ListObject, _
+                                     ByRef result As LineResult, _
+                                     ByVal priceByMT As Boolean)
+    With lineObject.Range
+        .Cells(1, tableObject.ListColumns("CalculatedODMM").Index).Value = result.od
+        .Cells(1, tableObject.ListColumns("CalculatedIDMM").Index).Value = result.ID
+        .Cells(1, tableObject.ListColumns("MassKgPerM").Index).Value = result.MassPerM
+        .Cells(1, tableObject.ListColumns("Metres").Index).Value = result.Metres
+        .Cells(1, tableObject.ListColumns("PipeCount").Index).Value = result.Pipes
+        .Cells(1, tableObject.ListColumns("WeightMT").Index).Value = result.MT
+        .Cells(1, tableObject.ListColumns("UnitPrice").Index).Value = _
+            IIf(priceByMT, result.TotalPerMT, result.TotalPerM)
+        .Cells(1, tableObject.ListColumns("PriceUnit").Index).Value = _
+            IIf(priceByMT, "MT", "Metres")
+        .Cells(1, tableObject.ListColumns("LineTotal").Index).Value = result.LineValue
+        .Cells(1, tableObject.ListColumns("Status").Index).Value = "CALCULATED"
     End With
 End Sub
 

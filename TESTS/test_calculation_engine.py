@@ -2,6 +2,7 @@ from calculation_engine import (
     CalculationError,
     coating_cost_per_mt,
     financial_cost,
+    freight_per_mt,
     geometry,
     quantity_conversion,
     selling_price,
@@ -31,6 +32,24 @@ def test_quantity_conversion_preserves_exact_metres():
 def test_coating_cost_is_rate_area_over_mass():
     result = coating_cost_per_mt(500, 1243, 255.75553836)
     assert round(result, 6) == round(500 * 3.141592653589793 * 1.243 / 255.75553836, 6)
+
+
+def test_legacy_coating_cost_uses_mass_mt_per_m():
+    result = coating_cost_per_mt(500, 1243, 255.75553836, legacy_mode=True)
+    assert round(result, 6) == round(7630.372395897313, 6)
+
+
+def test_legacy_freight_uses_fractional_trailers():
+    _, result = freight_per_mt(
+        98000,
+        2000,
+        12,
+        0.25575553836,
+        4,
+        100,
+        legacy_mode=True,
+    )
+    assert result == 8083
 
 
 def test_financial_cost():
