@@ -49,7 +49,8 @@ Embedded VBA signatures confirmed in `xl/vbaProject.bin`:
 The previously missing embedded `modSetup` and `ThisWorkbook` event are now
 preserved as source exports. The complete source-to-embedded inventory is
 documented in [`VBA_RECONCILIATION.md`](./VBA_RECONCILIATION.md). New source
-modules remain pending import and compile verification in Excel.
+modules were imported into DEV and compile/runtime smoke-tested in Excel on
+2026-10-08. The evidence is in `TESTS/excel_runtime_p1_20261008.txt`.
 
 ## Existing Python scripts and tests
 
@@ -111,23 +112,23 @@ Phase 5 source work adds one repeatable public `SetupQuoteHeader` procedure
 that validates required master tables and rebuilds named-range validation for
 B8, B14, B15, and B17. It is not embedded or Excel-runtime tested.
 
-The workbook package later grew to include the five pending module streams,
-but extracted embedded `modMasterData` still exposes
-`SetupMasterDrivenHeader`, not `SetupQuoteHeader`. This requires reconciliation
-before the header can be considered integrated.
+The workbook package now contains the reconciled source modules, and embedded
+`modMasterData` exposes `SetupQuoteHeader`. The header integration checkpoint
+is verified locally in Excel; shared-folder concurrency and later phases remain
+unfinished.
 
 ## Known discrepancies
 
 - The embedded project contains `SetupCustomerDropdown` and `Workbook_Open`
-  signatures that are not represented in the current exported source files.
+  signatures represented by the preserved source exports.
 - The prompt reports that the customer dropdown found two rows; the current
   workbook customer table must be checked for blank or unintended rows before
   production use.
 - The reference quotation has a documented synopsis weight discrepancy.
 - Excel runtime behavior has not been claimed or marked as passed.
-- The attempted Excel integration stage was blocked because the active Excel
-  automation endpoint exposed an empty/inaccessible `VBProject.VBComponents`
-  collection. See [`VBA_RUNTIME_TEST_REPORT.md`](./VBA_RUNTIME_TEST_REPORT.md).
+- The initial Excel integration stage was blocked by Trust Center settings;
+  after approved AccessVBOM and trusted-location changes, the DEV P1
+  integration smoke test passed. See [`VBA_RUNTIME_TEST_REPORT.md`](./VBA_RUNTIME_TEST_REPORT.md).
 
 ## Risks
 

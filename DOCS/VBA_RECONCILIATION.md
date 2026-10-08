@@ -7,8 +7,10 @@ Audit date: 2026-10-07
 The embedded project was read from
 `DEV/Mega_Pipes_Quotation_DEV.xlsm` with `oletools.olevba`. The source tree was
 searched with a procedure-name inventory over every `.bas` and `.cls` file.
-This is package/source inspection only; Microsoft Excel compilation and runtime
-execution were not performed.
+The initial audit was package/source inspection only. On 2026-10-08, the
+embedded modules were exported, drifted copies were preserved as
+`VBA/Modules/*.embedded.bak`, six drifted source modules were imported into
+DEV, and the Excel compile command plus local P1 smoke tests were executed.
 
 ## Authority decision
 
@@ -17,9 +19,11 @@ implementation. It is the only version known to have been opened and embedded
 by Microsoft Excel, and it contains procedures not present in the old source
 exports. No embedded code was deleted or overwritten during this audit.
 
-After the exported baseline is reconciled, newly added source modules are the
-candidate implementation for the next import/review stage. They are not
-considered active workbook functionality until imported and compiled in Excel.
+The six drifted source modules are now embedded in the DEV workbook and
+`modMasterData.SetupQuoteHeader` is confirmed present through VBOM inspection.
+The runtime result is recorded in
+`TESTS/excel_runtime_p1_20261008.txt`; this does not claim the remaining
+production phases are complete.
 
 ## Procedure inventory
 
@@ -93,4 +97,6 @@ When Excel is available for the import stage:
 5. Re-export all standard modules and the `ThisWorkbook` event to `VBA`.
 6. Re-run the source/embedded inventory and package audit.
 
-Until those steps occur, Excel runtime status remains **PENDING**.
+The P0/P1 integration checkpoint is **PASS** for the recorded local DEV
+smoke tests. Full multi-user, ORS, costing, offer, export, protection, and
+production-readiness behavior remains **PENDING**.

@@ -20,6 +20,9 @@ To embed these modules, use the Excel VBA editor in a trusted local copy:
 5. Save the workbook as a real macro-enabled workbook.
 6. Reopen it and verify that `xl/vbaProject.bin` is present in the package.
 
-Embedding is currently **BLOCKED/PENDING** because Excel COM automation is
-unreliable in this environment and no safe verified VBA project was available.
-The source files are not a claim that the workbook macros are already active.
+Embedding is now **VERIFIED for the DEV P1 checkpoint**. Excel 16.0 was
+opened through pywin32 after the approved Trust Center changes; VBOM access
+reported 23 components, the drifted source modules were imported, the VBE
+compile command was executed, and the header/quote-line smoke test passed.
+See `TESTS/excel_runtime_p1_20261008.txt`. This does not claim that later
+calculation, ORS, export, or multi-user phases are complete.

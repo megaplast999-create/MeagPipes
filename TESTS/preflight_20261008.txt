@@ -1,0 +1,22 @@
+Preflight date: 2026-10-08
+
+Excel:
+- Excel version: 16.0
+- COM access: PASS through pywin32
+- VBA project access before approval: BLOCKED (Programmatic access to Visual Basic Project is not trusted)
+- AccessVBOM: enabled at HKCU\Software\Microsoft\Office\16.0\Excel\Security\AccessVBOM=1 with user approval
+- VBProject.VBComponents.Count after approval: 23
+- DEV trusted location: added with user approval
+
+Python:
+- Python: 3.14.8
+- pywin32: installed
+- openpyxl: installed
+- pytest: installed
+
+Repository:
+- Git initialized in the project root
+
+ORS:
+- ORS_API_KEY present: NO
+- Live ORS tests: NEEDS_HUMAN

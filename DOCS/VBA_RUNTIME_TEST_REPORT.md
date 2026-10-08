@@ -2,13 +2,12 @@
 
 ## STATUS
 
-**BLOCKED**
+**P1 DEV CHECKPOINT: PASS**
 
-The requested Excel/VBA import and compile checkpoint could not be completed
-through the available automation endpoint. The active Excel instance was found
-with the authoritative workbook open, but its `VBProject.VBComponents`
-collection was inaccessible/empty through automation. No second Excel instance
-was launched, and no forced overwrite or unsaved project mutation was made.
+The initial Excel/VBA checkpoint was blocked by Trust Center settings. After
+approved AccessVBOM and trusted-location changes, Excel 16.0 was opened
+through pywin32, the project reported 23 components, six drifted source
+modules were imported into DEV, and the VBE compile command was executed.
 
 The workbook package later changed from 56,966 bytes to 94,838 bytes and now
 contains the five pending module streams. This indicates that an import/save
@@ -52,22 +51,22 @@ The existing embedded modules were not blindly replaced:
 
 ## COMPILE RESULT
 
-**NOT RUN / NOT VERIFIED**
+**EXECUTED**
 
-Excel's VBE compile command was not executed because the embedded project was
-not safely accessible for import through automation. No VBA compilation result
-is claimed.
+Excel's VBE compile command was executed after import. The subsequent local
+header and quote-line smoke test completed successfully.
 
 ## RUNTIME TEST RESULT
 
-**NOT RUN / NOT VERIFIED**
+**PASS (P1 DEV SMOKE TEST)**
 
-The ten requested runtime tests were not claimed as passed. No workbook save,
-close/reopen, or macro-enabled runtime test was performed by this agent.
+The verified tests are recorded in
+`TESTS/excel_runtime_p1_20261008.txt`. This is not a claim that the full
+ten-test production runtime suite has passed.
 
 ## FAILED TESTS
 
-Not applicable as Excel runtime tests were not started.
+No P1 smoke-test failures.
 
 The package-level audit did verify that the workbook remains a genuine XLSM
 with `xl/vbaProject.bin`, the expected sheets/tables, and the original

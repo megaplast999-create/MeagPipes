@@ -1,0 +1,24 @@
+Excel runtime test date: 2026-10-08
+Workbook: DEV\Mega_Pipes_Quotation_DEV.xlsm
+Excel version: 16.0
+VBProject components: 23
+Compile command: EXECUTED
+
+Header smoke test:
+- B8 customer validation type: 3 (list)
+- B14 plant validation type: 3 (list)
+- B15 payment terms validation type: 3 (list)
+- B17 quantity unit validation type: 3 (list)
+- Customer contact lookup: Rakesh Gupta
+- Customer delivery lookup: Krishna Nagar, Bagodar, Jharkhand - 825322
+
+Quote workflow smoke test:
+- First allocated enquiry: MKTG/ENQ/26-27/595
+- Second allocated enquiry: MKTG/ENQ/26-27/596
+- New quote enquiry: MKTG/ENQ/26-27/597
+- Configured validity: 5 days
+- Default quantity unit: Metres
+- Draft quote-line rows after insertion: 3
+
+RESULT: PASS
+Scope: local DEV workbook only; changes were not saved by the runtime smoke tests.
