@@ -1,0 +1,12 @@
+# Version History
+
+| Phase | Date | Version | Changes | Tests | Known issues |
+|---|---|---|---|---|---|
+| Phase 0 | 2026-10-07 | DEV-0.1 | Created the initial structural workbook and project folders. | Initial workbook package inspection. | No VBA project. |
+| Phase 1 | 2026-10-07 | DEV-0.1 | Added workbook architecture, required tables, VBA folders, and architecture documentation. | `phase1_architecture_check.py` passed. | No VBA project. |
+| Phases 2-4 foundation | 2026-10-07 | DEV-0.2 | Seeded documented master data and settings; added reproducible workbook builder and independent calculation reference layer. | Structural validation passed; calculation tests pending runner. | VBA embedding and Excel runtime validation are blocked/pending. |
+| Header and quote-line source stage | 2026-10-07 | DEV-0.3 | Audited the manually embedded workbook, documented current state, and added source modules for master-driven header validation, customer lookup, local DEV sequencing, and validated quote-line insertion. | Python workbook/runtime audit and calculation tests. | New source modules require import/reconciliation; Excel runtime validation pending. |
+| VBA reconciliation and source architecture | 2026-10-07 | DEV-0.4 | Inventoried embedded VBA with olevba, exported `modSetup` and `ThisWorkbook`, documented authority/conflicts, and added modular quote-header and dependent-dropdown source architecture. | Python tests and source duplicate audit. | New modules are not embedded or Excel-compiled; runtime validation pending. |
+| Excel integration checkpoint | 2026-10-07 | DEV-0.4 | Created pre-import backup and attempted safe import through the existing Excel instance. Documented automation boundary and preserved embedded authority. | Python/package audits. | VBProject collection inaccessible/empty through automation; compile and runtime tests blocked. |
+| Phase 5 header source preparation | 2026-10-07 | DEV-0.5 | Added one repeatable `SetupQuoteHeader` source procedure with required-table checks and named-range validation for customer, plant, payment terms, and price basis. | Python tests and source duplicate audit. | Not embedded, compiled, or runtime tested. |
+| Phase 5 package re-audit | 2026-10-07 | DEV-0.5 | Re-audited after the workbook package grew to include pending module streams; documented the remaining `SetupQuoteHeader` versus `SetupMasterDrivenHeader` discrepancy. | Python/package audits. | Excel compile and visible runtime testing remain unverified. |
