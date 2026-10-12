@@ -53,6 +53,114 @@ TestError:
     Err.Raise errorNumber, "RunP3GoldenTests", errorDescription
 End Sub
 
+Public Function RunGoldenLegacy() As String
+    Dim total As Variant
+    Dim expected As Variant
+    Dim index As Long
+    Dim res As LineResult
+    Dim expectedPrices As Variant
+
+    On Error GoTo FailureHandler
+    expected = CDec(178657900)
+    expectedPrices = Array(22681, 23914, 24748, 25580)
+
+    total = P3GoldenTotal(True)
+    If Abs(CDbl(CDec(total) - expected)) >= 1 Then
+        RunGoldenLegacy = "FAIL: Legacy total was " & CStr(total) & ", expected " & CStr(expected)
+        Exit Function
+    End If
+
+    For index = 0 To 3
+        res = P3GoldenLine(True, index)
+        If Abs(CDbl(CDec(res.TotalPerM) - CDec(expectedPrices(index)))) >= 1 Then
+            RunGoldenLegacy = "FAIL: Line " & CStr(index + 1) & " price was " & CStr(res.TotalPerM) & ", expected " & CStr(expectedPrices(index))
+            Exit Function
+        End If
+    Next index
+
+    RunGoldenLegacy = "PASS"
+    Exit Function
+
+FailureHandler:
+    RunGoldenLegacy = "FAIL: " & Err.Description
+End Function
+
+Public Function RunGoldenNormal() As String
+    Dim total As Variant
+    Dim expected As Variant
+    Dim index As Long
+    Dim res As LineResult
+    Dim expectedPrices As Variant
+
+    On Error GoTo FailureHandler
+    expected = CDec(178801050)
+    expectedPrices = Array(22689, 24109, 24857, 25581)
+
+    total = P3GoldenTotal(False)
+    If Abs(CDbl(CDec(total) - expected)) >= 1 Then
+        RunGoldenNormal = "FAIL: Normal total was " & CStr(total) & ", expected " & CStr(expected)
+        Exit Function
+    End If
+
+    For index = 0 To 3
+        res = P3GoldenLine(False, index)
+        If Abs(CDbl(CDec(res.TotalPerM) - CDec(expectedPrices(index)))) >= 1 Then
+            RunGoldenNormal = "FAIL: Line " & CStr(index + 1) & " price was " & CStr(res.TotalPerM) & ", expected " & CStr(expectedPrices(index))
+            Exit Function
+        End If
+    Next index
+
+    RunGoldenNormal = "PASS"
+    Exit Function
+
+FailureHandler:
+    RunGoldenNormal = "FAIL: " & Err.Description
+End Function
+
+Public Function RunP5GoldenTestSuite() As String
+    Dim outputPath As String
+    Dim fileNumber As Integer
+    Dim legResult As String
+    Dim normResult As String
+    Dim geomResult As String
+    Dim guardResult As String
+    Dim index As Long
+
+    On Error GoTo FailureHandler
+    outputPath = TestsPath() & Application.PathSeparator & "vba_p5_golden_20261012.txt"
+    legResult = RunGoldenLegacy()
+    normResult = RunGoldenNormal()
+    geomResult = RunP3InvalidGeometryTest()
+    guardResult = RunP3InvalidMasterGuardTest()
+
+    fileNumber = FreeFile
+    Open outputPath For Output As #fileNumber
+    Print #fileNumber, "P5 VBA golden test suite date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+    Print #fileNumber, "TOLERANCE=<1"
+    Print #fileNumber, "RunGoldenLegacy=" & legResult
+    Print #fileNumber, "RunGoldenNormal=" & normResult
+    Print #fileNumber, "RunInvalidGeometry=" & geomResult
+    Print #fileNumber, "RunInvalidMasterGuard=" & guardResult
+    Print #fileNumber, "--- LINE DIAGNOSTICS ---"
+    For index = 0 To 3
+        WriteGoldenLine fileNumber, True, index
+        WriteGoldenLine fileNumber, False, index
+    Next index
+    Print #fileNumber, "--- SUMMARY ---"
+    If legResult = "PASS" And normResult = "PASS" And InStr(1, geomResult, "PASS") > 0 And InStr(1, guardResult, "PASS") > 0 Then
+        Print #fileNumber, "RESULT=PASS"
+        RunP5GoldenTestSuite = "PASS: All P5 golden tests and validation guards passed."
+    Else
+        Print #fileNumber, "RESULT=FAIL"
+        RunP5GoldenTestSuite = "FAIL: One or more P5 tests failed."
+    End If
+    Close #fileNumber
+    Exit Function
+
+FailureHandler:
+    RunP5GoldenTestSuite = "FAIL: " & Err.Description
+End Function
+
 Private Sub WriteGoldenLine(ByVal fileNumber As Integer, _
                             ByVal legacy As Boolean, _
                             ByVal index As Long)
@@ -86,10 +194,10 @@ Private Sub WriteGoldenLine(ByVal fileNumber As Integer, _
         intc = CDec(275) * CDec(3.14) * CDec(result.od) / _
             CDec(1000) / massMt
     Else
-        ext = CDec(500) * WorksheetFunction.PI() * CDec(result.od) / _
-            CDec(1000) / CDec(result.MassPerM)
-        intc = CDec(275) * WorksheetFunction.PI() * CDec(result.ID) / _
-            CDec(1000) / CDec(result.MassPerM)
+        ext = CDec(500) * CDec(3.14) * CDec(result.od) / _
+            CDec(1000) / massMt
+        intc = CDec(275) * CDec(3.14) * CDec(result.ID) / _
+            CDec(1000) / massMt
     End If
     expectedLineValue = CDec(expectedPerM) * CDec(quantities(index))
 
