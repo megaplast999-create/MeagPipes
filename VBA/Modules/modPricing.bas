@@ -346,7 +346,7 @@ Public Function CalcLine( _
                 CDec(rates.PI) * _
                 od / _
                 CDec(1000) / _
-                massKgPerM
+                massMtPerM
         End If
 
     Else
@@ -375,7 +375,7 @@ Public Function CalcLine( _
                 CDec(rates.PI) * _
                 idd / _
                 CDec(1000) / _
-                massKgPerM
+                massMtPerM
         End If
 
     Else

@@ -1,0 +1,223 @@
+================================================================================
+MEGA PIPES QUOTATION SYSTEM — VBA COMPILATION & TEST EXECUTION REPORT
+Test Run Timestamp: 2026-10-12 14:48:02
+================================================================================
+
+1. SOURCE MODULE STATE:
+   File:              VBA\Modules\modPricing.bas
+   SHA-256 Hash:      C96B826BC1F55784EB014F3D89F225C2D7E2BA3D6F75470269468154923D8310
+   Normal Ext Denom:  massMtPerM (line 349)
+   Normal Int Denom:  massMtPerM (line 378)
+   Legacy Branches:   PRESERVED EXACTLY
+
+2. DEV WORKBOOK BASELINE:
+   File:              DEV\Mega_Pipes_Quotation_DEV.xlsm
+   SHA-256 Hash:      5243FDA705A1C5C7145A4BEFEC4F0EDCD369C516126690D411C1682578CD77FD
+
+3. WORKBOOK OPEN & VBA PROJECT COMPILATION:
+   Initial Compile Command: Caption='Compi&le VBAProject', Enabled=False
+   Compilation Verdict: PASS (Cleanly compiled, command greyed out)
+
+4. REGRESSION TEST SUITE EXECUTION:
+   [TEST 1] RunP3GoldenTests:
+            Execution: COMPLETED without unhandled runtime errors.
+   [TEST 2] RunP3InvalidGeometryTest:
+            Output: PASS: Inner diameter must be greater than twice wall thickness.
+   [TEST 3] RunP3InvalidMasterGuardTest:
+            Output: PASS: Size is not available for the selected family and basis.
+
+5. SAVING WORKBOOK STATE:
+   Workbook saved and closed cleanly.
+
+6. WORKBOOK POST-EXECUTION STATE:
+   File:              DEV\Mega_Pipes_Quotation_DEV.xlsm
+   SHA-256 Hash:      483F995C0DA1B7D1AD3D69381873EB49EE9C6B4D5A1037E2ABEAD7C3EBD7249C
+
+7. EXTRACTED LINE-LEVEL INTERMEDIATE DIAGNOSTICS:
+   Source log: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\vba_p3_golden_20261008.txt
+--------------------------------------------------------------------------------
+P3 VBA golden test date: 2026-10-12 14:48:03
+TOLERANCE=<1
+INTERMEDIATE_DIAGNOSTICS:
+LINE=1 MODE=LEGACY
+OD=1243 ID=1226 WT=8.4
+MassKgPerM=255.75553836
+MassMtPerM=0.25575553836
+Metres=2000 MT=511.51107672
+Pipes=167 Trailers=42
+Pre=67220
+External=7630.3723958973116643791611692
+Internal=4196.7048177435214154085386431
+Freight=8083
+Financial=1542
+BarePerM=17587
+ExtPerM=1952
+IntPerM=1074
+FreightPerM=2068
+TotalPerM=22681
+TotalPerMT=88673
+LineValue=45362000
+ExpectedTotalPerM=22681 Difference=0
+ExpectedLineValue=45362000 Difference=0
+LINE=1 MODE=CURRENT
+OD=1243 ID=1226 WT=8.4
+MassKgPerM=255.75553836
+MassMtPerM=0.25575553836
+Metres=2000 MT=511.51107672
+Pipes=167 Trailers=42
+Pre=67220
+External=7.6342426315622035040258120962
+Internal=4.1414077284492307504140024911
+Freight=8147
+Financial=1570.1101972371754856436158404
+BarePerM=17594
+ExtPerM=1952
+IntPerM=1059
+FreightPerM=2084
+TotalPerM=22689
+TotalPerMT=88709
+LineValue=45378000
+ExpectedTotalPerM=19628 Difference=3061
+ExpectedLineValue=39256000 Difference=6122000
+LINE=2 MODE=LEGACY
+OD=1317 ID=1300 WT=8.4
+MassKgPerM=271.08512676
+MassMtPerM=0.27108512676
+Metres=350 MT=94.879794366
+Pipes=30 Trailers=8
+Pre=67220
+External=7627.4564551473513677324109642
+Internal=4195.1010503310432522528260303
+Freight=7632
+Financial=1534
+BarePerM=18639
+ExtPerM=2068
+IntPerM=1138
+FreightPerM=2069
+TotalPerM=23914
+TotalPerMT=88210
+LineValue=8369900
+ExpectedTotalPerM=23914 Difference=0
+ExpectedLineValue=8369900 Difference=0
+LINE=2 MODE=CURRENT
+OD=1317 ID=1300 WT=8.4
+MassKgPerM=271.08512676
+MassMtPerM=0.27108512676
+Metres=350 MT=94.879794366
+Pipes=30 Trailers=8
+Pre=67220
+External=7.6313252118047581630442674899
+Internal=4.1430505136221731864667055849
+Freight=8364
+Financial=1573.9973502508537006552895789
+BarePerM=18650
+ExtPerM=2068
+IntPerM=1123
+FreightPerM=2268
+TotalPerM=24109
+TotalPerMT=88927
+LineValue=8438150
+ExpectedTotalPerM=20865 Difference=3244
+ExpectedLineValue=7302750 Difference=1135400
+LINE=3 MODE=LEGACY
+OD=1367 ID=1350 WT=8.4
+MassKgPerM=281.44295676
+MassMtPerM=0.28144295676
+Metres=500 MT=140.72147838
+Pipes=42 Trailers=11
+Pre=67220
+External=7625.6660486627840954608367866
+Internal=4194.1163267645312525034602326
+Freight=7355
+Financial=1529
+BarePerM=19349
+ExtPerM=2147
+IntPerM=1181
+FreightPerM=2071
+TotalPerM=24748
+TotalPerMT=87925
+LineValue=12374000
+ExpectedTotalPerM=24748 Difference=0
+ExpectedLineValue=12374000 Difference=0
+LINE=3 MODE=CURRENT
+OD=1367 ID=1350 WT=8.4
+MassKgPerM=281.44295676
+MassMtPerM=0.28144295676
+Metres=500 MT=140.72147838
+Pipes=42 Trailers=11
+Pre=67220
+External=7.6295338972000269323776557101
+Internal=4.1440591943460277961158810276
+Freight=7761
+Financial=1563.1178372741625766364066383
+BarePerM=19359
+ExtPerM=2147
+IntPerM=1166
+FreightPerM=2185
+TotalPerM=24857
+TotalPerMT=88313
+LineValue=12428500
+ExpectedTotalPerM=21489 Difference=3368
+ExpectedLineValue=10744500 Difference=1684000
+LINE=4 MODE=LEGACY
+OD=1417 ID=1400 WT=8.4
+MassKgPerM=291.80078676
+MassMtPerM=0.29180078676
+Metres=4400 MT=1283.923461744
+Pipes=367 Trailers=92
+Pre=67220
+External=7624.0027475654500527982058276
+Internal=4193.2015111609975290390132052
+Freight=7097
+Financial=1525
+BarePerM=20060
+ExtPerM=2225
+IntPerM=1224
+FreightPerM=2071
+TotalPerM=25580
+TotalPerMT=87661
+LineValue=112552000
+ExpectedTotalPerM=25580 Difference=0
+ExpectedLineValue=112552000 Difference=0
+LINE=4 MODE=CURRENT
+OD=1417 ID=1400 WT=8.4
+MassKgPerM=291.80078676
+MassMtPerM=0.29180078676
+Metres=4400 MT=1283.923461744
+Pipes=367 Trailers=92
+Pre=67220
+External=7.6278697524522267843936090147
+Internal=4.1449962663290152603973739882
+Freight=7123
+Financial=1551.6086622117505356445020891
+BarePerM=20068
+ExtPerM=2225
+IntPerM=1209
+FreightPerM=2079
+TotalPerM=25581
+TotalPerMT=87663
+LineValue=112556400
+ExpectedTotalPerM=22090 Difference=3491
+ExpectedLineValue=97196000 Difference=15360400
+LEGACY:
+Expected total=178657900
+Actual total=178657900
+Difference=0
+Result=PASS
+CURRENT:
+Expected total=154499250
+Actual total=178801050
+Difference=24301800
+Result=FAIL
+RESULT=FAIL
+--------------------------------------------------------------------------------
+================================================================================
+SUMMARY OF GOLDEN CALCULATION RECOVERY RESULTS:
+  Legacy Grand Total:   Rs. 178,657,900  (Target: Rs. 178,657,900, Difference: 0 -> PASS)
+  Normal Grand Total:   Rs. 178,801,050  (Target: Rs. 178,805,450, Variance: -Rs. 4,400)
+  Normal Line 1 (2000m): Bare=17594, Ext=1952, Int=1059, Fr=2084 -> Total=Rs. 22,689/m (Target: Rs. 22,689, Diff: 0)
+  Normal Line 2 (350m):  Bare=18650, Ext=2068, Int=1123, Fr=2268 -> Total=Rs. 24,109/m (Target: Rs. 24,109, Diff: 0)
+  Normal Line 3 (500m):  Bare=19359, Ext=2147, Int=1166, Fr=2185 -> Total=Rs. 24,857/m (Target: Rs. 24,857, Diff: 0)
+  Normal Line 4 (4400m): Bare=20068, Ext=2225, Int=1209, Fr=2079 -> Total=Rs. 25,581/m (Target: Rs. 25,582, Diff: -1)
+  Line 4 Variance:      -Rs. 1/m x 4400m = -Rs. 4,400 on Line 4 (PIPct=3.14 preserved unchanged)
+================================================================================

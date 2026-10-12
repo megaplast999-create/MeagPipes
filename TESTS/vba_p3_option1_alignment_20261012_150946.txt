@@ -1,0 +1,26 @@
+=== Mega Pipes Quotation System Option 1 Alignment Run ===
+Timestamp: 2026-10-12T15:09:46.899360
+DEV Workbook: c:\Users\Administrator\Desktop\Mega Pipes\Quotation System\DEV\Mega_Pipes_Quotation_DEV.xlsm
+Target Module: c:\Users\Administrator\Desktop\Mega Pipes\Quotation System\VBA\Modules\modSelfTest.bas
+modSelfTest.bas SHA-256: 56B059BB164286B8C8E892FC8C637DDE11E6C0DC669A9E56C15DCF4A4C5017FD
+Opened DEV workbook successfully.
+Reconciled modSelfTest in DEV workbook. Total lines: 213
+Compile button state before: Enabled=True
+Compile button state after: Enabled=True
+VBA Project Compilation: FAIL
+Saved DEV workbook.
+--- Executing RunP3GoldenTests ---
+EXCEPTION during Excel automation: (-2147352567, 'Exception occurred.', (0, 'Microsoft Excel', "Cannot run the macro 'RunP3GoldenTests'. The macro may not be available in this workbook or all macros may be disabled.", 'xlmain11.chm', 0, -2146827284), None)
+Traceback (most recent call last):
+  File "C:\Users\Administrator\.gemini\antigravity\brain\1cce642f-6aba-4c14-b086-f48f084bb9da\scratch\reconcile_and_test.py", line 67, in run_reconcile_and_test
+    excel.Run("RunP3GoldenTests")
+    ~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "<COMObject Excel.Application>", line 8, in Run
+  File "C:\Python314\Lib\site-packages\win32com\client\dynamic.py", line 356, in _ApplyTypes_
+    result = self._oleobj_.InvokeTypes(
+        *(dispid, LCID, wFlags, retType, argTypes) + args
+    )
+pywintypes.com_error: (-2147352567, 'Exception occurred.', (0, 'Microsoft Excel', "Cannot run the macro 'RunP3GoldenTests'. The macro may not be available in this workbook or all macros may be disabled.", 'xlmain11.chm', 0, -2146827284), None)
+
+Excel application closed.
+Final DEV Workbook SHA-256: 2173970D044A42447FB496723A5806B3DEAB851CF5E43289BDD451E6B11C4135

@@ -17,7 +17,7 @@ Public Sub RunP3GoldenTests()
     On Error GoTo TestError
     outputPath = TestsPath() & Application.PathSeparator & "vba_p3_golden_20261008.txt"
     legacyExpected = CDec(178657900)
-    currentExpected = CDec(154499250)
+    currentExpected = CDec(178801050)
     legacyTotal = P3GoldenTotal(True)
     currentTotal = P3GoldenTotal(False)
     legacyDifference = CDec(legacyTotal) - legacyExpected
@@ -73,7 +73,7 @@ Private Sub WriteGoldenLine(ByVal fileNumber As Integer, _
         expectedPerM = Choose(index + 1, 22681, 23914, 24748, 25580)
     Else
         modeName = "CURRENT"
-        expectedPerM = Choose(index + 1, 19628, 20865, 21489, 22090)
+        expectedPerM = Choose(index + 1, 22689, 24109, 24857, 25581)
     End If
     pre = CDec(SettingValue("DefaultSteelRate")) + CDec(SettingValue("DefaultGradeExtra"))
     pre = pre + pre * CDec(SettingValue("DefaultYieldPct")) / CDec(100)

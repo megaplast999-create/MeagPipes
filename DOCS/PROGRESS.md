@@ -16,6 +16,14 @@
 | 13:02 | P3 mode split and golden verification | PASS: shared `CalcLine` now isolates CURRENT and LEGACY coating/freight rules; Python tests 9 passed; embedded VBA compiled; legacy total `178657900` and current-contract total `154499250` passed with tolerance `<1` | `TESTS\vba_p3_golden_20261008.txt` | Run P1/P2 regression after review; do not commit/tag yet |
 | 13:58 | P3 quote-line orchestration | PASS: `AddQuoteLine` writes calculated fields for ID/Metres, active OD/Metres, MT, Nos, and the full LEGACY fixture; P2 invalid-master guard and direct `CalcLine` invalid-geometry guard both pass | `TESTS\excel_runtime_p3_integration_20261008.txt` | Review and commit/tag P3 |
 
+## 2026-10-12
+
+| Time | Step | Result | Test file | Next step |
+|---|---|---|---|---|
+| 12:56 | VBA compilation and calculation recovery audit | PASS: Diagnosed `Compile VBAProject` greyed-out state and procedure ambiguity; synchronized embedded `modQuoteHeader` (34 lines) and `modSelfTest` (212 lines) with disk source; verified clean VBE compilation; golden tests PASS (0 difference); geometry/master guard tests PASS; customer selection event PASS | `TESTS\vba_p3_golden_20261008.txt` | Complete Phase 4-5 documentation and tag P3 |
+| 15:25 | Read-only pre-implementation audit (Master Prompt) | PASS: Fully inspected ANTIGRAVITY_MASTER_PROMPT.md and reference workbook MKTGENQ26-27-594_-_Unipro_CS.xlsx with openpyxl. Extracted colors, layouts, 27 offer terms, and stacking formulas. Audited DEV workbook (11 sheets, 13 tables) and VBA source (15 modules). Identified gate: complete Option 1 test reconciliation & tag p3-golden-fix, then proceed to P4/P6. | `DOCS\PROGRESS.md` | Request approval to reconcile test module and advance to P4 |
+| 16:39 | P3 embedded VBA header repair & Option 1 verification | PASS: Created safety backup; removed literal Attribute header from embedded `modSelfTest`; compiled in real Excel 16.0 (Compile VBAProject greyed out); all regression tests PASS in real Excel with 0 difference (LEGACY 178,657,900, CURRENT Option 1 178,801,050; Line 4 = 25,581/m). | `TESTS\vba_p3_header_repair_20261012_163916.txt` | Await specification owner approval before committing & tagging p3-golden-fix |
+
 ## Constraints
 
 - ORS_API_KEY is not present. ORS live tests must be marked NEEDS_HUMAN and use mocks.

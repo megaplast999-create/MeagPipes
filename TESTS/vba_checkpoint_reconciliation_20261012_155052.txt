@@ -1,0 +1,309 @@
+================================================================================
+MEGA PIPES QUOTATION SYSTEM — P3 CHECKPOINT RECONCILIATION REPORT
+Timestamp: 2026-10-12 15:50:52
+Mode: READ-ONLY INSPECTION (No workbook modifications, imports, or git actions)
+================================================================================
+
+1. WORKBOOK IDENTITY:
+   Target Path:      c:\Users\Administrator\Desktop\Mega Pipes\Quotation System\DEV\Mega_Pipes_Quotation_DEV.xlsm
+   File Size:        146,808 bytes
+   SHA-256 Hash:     2173970D044A42447FB496723A5806B3DEAB851CF5E43289BDD451E6B11C4135
+
+2. DISK VBA SOURCE INVENTORY:
+   Standard Modules (.bas in VBA\Modules): 15
+   Class/Doc Modules (.cls in VBA\Classes): 1
+
+3. WORKBOOK OPEN & COM ACCESS:
+   Successfully opened DEV workbook in ReadOnly mode (Events disabled).
+   VBProject Name:     VBAProject
+   VBComponents Count: 27
+   VBE Compile Control: Caption='Compi&le VBAProject', Enabled=True
+   Compilation Status:  UNCOMPILED / DIRTY (VBE command 'Compile VBAProject' is Enabled/active)
+   Workbook closed without saving (SaveChanges=False). Excel application terminated.
+
+4. MODULE-BY-MODULE COMPARISON:
+Module Name               | Component Type  | Embedded Lines | Disk Lines | Status
+--------------------------------------------------------------------------------
+Sheet1                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet10                   | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet11                   | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet2                    | Document/Sheet  |             32 | N/A        | MISSING FROM DISK
+Sheet3                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet4                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet5                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet6                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet7                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet8                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+Sheet9                    | Document/Sheet  |              0 | N/A        | MISSING FROM DISK
+ThisWorkbook              | Class/Doc       |             26 |         32 | DIFFERENT
+modCalculation            | Standard        |             51 |         52 | DIFFERENT
+modDependentDropdowns     | Standard        |            295 |        296 | DIFFERENT
+modGeometry               | Standard        |             44 |         45 | DIFFERENT
+modMain                   | Standard        |              9 |         10 | MATCH
+modMasterData             | Standard        |            171 |        172 | DIFFERENT
+modMath                   | Standard        |             27 |         28 | MATCH
+modNavigation             | Standard        |             21 |         22 | MATCH
+modPricing                | Standard        |            753 |        754 | MATCH
+modQuoteHeader            | Standard        |             36 |         37 | DIFFERENT
+modQuoteLines             | Standard        |            185 |        186 | DIFFERENT
+modSelfTest               | Standard        |            213 |        212 | DIFFERENT
+modSequence               | Standard        |             46 |         47 | DIFFERENT
+modSetup                  | Standard        |             56 |         57 | MATCH
+modTheme                  | Standard        |            117 |        118 | DIFFERENT
+modValidation             | Standard        |             13 |         14 | MATCH
+
+5. SPECIFIC DISCREPANCY DETAILS:
+
+   --- Discrepancy in [ThisWorkbook] ---
+       --- Disk (ThisWorkbook)
+       +++ Embedded (ThisWorkbook)
+       @@ -1,4 +1,3 @@
+       -VERSION 1.0 CLASS
+        Option Explicit
+        Private Sub Workbook_Open()
+            On Error GoTo ErrorHandler
+
+   --- Discrepancy in [modCalculation] ---
+       --- Disk (modCalculation)
+       +++ Embedded (modCalculation)
+       @@ -17,27 +17,27 @@
+                    Err.Raise vbObjectError + 1103, "ConvertQuantityToMetres", "Unit must be Metres, MT, or Nos."
+            End Select
+        End Function
+       -Public Function CalculatePipeCount(ByVal metres As Double, ByVal pipeLengthM As Double) As Long
+       -    If metres <= 0# Or pipeLengthM <= 0# Then
+       +Public Function CalculatePipeCount(ByVal Metres As Double, ByVal pipeLengthM As Double) As Long
+       +    If Metres <= 0# Or pipeLengthM <= 0# Then
+                Err.Raise vbObjectError + 1104, "CalculatePipeCount", "Metres and pipe length must be positive."
+            End If
+       -    CalculatePipeCount = WorksheetFunction.RoundUp(metres / pipeLengthM, 0)
+       +    CalculatePipeCount = WorksheetFunction.RoundUp(Metres / pipeLengthM, 0)
+        End Function
+       -Public Function CalculateWeightMT(ByVal metres As Double, ByVal massKgPerM As Double) As Double
+       -    If metres < 0# Or massKgPerM <= 0# Then
+       +Public Function CalculateWeightMT(ByVal Metres As Double, ByVal massKgPerM As Double) As Double
+       +    If Metres < 0# Or massKgPerM <= 0# Then
+                Err.Raise vbObjectError + 1105, "CalculateWeightMT", "Invalid quantity or mass."
+            End If
+       -    CalculateWeightMT = metres * massKgPerM / 1000#
+       +    CalculateWeightMT = Metres * massKgPerM / 1000#
+        End Function
+        Public Function CalculateCoatingCostPerMT(ByVal rateRsPerM2 As Double, ByVal diameterMm As Double, ByVal massKgPerM As Double) As Double
+
+   --- Discrepancy in [modDependentDropdowns] ---
+       --- Disk (modDependentDropdowns)
+       +++ Embedded (modDependentDropdowns)
+       @@ -20,13 +20,13 @@
+        Public Sub SetupQuoteLineDropdowns()
+            Dim quoteSheet As Worksheet
+            Dim family As String
+       -    Dim basis As String
+       +    Dim Basis As String
+            Set quoteSheet = ThisWorkbook.Worksheets("QUOTE")
+            family = Trim$(CStr(quoteSheet.Range("B22").Value2))
+       -    basis = UCase$(Trim$(CStr(quoteSheet.Range("B23").Value2)))
+       -    If Len(family) > 0 And (basis = "ID" Or basis = "OD") Then
+       -        BuildSizeHelperList family, basis, 32
+       -        ApplyNamedListValidation quoteSheet.Range("B24"), "Sizes_" & family & "_" & basis
+       +    Basis = UCase$(Trim$(CStr(quoteSheet.Range("B23").Value2)))
+       +    If Len(family) > 0 And (Basis = "ID" Or Basis = "OD") Then
+       +        BuildSizeHelperList family, Basis, 32
+       +        ApplyNamedListValidation quoteSheet.Range("B24"), "Sizes_" & family & "_" & Basis
+            End If
+            If Len(family) > 0 Then
+                BuildFilteredHelperList "WT_" & family, "tblThickness", "Family", "ThicknessMM", family, 33
+       @@ -37,30 +37,30 @@
+            ApplyPositiveValidation quoteSheet.Range("B29")
+            ApplyInlineValidation quoteSheet.Range("B30"), "Metres,MT,Nos", "Select Metres, MT, or Nos."
+        End Sub
+
+   --- Discrepancy in [modGeometry] ---
+       --- Disk (modGeometry)
+       +++ Embedded (modGeometry)
+       @@ -1,26 +1,26 @@
+        Option Explicit
+       -Public Function CalculateOD(ByVal sizeMm As Double, ByVal thicknessMm As Double, ByVal basis As String) As Double
+       -    If sizeMm <= 0# Or thicknessMm <= 0# Then
+       +Public Function CalculateOD(ByVal SizeMM As Double, ByVal thicknessMm As Double, ByVal Basis As String) As Double
+       +    If SizeMM <= 0# Or thicknessMm <= 0# Then
+                Err.Raise vbObjectError + 1001, "CalculateOD", "Size and thickness must be positive."
+            End If
+       -    Select Case UCase$(Trim$(basis))
+       +    Select Case UCase$(Trim$(Basis))
+                Case "OD"
+       -            CalculateOD = sizeMm
+       +            CalculateOD = SizeMM
+                Case "ID"
+       -            CalculateOD = WorksheetFunction.RoundUp(sizeMm + (2# * thicknessMm), 0)
+       +            CalculateOD = WorksheetFunction.RoundUp(SizeMM + (2# * thicknessMm), 0)
+                Case Else
+                    Err.Raise vbObjectError + 1002, "CalculateOD", "Basis must be OD or ID."
+            End Select
+        End Function
+       -Public Function CalculateID(ByVal sizeMm As Double, ByVal thicknessMm As Double, ByVal basis As String) As Double
+       +Public Function CalculateID(ByVal SizeMM As Double, ByVal thicknessMm As Double, ByVal Basis As String) As Double
+            Dim odMm As Double
+
+   --- Discrepancy in [modMasterData] ---
+       --- Disk (modMasterData)
+       +++ Embedded (modMasterData)
+       @@ -44,8 +44,8 @@
+            On Error GoTo 0
+            ThisWorkbook.Names.Add Name:=nameText, RefersTo:="=" & dataRange.Address(External:=True)
+        End Sub
+       -Private Sub ApplyNamedValidation(ByVal target As Range, ByVal nameText As String, ByVal errorMessage As String)
+       -    With target.Validation
+       +Private Sub ApplyNamedValidation(ByVal Target As Range, ByVal nameText As String, ByVal errorMessage As String)
+       +    With Target.Validation
+                .Delete
+                .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+                    Operator:=xlBetween, Formula1:="=" & nameText
+       @@ -53,11 +53,11 @@
+                .InCellDropdown = True
+                .ShowError = True
+                .ErrorTitle = "Invalid selection"
+       -        .ErrorMessage = errorMessage
+       +        .errorMessage = errorMessage
+            End With
+        End Sub
+       -Private Sub ApplyInlineValidation(ByVal target As Range, ByVal values As String, ByVal errorMessage As String)
+       -    With target.Validation
+       +Private Sub ApplyInlineValidation(ByVal Target As Range, ByVal values As String, ByVal errorMessage As String)
+       +    With Target.Validation
+
+   --- Discrepancy in [modQuoteHeader] ---
+       --- Disk (modQuoteHeader)
+       +++ Embedded (modQuoteHeader)
+       @@ -2,10 +2,10 @@
+        Public Sub InitializeNewQuote()
+            On Error GoTo ErrorHandler
+            With ThisWorkbook.Worksheets("QUOTE")
+       -        .Range("B4").Value = AllocateEnquiryNumber()
+       -        .Range("B5").Value = Date
+       -        .Range("B16").Value = GetConfiguredValidity()
+       -        .Range("B17").Value = "Metres"
+       +        .Range("B4").value = AllocateEnquiryNumber()
+       +        .Range("B5").value = Date
+       +        .Range("B16").value = GetConfiguredValidity()
+       +        .Range("B17").value = "Metres"
+            End With
+            SetupMasterDrivenHeader
+            Exit Sub
+       @@ -24,8 +24,8 @@
+            Dim rowObject As ListRow
+            Set settings = ThisWorkbook.Worksheets("SETTINGS").ListObjects("tblSettings")
+            For Each rowObject In settings.ListRows
+       -        If StrComp(CStr(rowObject.Range.Cells(1, settings.ListColumns("SettingKey").Index).Value), "ValidityDays", vbTextCompare) = 0 Then
+       -            GetConfiguredValidity = CLng(rowObject.Range.Cells(1, settings.ListColumns("SettingValue").Index).Value)
+       +        If StrComp(CStr(rowObject.Range.Cells(1, settings.ListColumns("SettingKey").index).value), "ValidityDays", vbTextCompare) = 0 Then
+       +            GetConfiguredValidity = CLng(rowObject.Range.Cells(1, settings.ListColumns("SettingValue").index).value)
+
+   --- Discrepancy in [modQuoteLines] ---
+       --- Disk (modQuoteLines)
+       +++ Embedded (modQuoteLines)
+       @@ -1,12 +1,12 @@
+        Option Explicit
+        Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVal family As String, _
+       -    ByVal basis As String, ByVal sizeMm As Double, ByVal thicknessMm As Double, _
+       +    ByVal Basis As String, ByVal SizeMM As Double, ByVal thicknessMm As Double, _
+            ByVal gradeId As String, ByVal quantity As Double, ByVal quantityUnit As String, _
+            ByVal pipeLengthM As Double, ByVal plantId As String, _
+            Optional ByVal legacyMode As Boolean = False, _
+            Optional ByVal priceByMT As Boolean = False, _
+       -    Optional ByVal manualFC As Variant, _
+       -    Optional ByVal tripRate As Variant)
+       +    Optional ByVal ManualFC As Variant, _
+       +    Optional ByVal TripRate As Variant)
+            Dim tableObject As ListObject
+            Dim lineObject As ListRow
+            Dim lineData As QuoteLineInput
+       @@ -23,37 +23,37 @@
+            If Not IsValidPipeLength(pipeLengthM) Then
+                Err.Raise vbObjectError + 1303, "AddQuoteLine", "Pipe length must be between 6 and 13 metres."
+            End If
+       -    If UCase$(Trim$(basis)) <> "OD" And UCase$(Trim$(basis)) <> "ID" Then
+       +    If UCase$(Trim$(Basis)) <> "OD" And UCase$(Trim$(Basis)) <> "ID" Then
+                Err.Raise vbObjectError + 1304, "AddQuoteLine", "Basis must be OD or ID."
+
+   --- Discrepancy in [modSelfTest] ---
+       --- Disk (modSelfTest)
+       +++ Embedded (modSelfTest)
+       @@ -1,3 +1,4 @@
+       +Attribute VB_Name = "modSelfTest"
+        Option Explicit
+        Public Sub RunP3GoldenTests()
+            Dim outputPath As String
+       @@ -178,8 +179,8 @@
+            On Error GoTo ExpectedFailure
+            Set grades = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblGrades")
+            Set plants = ThisWorkbook.Worksheets("PLANTS").ListObjects("tblPlants")
+       -    gradeId = CStr(grades.ListRows(1).Range.Cells(1, grades.ListColumns("GradeID").Index).Value)
+       -    plantId = CStr(plants.ListRows(1).Range.Cells(1, plants.ListColumns("PlantID").Index).Value)
+       +    gradeId = CStr(grades.ListRows(1).Range.Cells(1, grades.ListColumns("GradeID").index).value)
+       +    plantId = CStr(plants.ListRows(1).Range.Cells(1, plants.ListColumns("PlantID").index).value)
+            AddQuoteLine "P3-INVALID-MASTER", "P02", "HSAW", "ID", _
+                10, 8.4, gradeId, 1, "Metres", 12, plantId
+            RunP3InvalidMasterGuardTest = "FAIL: P2 accepted an invalid master combination."
+
+   --- Discrepancy in [modSequence] ---
+       --- Disk (modSequence)
+       +++ Embedded (modSequence)
+       @@ -8,21 +8,21 @@
+            If serialRow Is Nothing Then
+                currentSerial = CLng(GetSettingValue(settings, "EnquirySerialStart", 595))
+                Set serialRow = settings.ListRows.Add
+       -        serialRow.Range.Cells(1, settings.ListColumns("SettingKey").Index).Value = "CurrentEnquirySerial"
+       -        serialRow.Range.Cells(1, settings.ListColumns("DataType").Index).Value = "Integer"
+       -        serialRow.Range.Cells(1, settings.ListColumns("Description").Index).Value = "DEV local sequence counter"
+       -        serialRow.Range.Cells(1, settings.ListColumns("Editable").Index).Value = "No"
+       -        serialRow.Range.Cells(1, settings.ListColumns("Category").Index).Value = "Sequence"
+       +        serialRow.Range.Cells(1, settings.ListColumns("SettingKey").index).value = "CurrentEnquirySerial"
+       +        serialRow.Range.Cells(1, settings.ListColumns("DataType").index).value = "Integer"
+       +        serialRow.Range.Cells(1, settings.ListColumns("Description").index).value = "DEV local sequence counter"
+       +        serialRow.Range.Cells(1, settings.ListColumns("Editable").index).value = "No"
+       +        serialRow.Range.Cells(1, settings.ListColumns("Category").index).value = "Sequence"
+            Else
+       -        currentSerial = CLng(serialRow.Range.Cells(1, settings.ListColumns("SettingValue").Index).Value)
+       +        currentSerial = CLng(serialRow.Range.Cells(1, settings.ListColumns("SettingValue").index).value)
+            End If
+       -    serialRow.Range.Cells(1, settings.ListColumns("SettingValue").Index).Value = currentSerial + 1
+       +    serialRow.Range.Cells(1, settings.ListColumns("SettingValue").index).value = currentSerial + 1
+            AllocateEnquiryNumber = "MKTG/ENQ/26-27/" & CStr(currentSerial)
+        End Function
+        Private Function FindSettingRow(ByVal settings As ListObject, ByVal key As String) As ListRow
+
+   --- Discrepancy in [modTheme] ---
+       --- Disk (modTheme)
+       +++ Embedded (modTheme)
+       @@ -18,10 +18,10 @@
+            blue = CLng("&H" & Mid$(value, 5, 2))
+            HexToLong = RGB(red, green, blue)
+        End Function
+       -Public Sub ColourRow(ByVal target As Range, ByVal fillHex As String, _
+       +Public Sub ColourRow(ByVal Target As Range, ByVal fillHex As String, _
+                             Optional ByVal fontHex As String = "FFFFFF")
+       -    If target Is Nothing Then Exit Sub
+       -    With target
+       +    If Target Is Nothing Then Exit Sub
+       +    With Target
+                .Interior.Pattern = xlSolid
+                .Interior.Color = HexToLong(fillHex)
+                .Font.Color = HexToLong(fontHex)
+
+6. COATING DENOMINATOR VERIFICATION in modPricing:
+   Disk modPricing.bas:
+     Normal External Coating Denominator uses massMtPerM: True
+     Normal Internal Coating Denominator uses massMtPerM: True
+   Embedded modPricing:
+     Normal External Coating Denominator uses massMtPerM: True
+     Normal Internal Coating Denominator uses massMtPerM: True
+
+7. SAFETY CONFIRMATION:
+   - Workbook was opened ReadOnly with EnableEvents=False and closed without saving (SaveChanges=False).
+   - No modules were imported, exported, added, or deleted.
+   - LIVE environment was NOT touched.
+   - No Git commits or tags were created.
+   - No existing backups were altered or deleted.
+   Pre-inspection SHA-256:  2173970D044A42447FB496723A5806B3DEAB851CF5E43289BDD451E6B11C4135
+   Post-inspection SHA-256: 2173970D044A42447FB496723A5806B3DEAB851CF5E43289BDD451E6B11C4135
+   Workbook Bit-Identity:   True (100% UNMODIFIED)

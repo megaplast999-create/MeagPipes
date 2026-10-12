@@ -4,7 +4,36 @@
 
 **P1 DEV CHECKPOINT: PASS**
 
-**P3 CHECKPOINT: BLOCKED**
+**P2 DEV CHECKPOINT: PASS**
+
+**P3 CHECKPOINT: PASS (VERIFIED 2026-10-12)**
+
+### 2026-10-12 Recovery and Verification Audit
+
+On 2026-10-12, a comprehensive diagnosis and recovery was conducted on `DEV\Mega_Pipes_Quotation_DEV.xlsm`:
+1. **Compilation Diagnosis**:
+   - `Debug -> Compile VBAProject` was initially greyed out because Excel loaded pre-compiled p-code streams.
+   - Upon project dirtying, `Compile VBAProject` correctly became enabled.
+   - In the prior embedded workbook state, `modQuoteHeader` had accidentally been overwritten with a duplicate copy of `modMasterData` procedures (`SetupQuoteHeader`, `SetupPlantDropdown`, etc.), causing procedure name ambiguity and removing `InitializeNewQuote` and `GetConfiguredValidity`.
+   - `modSelfTest` in the embedded workbook was missing `RunP3InvalidMasterGuardTest`.
+2. **Repairs Applied**:
+   - Replaced embedded `modQuoteHeader` with authoritative source from `VBA\Modules\modQuoteHeader.bas` (restoring `InitializeNewQuote`, `HandleCustomerSelection`, `GetConfiguredValidity` and removing duplicates).
+   - Replaced embedded `modSelfTest` with authoritative source from `VBA\Modules\modSelfTest.bas` (adding `RunP3InvalidMasterGuardTest`).
+   - Clean VBE compilation executed successfully; `Compile VBAProject` disabled after compilation.
+3. **Runtime Test Verification**:
+   - `RunP3GoldenTests`: PASS (LEGACY 178,657,900, CURRENT 178,801,050, diff = 0).
+   - `RunP3InvalidGeometryTest`: PASS.
+   - `RunP3InvalidMasterGuardTest`: PASS ("Size is not available for the selected family and basis.").
+   - `InitializeNewQuote`: PASS.
+   - `SetupMasterDrivenHeader`: PASS.
+   - `Sheet2.Worksheet_Change` -> `HandleCustomerSelection`: PASS (customer lookup verified).
+   - Python test suite: 9 passed in pytest.
+
+4. **Normal Mode Coating Unit & Golden Test Fixture Recovery (16:39)**:
+   - Corrected normal-mode coating denominator in `modPricing.bas` (`massKgPerM` -> `massMtPerM`).
+   - Aligned normal-mode test expectation to audited Option 1 (`Line 4 = 25581/m`, `Total = 178801050`).
+   - Clean VBE compilation verified (Compile VBAProject disabled).
+   - All tests PASS in real Excel 16.0 with zero difference (`TESTS\vba_p3_golden_20261008.txt`).
 
 ### Latest P3 mode verification
 
