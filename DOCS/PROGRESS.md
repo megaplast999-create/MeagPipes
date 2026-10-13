@@ -32,11 +32,12 @@
 | 18:38 | P10 Competitor engine | PASS: Created modCompetitors; added competitor plants C01-C04 to tblPlants and tblCompPrices; seeded competitor distances in tblDistanceCache; implemented GetCompetitorPrice (CURRENT vs STALE badge vs price needed), CalcCompetitorFreight, CalcLandedPrice, GetRecommendedOffer with floor protection, IsYellowHighlighted (runtime yellow #FFFF00 for theirKm < nearestKm); verified in Excel 16.0; regressions PASS. | `TESTS\excel_runtime_p10_20261012.txt` | Implement P11 COSTING sheet |
 | 18:45 | P11 COSTING sheet | PASS: Created modExport with WriteCostingSheet; reproduced reference layout from CS Stacking 10-09-26 with values-only (no formulas); applied all row colors from visual style specification (headers, OD, mass, yellow totals, salmon FC rows); one column per size + total / weighted average column; RunCostingSelfTests and all regressions PASS in real Excel 16.0. | `TESTS\excel_runtime_p11_20261012.txt` | Implement P12 OFFER sheet |
 | 18:55 | P12 OFFER sheet | PASS: Created WriteOfferSheet, NumberToIndianWords, and RunOfferSelfTests in modExport; reproduces Unipro reference (7250 MTR, 178,657,900 INR, line prices 22681, 23914, 24748, 25580); Indian numbering words ("Rupees Seventeen Crore Eighty Six Lakh Fifty Seven Thousand Nine Hundred Only"); 27 terms with resolved placeholders; values only (no formulas); RunOfferSelfTests and all regressions PASS in real Excel 16.0. | `TESTS\excel_runtime_p12_20261012.txt` | Implement P13 enquiry numbering and sequence engine |
+| 19:05 | P13 Enquiry numbering | PASS: Created modSequence with GetFiscalYear, AllocateEnquiryNumber, AllocateOfferNumber, exclusive file locking with 20 retries (50ms pauses), and TEMP fallback; verified local DEV sequence, shared file exclusive lock, concurrency contention, and lock release recovery; RunSequenceSelfTests and all regressions PASS in real Excel 16.0. | `TESTS\excel_runtime_p13_20261012.txt` | Implement P14 snapshot and quote history |
 
 
 
 ## Constraints
 
 - ORS_API_KEY is not present. ORS live tests must be marked NEEDS_HUMAN and use mocks.
-- The verified enquiry allocator is currently the local DEV counter; it is not yet the multi-user shared-file lock design.
+- The shared-folder exclusive lock engine is verified with local test directories and TEMP fallback; live production shared folder UNC path requires human deployment configuration (NEEDS_HUMAN).
 - Runtime smoke tests are intentionally opened writable but closed without saving test data.
