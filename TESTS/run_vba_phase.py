@@ -33,6 +33,7 @@ REGRESSION_MACROS = [
     "RunOfflineSelfTests",
     "RunExportSelfTests",
     "RunDocumentNumberingSelfTests",
+    "RunAuditSelfTests",
 ]
 
 def run_phase(module_path=None, module_name=None, test_macro=None, phase_name="PHASE TEST", output_log=None, save_wb=False, notes=None):
@@ -57,19 +58,19 @@ def run_phase(module_path=None, module_name=None, test_macro=None, phase_name="P
         vbp = wb.VBProject
         
         if module_path and module_name:
-            m_path = Path(module_path).resolve()
-            if not m_path.exists():
-                raise FileNotFoundError(f"Module file not found: {m_path}")
-            
-            # Remove existing module if present
-            try:
-                comp = vbp.VBComponents(module_name)
-                vbp.VBComponents.Remove(comp)
-            except Exception:
-                pass
-            
-            vbp.VBComponents.Import(str(m_path))
-            log(f"Imported updated {module_name} successfully into DEV workbook.")
+            paths = [p.strip() for p in module_path.split(",")]
+            names = [n.strip() for n in module_name.split(",")]
+            for m_path_str, m_name in zip(paths, names):
+                m_path = Path(m_path_str).resolve()
+                if not m_path.exists():
+                    raise FileNotFoundError(f"Module file not found: {m_path}")
+                try:
+                    comp = vbp.VBComponents(m_name)
+                    vbp.VBComponents.Remove(comp)
+                except Exception:
+                    pass
+                vbp.VBComponents.Import(str(m_path))
+                log(f"Imported updated {m_name} successfully into DEV workbook.")
             
         # Check and compile VBAProject
         try:

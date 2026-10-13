@@ -276,7 +276,15 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     ws.Range("D10:E10").Interior.Color = RGB(255, 255, 0) ' Yellow highlight
     
     ws.Range("D11").Value = "Workflow Status"
-    ws.Range("E11").Value = summary.Status
+    Dim curWf As String
+    curWf = Trim$(CStr(ws.Range("E11").Value))
+    If summary.LineCount = 0 Or summary.ValidLineCount = 0 Then
+        ws.Range("E11").Value = "Draft"
+    ElseIf curWf = "Approved" Or curWf = "Issued" Then
+        modApproval.InvalidateApprovalIfModified "Recalculation detected quote edits"
+    ElseIf curWf = "" Or curWf = "Draft" Or curWf = "VALID" Or curWf = "EMPTY" Then
+        ws.Range("E11").Value = "Calculated"
+    End If
     
     ws.Range("D12").Value = "Mode"
     ws.Range("E12").Value = IIf(header.LegacyMode, "LEGACY", "NORMAL (Option 1)")
