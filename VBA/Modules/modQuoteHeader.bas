@@ -12,6 +12,8 @@ Option Explicit
 Private mLastClickTime As Double
 
 Public Sub InitializeNewQuote(Optional ByVal forceNew As Boolean = False)
+    Dim curStep As String
+    curStep = "Init"
     On Error GoTo ErrorHandler
     
     ' Debouncing protection: ignore rapid duplicate clicks within 1 second
@@ -24,10 +26,12 @@ Public Sub InitializeNewQuote(Optional ByVal forceNew As Boolean = False)
     End If
     mLastClickTime = curTime
     
+    curStep = "Unprotect wsQ"
     Dim wsQ As Worksheet
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     modProtection.UnprotectSheet wsQ
     
+    curStep = "AllocateEnquiryNumber"
     With wsQ
         Dim existingNum As String
         existingNum = Trim$(CStr(.Range("B4").Value))
@@ -36,9 +40,14 @@ Public Sub InitializeNewQuote(Optional ByVal forceNew As Boolean = False)
         ' Reopening an existing quote retains its allocated number.
         ' Allocate a new number ONLY if cell B4 is empty or forceNew is True.
         If Len(existingNum) = 0 Or forceNew Then
-            .Range("B4").Value = AllocateEnquiryNumber()
+            curStep = "AllocateEnquiryNumber Call"
+            Dim newNum As String
+            newNum = AllocateEnquiryNumber()
+            curStep = "Write B4"
+            .Range("B4").Value = newNum
         End If
         
+        curStep = "Set Date and Config"
         .Range("B5").Value = Date
         .Range("B16").Value = GetConfiguredValidity()
         If Len(Trim$(CStr(.Range("B17").Value))) = 0 Then
@@ -46,14 +55,32 @@ Public Sub InitializeNewQuote(Optional ByVal forceNew As Boolean = False)
         End If
     End With
     
+    curStep = "SetupMasterDrivenHeader"
     SetupMasterDrivenHeader
+    
+    curStep = "Protect wsQ"
     modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
     Exit Sub
 ErrorHandler:
+    Dim saveErrNum As Long, saveErrDesc As String, saveErrSource As String
+    saveErrNum = Err.Number
+    saveErrDesc = Err.Description
+    saveErrSource = Err.Source
+    
     On Error Resume Next
     If Not wsQ Is Nothing Then modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    
+    Dim logPath As String, fNum As Integer
+    logPath = ThisWorkbook.Path & "\..\TESTS\ui_error.log"
+    fNum = FreeFile
+    Open logPath For Append As #fNum
+    Print #fNum, Format$(Now, "yyyy-mm-dd hh:nn:ss") & " | InitializeNewQuote [" & curStep & "] | Err: " & saveErrNum & " | Desc: " & saveErrDesc & " | Source: " & saveErrSource
+    Close #fNum
     On Error GoTo 0
-    Err.Raise Err.Number, "InitializeNewQuote", Err.Description
+    
+    If saveErrNum <> 0 Then
+        Err.Raise saveErrNum, "InitializeNewQuote [" & curStep & "]", saveErrDesc
+    End If
 End Sub
 
 Public Sub HandleCustomerSelection()

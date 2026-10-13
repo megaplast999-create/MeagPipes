@@ -64,9 +64,21 @@ CleanExit:
     Exit Sub
 
 ErrorHandler:
+    Dim saveErrNum As Long, saveErrDesc As String, saveErrSource As String
+    saveErrNum = Err.Number
+    saveErrDesc = Err.Description
+    saveErrSource = Err.Source
     Application.EnableEvents = True
     Application.ScreenUpdating = True
-    SafeMsgBox "Mega Pipes Quotation System initialization error: " & Err.Description, vbExclamation
+    On Error Resume Next
+    Dim logPath As String, fNum As Integer
+    logPath = ThisWorkbook.Path & "\..\TESTS\ui_error.log"
+    fNum = FreeFile
+    Open logPath For Append As #fNum
+    Print #fNum, Format$(Now, "yyyy-mm-dd hh:nn:ss") & " | OnWorkbookOpen | Err: " & saveErrNum & " | Desc: " & saveErrDesc & " | Source: " & saveErrSource
+    Close #fNum
+    On Error GoTo 0
+    SafeMsgBox "Mega Pipes Quotation System initialization error: " & saveErrDesc, vbExclamation
 End Sub
 
 ' ============================================================
@@ -88,12 +100,12 @@ Public Sub BuildStartScreen()
     modProtection.UnprotectSheet ws
     
     ' Remove old shapes / buttons to cleanly refresh
-    Dim shp As Shape
-    For Each shp In ws.Shapes
+    Dim sIdx As Long
+    For sIdx = ws.Shapes.Count To 1 Step -1
         On Error Resume Next
-        shp.Delete
+        ws.Shapes(sIdx).Delete
         On Error GoTo 0
-    Next shp
+    Next sIdx
     
     ws.Cells.Interior.Color = RGB(248, 250, 248)
     ws.Cells.Font.Name = "Calibri"
@@ -286,12 +298,12 @@ Public Sub SetupQuoteSheetUI()
     modProtection.UnprotectSheet ws
     
     ' Clear old buttons on QUOTE
-    Dim shp As Shape
-    For Each shp In ws.Shapes
+    Dim sIdx As Long
+    For sIdx = ws.Shapes.Count To 1 Step -1
         On Error Resume Next
-        shp.Delete
+        ws.Shapes(sIdx).Delete
         On Error GoTo 0
-    Next shp
+    Next sIdx
     
     ' Ensure master-driven dropdowns and validations are active
     modMasterData.SetupMasterDrivenHeader
@@ -406,6 +418,7 @@ Public Sub RefreshQuoteLinesDisplay()
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
     
     ' Clear previous display rows (37 to 55)
+    wsQ.Range("A37:I55").UnMerge
     wsQ.Range("A37:I55").ClearContents
     wsQ.Range("A37:I55").Interior.Color = xlNone
     wsQ.Range("A37:I55").Borders.LineStyle = xlNone
@@ -490,6 +503,8 @@ End Sub
 Public Sub UI_NewQuotation()
     Dim prevEvents As Boolean
     Dim prevScreen As Boolean
+    Dim curStep As String
+    curStep = "Start"
     
     On Error GoTo ErrorHandler
     prevEvents = Application.EnableEvents
@@ -497,13 +512,16 @@ Public Sub UI_NewQuotation()
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     
+    curStep = "Unprotect wsQ"
     Dim wsQ As Worksheet
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     modProtection.UnprotectSheet wsQ
     
+    curStep = "InitializeNewQuote"
     ' Allocate or confirm fresh enquiry number
     modQuoteHeader.InitializeNewQuote forceNew:=True
     
+    curStep = "Clear input cells"
     ' Clear input cells in product requirement area
     wsQ.Range("B21").Value = "Pipe Standard"
     wsQ.Range("B22").Value = "HSAW"
@@ -517,29 +535,54 @@ Public Sub UI_NewQuotation()
     wsQ.Range("B30").Value = "Metres"
     wsQ.Range("B31").Value = 12#
     
+    curStep = "ClearQuoteLines"
     ' Clear quote lines table
     modQuote.ClearQuoteLines
     
+    curStep = "SetupDependentDropdownArchitecture"
     ' Refresh dependent dropdown architecture
     modDependentDropdowns.SetupDependentDropdownArchitecture
+    
+    curStep = "SetupQuoteLineDropdowns"
     modDependentDropdowns.SetupQuoteLineDropdowns
     
+    curStep = "RefreshQuoteLinesDisplay"
     ' Refresh display table
     RefreshQuoteLinesDisplay
     
+    curStep = "SetFeedbackBanner"
     ' Update status banner
     SetFeedbackBanner "New quotation created. Select customer and click '+ ADD ITEM TO QUOTE'.", UI_GREEN_DARK
     
+    curStep = "ProtectSheet wsQ"
     modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = True
-    wsQ.Select
+    
+    curStep = "Activate wsQ"
+    wsQ.Activate
+    On Error Resume Next
+    wsQ.Range("B8").Select
+    On Error GoTo 0
     Exit Sub
 
 ErrorHandler:
+    Dim saveErrNum As Long, saveErrDesc As String, saveErrSource As String
+    saveErrNum = Err.Number
+    saveErrDesc = Err.Description
+    saveErrSource = Err.Source
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreen
-    SafeMsgBox "Could not start new quotation: " & Err.Description, vbExclamation
+    On Error Resume Next
+    Dim logPath As String, fNum As Integer
+    logPath = ThisWorkbook.Path & "\..\TESTS\ui_error.log"
+    fNum = FreeFile
+    Open logPath For Append As #fNum
+    Print #fNum, Format$(Now, "yyyy-mm-dd hh:nn:ss") & " | Step: " & curStep & " | Err: " & saveErrNum & " | Desc: " & saveErrDesc & " | Source: " & saveErrSource
+    Close #fNum
+    On Error GoTo 0
+    SafeMsgBox "Could not start new quotation [" & curStep & "]: " & saveErrDesc, vbExclamation
 End Sub
 
 Public Sub UI_OpenQuotation()
@@ -1033,7 +1076,7 @@ End Sub
 ' ============================================================
 
 Private Sub SafeMsgBox(ByVal msg As String, Optional ByVal style As VbMsgBoxStyle = vbInformation, Optional ByVal title As String = "Mega Pipes")
-    If Application.DisplayAlerts Then
+    If Application.DisplayAlerts And Application.UserControl Then
         MsgBox msg, style, title
     End If
 End Sub

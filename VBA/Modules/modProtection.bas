@@ -80,9 +80,12 @@ Public Sub ConfigureCellLocking()
     LockColumn tblLines, "LineTotal"
     LockColumn tblLines, "Status"
     
-    ' 3. MASTERS Sheet: Unlock cells so dynamic cascading dropdown helpers can write
+    ' 3. Internal data & helper sheets: Unlock cells so system macros can write
     On Error Resume Next
     ThisWorkbook.Worksheets("MASTERS").Cells.Locked = False
+    ThisWorkbook.Worksheets("SETTINGS").Cells.Locked = False
+    ThisWorkbook.Worksheets("QUOTE_LOG").Cells.Locked = False
+    ThisWorkbook.Worksheets("DISTANCE_CACHE").Cells.Locked = False
     On Error GoTo 0
 
 CleanExit:
@@ -117,6 +120,7 @@ Public Sub ProtectSheet(ByVal ws As Worksheet, Optional ByVal userInterfaceOnly 
                AllowFormattingRows:=True, _
                AllowSorting:=True, _
                AllowFiltering:=True
+    ws.EnableSelection = xlNoRestrictions
     On Error GoTo 0
 End Sub
 
@@ -127,6 +131,12 @@ Public Sub UnprotectSheet(ByVal ws As Worksheet, Optional ByVal pwd As String = 
     
     On Error Resume Next
     ws.Unprotect Password:=effectivePwd
+    If ws.ProtectContents And Len(effectivePwd) > 0 Then
+        ws.Unprotect Password:=""
+    End If
+    If ws.ProtectContents Then
+        ws.Unprotect Password:="MegaPipes2026"
+    End If
     On Error GoTo 0
 End Sub
 

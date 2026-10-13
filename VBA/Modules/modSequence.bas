@@ -158,11 +158,15 @@ Private Function AllocateFromSharedFolder(ByVal sharedPath As String, ByVal fy A
 End Function
 
 Private Function AllocateFromLocalDev(ByVal fy As String) As String
+    Dim wsSet As Worksheet
     Dim settings As ListObject
     Dim serialRow As ListRow
     Dim currentSerial As Long
     
-    Set settings = ThisWorkbook.Worksheets("SETTINGS").ListObjects("tblSettings")
+    Set wsSet = ThisWorkbook.Worksheets("SETTINGS")
+    modProtection.UnprotectSheet wsSet
+    
+    Set settings = wsSet.ListObjects("tblSettings")
     Set serialRow = FindSettingRow(settings, "CurrentEnquirySerial")
     If serialRow Is Nothing Then
         currentSerial = CLng(GetSettingValue(settings, "EnquirySerialStart", 595))
@@ -175,6 +179,7 @@ Private Function AllocateFromLocalDev(ByVal fy As String) As String
     End If
     
     serialRow.Range.Cells(1, settings.ListColumns("SettingValue").Index).Value = currentSerial + 1
+    modProtection.ProtectSheet wsSet, userInterfaceOnly:=True
     AllocateFromLocalDev = "MKTG/ENQ/" & fy & "/" & CStr(currentSerial)
 End Function
 

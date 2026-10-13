@@ -100,11 +100,7 @@ End Sub
 
 Public Sub SetupMasterDrivenHeader()
     On Error GoTo ErrorHandler
-    ApplyListValidation ThisWorkbook.Worksheets("QUOTE").Range("B8"), _
-        TableColumnAddress("CUSTOMERS", "tblCustomers", "CustomerName")
-    SetupPlantDropdown
-    SetupPaymentTermsDropdown
-    SetupPriceBasisDropdown
+    SetupQuoteHeader
     Exit Sub
 ErrorHandler:
     Err.Raise Err.Number, "SetupMasterDrivenHeader", Err.Description
