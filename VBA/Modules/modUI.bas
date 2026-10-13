@@ -107,8 +107,8 @@ Public Sub BuildStartScreen()
         On Error GoTo 0
     Next sIdx
     
-    ws.Cells.Interior.Color = RGB(248, 250, 248)
-    ws.Cells.Font.Name = "Calibri"
+    ws.Range("A1:G35").Interior.Color = RGB(248, 250, 248)
+    ws.Range("A1:G35").Font.Name = "Calibri"
     
     ' Set column widths
     ws.Columns("A").ColumnWidth = 3

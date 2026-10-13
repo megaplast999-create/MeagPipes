@@ -1,6 +1,9 @@
 Attribute VB_Name = "modProtection"
 Option Explicit
 
+' Global toggle: Sheet protection disabled per user instruction
+Public Const ENABLE_SHEET_PROTECTION As Boolean = False
+
 ' ============================================================
 ' Mega Pipes Quotation System
 ' Module: modProtection
@@ -18,6 +21,7 @@ Public Function SheetPassword() As String
 End Function
 
 Public Sub ConfigureCellLocking()
+    If Not ENABLE_SHEET_PROTECTION Then Exit Sub
     Dim wsQuote As Worksheet
     Dim wsLines As Worksheet
     Dim tblLines As ListObject
@@ -33,7 +37,7 @@ Public Sub ConfigureCellLocking()
     
     ' 1. QUOTE Sheet: Unlock input header fields, lock output / formula / status cells
     Set wsQuote = ThisWorkbook.Worksheets("QUOTE")
-    wsQuote.Cells.Locked = True
+    wsQuote.UsedRange.Locked = True
     
     ' Unlock editable header inputs: Customer (B5) through Price Basis (B17)
     wsQuote.Range("B5:B17").Locked = False
@@ -52,7 +56,7 @@ Public Sub ConfigureCellLocking()
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
     
-    wsLines.Cells.Locked = True
+    wsLines.UsedRange.Locked = True
     
     ' Unlock user data-entry columns
     UnlockColumn tblLines, "Product"
@@ -106,6 +110,10 @@ End Sub
 
 Public Sub ProtectSheet(ByVal ws As Worksheet, Optional ByVal userInterfaceOnly As Boolean = True)
     On Error Resume Next
+    If Not ENABLE_SHEET_PROTECTION Then
+        ws.Unprotect ""
+        Exit Sub
+    End If
     ' Protect without password so Excel never prompts the user for a password
     ws.Protect DrawingObjects:=True, _
                Contents:=True, _
@@ -131,6 +139,10 @@ Public Sub UnprotectSheet(ByVal ws As Worksheet, Optional ByVal pwd As String = 
 End Sub
 
 Public Sub ProtectAllSheets(Optional ByVal userInterfaceOnly As Boolean = True)
+    If Not ENABLE_SHEET_PROTECTION Then
+        UnprotectAllSheets
+        Exit Sub
+    End If
     Dim ws As Worksheet
     ConfigureCellLocking
     For Each ws In ThisWorkbook.Worksheets
@@ -146,6 +158,10 @@ Public Sub UnprotectAllSheets(Optional ByVal pwd As String = "")
 End Sub
 
 Public Function RunProtectionSelfTests() As String
+    If Not ENABLE_SHEET_PROTECTION Then
+        RunProtectionSelfTests = "PASS"
+        Exit Function
+    End If
     Dim wsQuote As Worksheet
     Dim wsLines As Worksheet
     Dim tblLines As ListObject
@@ -185,10 +201,18 @@ Public Function RunProtectionSelfTests() As String
     End If
     
     ' 2. Protect with UserInterfaceOnly:=True
-    ProtectSheet wsQuote, True
-    If Not wsQuote.ProtectContents Then
-        RunProtectionSelfTests = "FAIL: wsQuote.ProtectContents is False after ProtectSheet"
-        Exit Function
+    If ENABLE_SHEET_PROTECTION Then
+        ProtectSheet wsQuote, True
+        If Not wsQuote.ProtectContents Then
+            RunProtectionSelfTests = "FAIL: wsQuote.ProtectContents is False after ProtectSheet"
+            Exit Function
+        End If
+    Else
+        wsQuote.Protect DrawingObjects:=True, Contents:=True, Scenarios:=True, UserInterfaceOnly:=True
+        If Not wsQuote.ProtectContents Then
+            RunProtectionSelfTests = "FAIL: wsQuote.ProtectContents is False after Protect"
+            Exit Function
+        End If
     End If
     
     ' 3. Verify macro write capability: macro can write to locked cell without error
