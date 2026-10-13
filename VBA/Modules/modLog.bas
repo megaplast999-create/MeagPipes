@@ -503,3 +503,153 @@ Public Function RunSnapshotSelfTests() As String
 TestFail:
     RunSnapshotSelfTests = "FAIL: Exception - " & Err.Description
 End Function
+
+' ============================================================
+' P20 AUDIT LOGGING ENGINE
+' ============================================================
+
+Private mIsLogging As Boolean
+
+Public Function LogAction(ByVal quoteId As String, ByVal actionName As String, _
+                          Optional ByVal oldVal As String = "", _
+                          Optional ByVal newVal As String = "", _
+                          Optional ByVal sheetName As String = "QUOTE", _
+                          Optional ByVal statusVal As String = "LOGGED", _
+                          Optional ByVal notesText As String = "") As String
+    Dim wsLog As Worksheet
+    Dim tblLog As ListObject
+    Dim newRow As ListRow
+    Dim curUser As String
+    Dim logId As String
+    
+    ' Recursion protection
+    If mIsLogging Then Exit Function
+    mIsLogging = True
+    
+    On Error GoTo CleanExit
+    
+    ' Mask secrets/passwords
+    Dim safeOld As String, safeNew As String, safeNotes As String
+    safeOld = MaskSecrets(oldVal)
+    safeNew = MaskSecrets(newVal)
+    safeNotes = MaskSecrets(notesText)
+    
+    curUser = Environ$("USERNAME")
+    If Len(curUser) = 0 Then curUser = "User"
+    
+    Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    Set tblLog = wsLog.ListObjects("tblQuoteLog")
+    
+    If tblLog.ListRows.Count = 1 And Len(Trim$(CStr(tblLog.ListRows(1).Range.Cells(1, tblLog.ListColumns("Action").Index).Value))) = 0 Then
+        Set newRow = tblLog.ListRows(1)
+    Else
+        Set newRow = tblLog.ListRows.Add
+    End If
+    
+    logId = "LOG-" & Format$(newRow.Index, "00000")
+    
+    With newRow.Range
+        .Cells(1, tblLog.ListColumns("LogID").Index).Value = logId
+        .Cells(1, tblLog.ListColumns("QuoteID").Index).Value = quoteId
+        .Cells(1, tblLog.ListColumns("Timestamp").Index).Value = Now
+        .Cells(1, tblLog.ListColumns("User").Index).Value = curUser
+        .Cells(1, tblLog.ListColumns("Action").Index).Value = actionName
+        .Cells(1, tblLog.ListColumns("OldValue").Index).Value = safeOld
+        .Cells(1, tblLog.ListColumns("NewValue").Index).Value = safeNew
+        .Cells(1, tblLog.ListColumns("SheetName").Index).Value = sheetName
+        .Cells(1, tblLog.ListColumns("Status").Index).Value = statusVal
+        .Cells(1, tblLog.ListColumns("Notes").Index).Value = safeNotes
+    End With
+    
+    LogAction = logId
+
+CleanExit:
+    mIsLogging = False
+End Function
+
+Private Function MaskSecrets(ByVal rawStr As String) As String
+    Dim s As String
+    s = rawStr
+    If InStr(1, s, "password", vbTextCompare) > 0 Or _
+       InStr(1, s, "pwd", vbTextCompare) > 0 Or _
+       InStr(1, s, "api_key", vbTextCompare) > 0 Or _
+       InStr(1, s, "secret", vbTextCompare) > 0 Then
+        MaskSecrets = "[REDACTED]"
+    Else
+        MaskSecrets = s
+    End If
+End Function
+
+Public Function RunAuditSelfTests() As String
+    Dim testLogId As String
+    Dim wsLog As Worksheet
+    Dim tblLog As ListObject
+    Dim r As Long
+    Dim foundRow As ListRow
+    
+    On Error GoTo TestFail
+    
+    ' 1. Test LogAction
+    testLogId = LogAction("Q-TEST-AUDIT", "TEST_ACTION", "OldVal", "NewVal", "QUOTE", "TEST_OK", "Audit self-test note")
+    If Len(testLogId) = 0 Then
+        RunAuditSelfTests = "FAIL: LogAction returned empty ID"
+        Exit Function
+    End If
+    
+    Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    Set tblLog = wsLog.ListObjects("tblQuoteLog")
+    
+    ' Verify row exists
+    For r = tblLog.ListRows.Count To 1 Step -1
+        If StrComp(Trim$(CStr(tblLog.ListRows(r).Range.Cells(1, tblLog.ListColumns("LogID").Index).Value)), testLogId, vbTextCompare) = 0 Then
+            Set foundRow = tblLog.ListRows(r)
+            Exit For
+        End If
+    Next r
+    
+    If foundRow Is Nothing Then
+        RunAuditSelfTests = "FAIL: Log row not found in tblQuoteLog"
+        Exit Function
+    End If
+    
+    With foundRow.Range
+        If .Cells(1, tblLog.ListColumns("QuoteID").Index).Value <> "Q-TEST-AUDIT" Then
+            RunAuditSelfTests = "FAIL: QuoteID mismatch"
+            Exit Function
+        End If
+        If .Cells(1, tblLog.ListColumns("Action").Index).Value <> "TEST_ACTION" Then
+            RunAuditSelfTests = "FAIL: Action mismatch"
+            Exit Function
+        End If
+        If .Cells(1, tblLog.ListColumns("User").Index).Value <> Environ$("USERNAME") And Len(CStr(.Cells(1, tblLog.ListColumns("User").Index).Value)) = 0 Then
+            RunAuditSelfTests = "FAIL: User identity not captured"
+            Exit Function
+        End If
+    End With
+    
+    ' 2. Test Secret Masking
+    Dim secretLogId As String
+    secretLogId = LogAction("Q-TEST-AUDIT", "SECURITY_TEST", "my_secret_pwd", "new_api_key_123")
+    For r = tblLog.ListRows.Count To 1 Step -1
+        If StrComp(Trim$(CStr(tblLog.ListRows(r).Range.Cells(1, tblLog.ListColumns("LogID").Index).Value)), secretLogId, vbTextCompare) = 0 Then
+            If tblLog.ListRows(r).Range.Cells(1, tblLog.ListColumns("OldValue").Index).Value <> "[REDACTED]" Then
+                RunAuditSelfTests = "FAIL: Password was not masked in audit log"
+                Exit Function
+            End If
+            tblLog.ListRows(r).Delete
+            Exit For
+        End If
+    Next r
+    
+    ' Clean up test row
+    On Error Resume Next
+    foundRow.Delete
+    On Error GoTo 0
+    
+    RunAuditSelfTests = "PASS"
+    Exit Function
+    
+TestFail:
+    RunAuditSelfTests = "FAIL: Exception - " & Err.Description
+End Function
+
