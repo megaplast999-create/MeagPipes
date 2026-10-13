@@ -36,12 +36,18 @@ Public Sub ConfigureCellLocking()
     Set wsQuote = ThisWorkbook.Worksheets("QUOTE")
     wsQuote.Cells.Locked = True
     
-    ' Unlock editable header inputs: Customer (B5) through Mode (B13)
-    wsQuote.Range("B5:B13").Locked = False
+    ' Unlock editable header inputs: Customer (B5) through Price Basis (B17)
+    wsQuote.Range("B5:B17").Locked = False
+    
+    ' Unlock editable product item inputs (B21:B31)
+    wsQuote.Range("B21:B31").Locked = False
     
     ' Keep Enquiry Number (B4) and Summary card (D3:E14) locked
     wsQuote.Range("B4").Locked = True
     wsQuote.Range("D3:E14").Locked = True
+    
+    ' Unlock feedback banner cell
+    wsQuote.Range("A33").Locked = False
     
     ' 2. QUOTE_LINES Sheet: Unlock user input columns in tblQuoteLines
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
@@ -73,6 +79,11 @@ Public Sub ConfigureCellLocking()
     LockColumn tblLines, "UnitRateINR"
     LockColumn tblLines, "LineTotal"
     LockColumn tblLines, "Status"
+    
+    ' 3. MASTERS Sheet: Unlock cells so dynamic cascading dropdown helpers can write
+    On Error Resume Next
+    ThisWorkbook.Worksheets("MASTERS").Cells.Locked = False
+    On Error GoTo 0
 
 CleanExit:
     Application.EnableEvents = prevEvents

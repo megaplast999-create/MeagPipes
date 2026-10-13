@@ -244,6 +244,7 @@ Public Function SaveQuote(ByVal enquiryNo As String, Optional ByVal revNum As Lo
     ' Log snapshot save to tblQuoteLog
     On Error Resume Next
     Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    modProtection.UnprotectSheet wsLog
     Set tblLog = wsLog.ListObjects("tblQuoteLog")
     On Error GoTo 0
     
@@ -266,6 +267,7 @@ Public Function SaveQuote(ByVal enquiryNo As String, Optional ByVal revNum As Lo
             .Cells(1, tblLog.ListColumns("Status").Index).Value = "SAVED"
             .Cells(1, tblLog.ListColumns("Notes").Index).Value = "Snapshot saved: R" & CStr(revNum) & " (" & fName & ")"
         End With
+        modProtection.ProtectSheet wsLog, userInterfaceOnly:=True
     End If
     
     SaveQuote = fullPath
@@ -318,6 +320,8 @@ Public Function LoadQuote(ByVal snapshotPathOrEnquiryNo As String, Optional ByVa
     
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    modProtection.UnprotectSheet wsQ
+    modProtection.UnprotectSheet wsLines
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
     
     ' Read metadata into dictionary
@@ -380,6 +384,7 @@ Public Function LoadQuote(ByVal snapshotPathOrEnquiryNo As String, Optional ByVa
     
     On Error Resume Next
     Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    modProtection.UnprotectSheet wsLog
     Set tblLog = wsLog.ListObjects("tblQuoteLog")
     On Error GoTo 0
     
@@ -402,8 +407,11 @@ Public Function LoadQuote(ByVal snapshotPathOrEnquiryNo As String, Optional ByVa
             .Cells(1, tblLog.ListColumns("Status").Index).Value = "LOADED"
             .Cells(1, tblLog.ListColumns("Notes").Index).Value = "Snapshot reloaded from " & fullPath
         End With
+        modProtection.ProtectSheet wsLog, userInterfaceOnly:=True
     End If
     
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
     LoadQuote = True
 End Function
 
@@ -564,6 +572,7 @@ Public Function LogAction(ByVal quoteId As String, ByVal actionName As String, _
     curUser = GetCurrentUser()
     
     Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    modProtection.UnprotectSheet wsLog
     Set tblLog = wsLog.ListObjects("tblQuoteLog")
     
     If tblLog.ListRows.Count = 1 And Len(Trim$(CStr(tblLog.ListRows(1).Range.Cells(1, tblLog.ListColumns("Action").Index).Value))) = 0 Then
@@ -586,6 +595,7 @@ Public Function LogAction(ByVal quoteId As String, ByVal actionName As String, _
         .Cells(1, tblLog.ListColumns("Status").Index).Value = statusVal
         .Cells(1, tblLog.ListColumns("Notes").Index).Value = safeNotes
     End With
+    modProtection.ProtectSheet wsLog, userInterfaceOnly:=True
     
     LogAction = logId
 

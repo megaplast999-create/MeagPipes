@@ -24,7 +24,11 @@ Public Sub InitializeNewQuote(Optional ByVal forceNew As Boolean = False)
     End If
     mLastClickTime = curTime
     
-    With ThisWorkbook.Worksheets("QUOTE")
+    Dim wsQ As Worksheet
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    modProtection.UnprotectSheet wsQ
+    
+    With wsQ
         Dim existingNum As String
         existingNum = Trim$(CStr(.Range("B4").Value))
         
@@ -43,8 +47,12 @@ Public Sub InitializeNewQuote(Optional ByVal forceNew As Boolean = False)
     End With
     
     SetupMasterDrivenHeader
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
     Exit Sub
 ErrorHandler:
+    On Error Resume Next
+    If Not wsQ Is Nothing Then modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    On Error GoTo 0
     Err.Raise Err.Number, "InitializeNewQuote", Err.Description
 End Sub
 
@@ -86,6 +94,7 @@ Public Function RunDocumentNumberingSelfTests() As String
     On Error GoTo TestFail
     
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    modProtection.UnprotectSheet wsQ
     Set tblSet = ThisWorkbook.Worksheets("SETTINGS").ListObjects("tblSettings")
     Set sRow = modSequence.FindSettingRow(tblSet, "CurrentEnquirySerial")
     
@@ -103,6 +112,7 @@ Public Function RunDocumentNumberingSelfTests() As String
     
     afterNum = Trim$(CStr(wsQ.Range("B4").Value))
     If afterNum <> testNum Then
+        modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
         RunDocumentNumberingSelfTests = "FAIL: Reopening quote changed number from " & testNum & " to " & afterNum
         Exit Function
     End If
@@ -110,6 +120,7 @@ Public Function RunDocumentNumberingSelfTests() As String
     If Not sRow Is Nothing Then
         serialAfter = CLng(sRow.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value)
         If serialAfter <> origSerial Then
+            modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
             RunDocumentNumberingSelfTests = "FAIL: Reopening quote incremented counter from " & CStr(origSerial) & " to " & CStr(serialAfter)
             Exit Function
         End If
@@ -118,25 +129,30 @@ Public Function RunDocumentNumberingSelfTests() As String
     ' Test 2: Rapid successive calls preserve number
     InitializeNewQuote forceNew:=False
     If Trim$(CStr(wsQ.Range("B4").Value)) <> testNum Then
+        modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
         RunDocumentNumberingSelfTests = "FAIL: Repeated call altered existing number"
         Exit Function
     End If
     
     ' Restore original state
+    modProtection.UnprotectSheet wsQ
     wsQ.Range("B4").Value = origB4
     If Not sRow Is Nothing Then
         sRow.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value = origSerial
     End If
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
     
     RunDocumentNumberingSelfTests = "PASS"
     Exit Function
     
 TestFail:
     On Error Resume Next
+    modProtection.UnprotectSheet wsQ
     wsQ.Range("B4").Value = origB4
     If Not sRow Is Nothing Then
         sRow.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value = origSerial
     End If
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
     On Error GoTo 0
     RunDocumentNumberingSelfTests = "FAIL: Exception - " & Err.Description
 End Function

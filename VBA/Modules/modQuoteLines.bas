@@ -37,6 +37,10 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
     ValidateQuantityUnit quantityUnit
     ValidatePlant plantId
 
+    Dim wsLines As Worksheet
+    Set wsLines = tableObject.Parent
+    modProtection.UnprotectSheet wsLines
+
     If tableObject.ListRows.Count = 1 And _
        Len(Trim$(CStr(tableObject.ListRows(1).Range.Cells(1, tableObject.ListColumns("ProductID").Index).Value))) = 0 Then
         Set lineObject = tableObject.ListRows(1)
@@ -93,11 +97,13 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
 
     result = CalcLine(lineData, rates, priceByMT)
     WriteCalculatedQuoteLine lineObject, tableObject, result, priceByMT
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
     Exit Sub
 
 CalculationError:
     On Error Resume Next
     lineObject.Delete
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
     On Error GoTo 0
     Err.Raise Err.Number, "AddQuoteLine", Err.Description
 End Sub
@@ -141,7 +147,7 @@ Private Sub ValidateSize(ByVal family As String, ByVal basis As String, ByVal si
     For Each rowObject In tableObject.ListRows
         If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
             And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Basis").Index).Value), basis, vbTextCompare) = 0 _
-            And Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("SizeMM").Index).Value) - sizeMm) < 0.0001 _
+            And (Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("SizeMM").Index).Value) - sizeMm) <= 1#) _
             And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
     Next rowObject
     Err.Raise vbObjectError + 1306, "ValidateSize", "Size is not available for the selected family and basis."
@@ -153,7 +159,7 @@ Private Sub ValidateThickness(ByVal family As String, ByVal thicknessMm As Doubl
     Set tableObject = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblThickness")
     For Each rowObject In tableObject.ListRows
         If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
-            And Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("ThicknessMM").Index).Value) - thicknessMm) < 0.0001 _
+            And (Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("ThicknessMM").Index).Value) - thicknessMm) <= 0.05) _
             And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
     Next rowObject
     Err.Raise vbObjectError + 1307, "ValidateThickness", "Thickness is not available for the selected family."
@@ -165,7 +171,9 @@ Private Sub ValidateGrade(ByVal family As String, ByVal gradeId As String)
     Set tableObject = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblGrades")
     For Each rowObject In tableObject.ListRows
         If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
-            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("GradeID").Index).Value), gradeId, vbTextCompare) = 0 _
+            And (StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("GradeID").Index).Value), gradeId, vbTextCompare) = 0 _
+                 Or StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("GradeName").Index).Value), gradeId, vbTextCompare) = 0 _
+                 Or InStr(1, CStr(rowObject.Range.Cells(1, tableObject.ListColumns("GradeName").Index).Value), gradeId, vbTextCompare) > 0) _
             And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
     Next rowObject
     Err.Raise vbObjectError + 1308, "ValidateGrade", "Grade is not available for the selected family."

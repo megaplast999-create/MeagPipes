@@ -23,10 +23,11 @@ ErrorHandler:
 
     Application.ScreenUpdating = True
 
-    MsgBox "Mega Pipes Quotation System could not open the START screen." & _
-           vbCrLf & vbCrLf & _
-           "Error: " & Err.Description, _
-           vbExclamation, _
-           "Mega Pipes Quotation System"
-
+    If Application.DisplayAlerts Then
+        MsgBox "Mega Pipes Quotation System could not open the START screen." & _
+               vbCrLf & vbCrLf & _
+               "Error: " & Err.Description, _
+               vbExclamation, _
+               "Mega Pipes Quotation System"
+    End If
 End Sub

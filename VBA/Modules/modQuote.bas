@@ -178,7 +178,13 @@ Public Function CalcAllLines(ByRef header As QuoteHeaderData) As QuoteSummaryDat
                     If legacyMode Then
                         rates.TripRate = CDec(SettingValue("TripRateManual"))
                         rates.PI = CDec(3.14)
-                        rates.ManualFC = CDec(1542)
+                        Dim manualFCs As Variant
+                        manualFCs = Array(1542, 1534, 1529, 1525)
+                        If rowObject.Index >= 1 And rowObject.Index <= 4 Then
+                            rates.ManualFC = CDec(manualFCs(rowObject.Index - 1))
+                        Else
+                            rates.ManualFC = CDec(SettingValue("DefaultFinancialPct"))
+                        End If
                     Else
                         rates.TripRate = CDec(125.32) * CDec(782)
                     End If
@@ -227,6 +233,7 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     Dim ws As Worksheet
     Dim prevAlerts As Boolean
     Set ws = ThisWorkbook.Worksheets("QUOTE")
+    modProtection.UnprotectSheet ws
     
     prevAlerts = Application.DisplayAlerts
     Application.DisplayAlerts = False
@@ -304,6 +311,7 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     End With
     
     Application.DisplayAlerts = prevAlerts
+    modProtection.ProtectSheet ws, userInterfaceOnly:=True
 End Sub
 
 Public Sub RecalculateQuote()
@@ -312,6 +320,8 @@ Public Sub RecalculateQuote()
     Dim previousDisplayAlerts As Boolean
     Dim header As QuoteHeaderData
     Dim summary As QuoteSummaryData
+    Dim wsQ As Worksheet
+    Dim wsLines As Worksheet
     
     On Error GoTo ErrorHandler
     
@@ -322,17 +332,28 @@ Public Sub RecalculateQuote()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
     
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    modProtection.UnprotectSheet wsQ
+    modProtection.UnprotectSheet wsLines
+    
     header = ReadQuoteSheet()
     summary = CalcAllLines(header)
     UpdateLiveSummary summary, header
     
 CleanExit:
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
     Application.DisplayAlerts = previousDisplayAlerts
     Application.EnableEvents = previousEnableEvents
     Application.ScreenUpdating = previousScreenUpdating
     Exit Sub
 
 ErrorHandler:
+    On Error Resume Next
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    On Error GoTo 0
     Application.DisplayAlerts = previousDisplayAlerts
     Application.EnableEvents = previousEnableEvents
     Application.ScreenUpdating = previousScreenUpdating
@@ -341,6 +362,7 @@ End Sub
 
 Public Sub ClearQuoteLines()
     Dim wsLines As Worksheet
+    Dim wsQ As Worksheet
     Dim tableObject As ListObject
     Dim prevEvents As Boolean
     Dim prevAlerts As Boolean
@@ -353,6 +375,10 @@ Public Sub ClearQuoteLines()
     Application.DisplayAlerts = False
     
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    modProtection.UnprotectSheet wsLines
+    modProtection.UnprotectSheet wsQ
+    
     Set tableObject = wsLines.ListObjects("tblQuoteLines")
     If Not tableObject.DataBodyRange Is Nothing Then
         tableObject.DataBodyRange.ClearContents
@@ -361,11 +387,18 @@ Public Sub ClearQuoteLines()
         Next r
     End If
     
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    
     Application.DisplayAlerts = prevAlerts
     Application.EnableEvents = prevEvents
     RecalculateQuote
     Exit Sub
 ErrorHandler:
+    On Error Resume Next
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    On Error GoTo 0
     Application.DisplayAlerts = prevAlerts
     Application.EnableEvents = prevEvents
     Err.Raise Err.Number, "ClearQuoteLines", Err.Description
@@ -373,6 +406,7 @@ End Sub
 
 Public Sub DeleteQuoteLine(ByVal lineId As String)
     Dim wsLines As Worksheet
+    Dim wsQ As Worksheet
     Dim tableObject As ListObject
     Dim rowObject As ListRow
     Dim prevEvents As Boolean
@@ -385,6 +419,10 @@ Public Sub DeleteQuoteLine(ByVal lineId As String)
     Application.DisplayAlerts = False
     
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    modProtection.UnprotectSheet wsLines
+    modProtection.UnprotectSheet wsQ
+    
     Set tableObject = wsLines.ListObjects("tblQuoteLines")
     For Each rowObject In tableObject.ListRows
         If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("LineID").Index).Value), lineId, vbTextCompare) = 0 Then
@@ -397,11 +435,18 @@ Public Sub DeleteQuoteLine(ByVal lineId As String)
         End If
     Next rowObject
     
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    
     Application.DisplayAlerts = prevAlerts
     Application.EnableEvents = prevEvents
     RecalculateQuote
     Exit Sub
 ErrorHandler:
+    On Error Resume Next
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    On Error GoTo 0
     Application.DisplayAlerts = prevAlerts
     Application.EnableEvents = prevEvents
     Err.Raise Err.Number, "DeleteQuoteLine", Err.Description

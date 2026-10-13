@@ -3,8 +3,10 @@ Option Explicit
 
 Public Sub ShowStartScreen()
     On Error GoTo ErrorHandler
-    ThisWorkbook.Worksheets("START").Activate
+    modUI.OnWorkbookOpen
     Exit Sub
 ErrorHandler:
-    MsgBox "Unable to open the START sheet: " & Err.Description, vbExclamation, "Mega Pipes"
+    If Application.DisplayAlerts Then
+        MsgBox "Unable to open the START screen: " & Err.Description, vbExclamation, "Mega Pipes"
+    End If
 End Sub

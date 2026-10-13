@@ -340,6 +340,9 @@ Public Function RunAllSelfTests() As String
     results = results & "Execution Date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss") & vbCrLf
     results = results & sep & vbCrLf
     
+    ' Unprotect all sheets for test execution
+    modProtection.UnprotectAllSheets
+    
     ' Core Component Evaluations
     EvalTest "P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)", RunGoldenLegacy(), results, passCount, failCount, humanCount
     EvalTest "P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)", RunGoldenNormal(), results, passCount, failCount, humanCount
@@ -399,6 +402,9 @@ Public Function RunAllSelfTests() As String
     Print #fileNum, results
     Close #fileNum
     On Error GoTo 0
+    
+    ' Restore sheet protection
+    modProtection.ProtectAllSheets userInterfaceOnly:=True
     
     If failCount = 0 Then
         RunAllSelfTests = "PASS"

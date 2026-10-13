@@ -4,29 +4,48 @@ Option Explicit
 Private Const HELPER_FIRST_ROW As Long = 2
 
 Public Sub SetupDependentDropdownArchitecture()
+    Dim wsM As Worksheet
+    Dim quoteSheet As Worksheet
     On Error GoTo ErrorHandler
+    Set wsM = ThisWorkbook.Worksheets("MASTERS")
+    Set quoteSheet = ThisWorkbook.Worksheets("QUOTE")
+    modProtection.UnprotectSheet wsM
+    modProtection.UnprotectSheet quoteSheet
+    
     BuildHelperList "ProductList", "tblProducts", "ProductName", "", 27
     BuildHelperList "FamilyList", "tblProducts", "Family", "", 28
     BuildHelperList "BasisList", "tblSizes", "Basis", "", 29
     BuildHelperList "ExternalCoatingList", "tblExternalCoatings", "CoatingName", "", 30
     BuildHelperList "InternalCoatingList", "tblInternalCoatings", "CoatingName", "", 31
-    ApplyNamedListValidation ThisWorkbook.Worksheets("QUOTE").Range("B21"), "ProductList"
-    ApplyNamedListValidation ThisWorkbook.Worksheets("QUOTE").Range("B22"), "FamilyList"
-    ApplyNamedListValidation ThisWorkbook.Worksheets("QUOTE").Range("B23"), "BasisList"
-    ApplyNamedListValidation ThisWorkbook.Worksheets("QUOTE").Range("B27"), "ExternalCoatingList"
-    ApplyNamedListValidation ThisWorkbook.Worksheets("QUOTE").Range("B28"), "InternalCoatingList"
+    ApplyNamedListValidation quoteSheet.Range("B21"), "ProductList"
+    ApplyNamedListValidation quoteSheet.Range("B22"), "FamilyList"
+    ApplyNamedListValidation quoteSheet.Range("B23"), "BasisList"
+    ApplyNamedListValidation quoteSheet.Range("B27"), "ExternalCoatingList"
+    ApplyNamedListValidation quoteSheet.Range("B28"), "InternalCoatingList"
     SetupQuoteLineDropdowns
+    modProtection.ProtectSheet quoteSheet, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsM, userInterfaceOnly:=True
     Exit Sub
 ErrorHandler:
+    On Error Resume Next
+    modProtection.ProtectSheet quoteSheet, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsM, userInterfaceOnly:=True
+    On Error GoTo 0
     Err.Raise Err.Number, "SetupDependentDropdownArchitecture", Err.Description
 End Sub
 
 Public Sub SetupQuoteLineDropdowns()
     Dim quoteSheet As Worksheet
+    Dim wsM As Worksheet
     Dim family As String
     Dim basis As String
 
+    On Error GoTo ErrorHandler
     Set quoteSheet = ThisWorkbook.Worksheets("QUOTE")
+    Set wsM = ThisWorkbook.Worksheets("MASTERS")
+    modProtection.UnprotectSheet wsM
+    modProtection.UnprotectSheet quoteSheet
+
     family = Trim$(CStr(quoteSheet.Range("B22").Value2))
     basis = UCase$(Trim$(CStr(quoteSheet.Range("B23").Value2)))
 
@@ -43,6 +62,15 @@ Public Sub SetupQuoteLineDropdowns()
     End If
     ApplyPositiveValidation quoteSheet.Range("B29")
     ApplyInlineValidation quoteSheet.Range("B30"), "Metres,MT,Nos", "Select Metres, MT, or Nos."
+    modProtection.ProtectSheet quoteSheet, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsM, userInterfaceOnly:=True
+    Exit Sub
+ErrorHandler:
+    On Error Resume Next
+    modProtection.ProtectSheet quoteSheet, userInterfaceOnly:=True
+    modProtection.ProtectSheet wsM, userInterfaceOnly:=True
+    On Error GoTo 0
+    Err.Raise Err.Number, "SetupQuoteLineDropdowns", Err.Description
 End Sub
 
 Public Sub RequestNewSize(ByVal family As String, ByVal basis As String, _
