@@ -11,12 +11,8 @@ Option Explicit
 ' ============================================================
 
 Public Function AdminPassword() As String
-    Dim pwd As String
-    pwd = Environ$("MEGA_ADMIN_PWD")
-    If Len(pwd) = 0 Then
-        pwd = ""
-    End If
-    AdminPassword = pwd
+    ' Password disabled per user instruction
+    AdminPassword = ""
 End Function
 
 Public Function GetSharedFolder(Optional ByVal overrideSharedFolder As String = "") As String

@@ -13,9 +13,8 @@ Option Explicit
 ' ============================================================
 
 Public Function SheetPassword() As String
-    Dim pwd As String
-    pwd = Environ$("MEGA_SHEET_PWD")
-    SheetPassword = pwd
+    ' Password disabled per user instruction
+    SheetPassword = ""
 End Function
 
 Public Sub ConfigureCellLocking()
@@ -106,12 +105,9 @@ Private Sub LockColumn(ByVal tbl As ListObject, ByVal colName As String)
 End Sub
 
 Public Sub ProtectSheet(ByVal ws As Worksheet, Optional ByVal userInterfaceOnly As Boolean = True)
-    Dim pwd As String
-    pwd = SheetPassword()
-    
     On Error Resume Next
-    ws.Protect Password:=pwd, _
-               DrawingObjects:=True, _
+    ' Protect without password so Excel never prompts the user for a password
+    ws.Protect DrawingObjects:=True, _
                Contents:=True, _
                Scenarios:=True, _
                UserInterfaceOnly:=userInterfaceOnly, _
@@ -125,18 +121,12 @@ Public Sub ProtectSheet(ByVal ws As Worksheet, Optional ByVal userInterfaceOnly 
 End Sub
 
 Public Sub UnprotectSheet(ByVal ws As Worksheet, Optional ByVal pwd As String = "")
-    Dim effectivePwd As String
-    effectivePwd = pwd
-    If Len(effectivePwd) = 0 Then effectivePwd = SheetPassword()
-    
     On Error Resume Next
-    ws.Unprotect Password:=effectivePwd
-    If ws.ProtectContents And Len(effectivePwd) > 0 Then
-        ws.Unprotect Password:=""
-    End If
-    If ws.ProtectContents Then
-        ws.Unprotect Password:="MegaPipes2026"
-    End If
+    ws.Unprotect ""
+    If ws.ProtectContents Then ws.Unprotect "MegaPipes2026"
+    If ws.ProtectContents Then ws.Unprotect "admin"
+    If ws.ProtectContents Then ws.Unprotect "MegaPipes"
+    If ws.ProtectContents And Len(pwd) > 0 Then ws.Unprotect pwd
     On Error GoTo 0
 End Sub
 

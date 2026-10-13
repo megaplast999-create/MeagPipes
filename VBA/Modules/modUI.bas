@@ -967,22 +967,10 @@ End Sub
 
 Public Sub UI_AdminUnlock()
     On Error GoTo ErrorHandler
-    Dim pwd As String
-    If Application.DisplayAlerts Then
-        pwd = InputBox("Enter Administrator password to reveal backend engineering sheets:", _
-                       "Mega Pipes — Admin Access", "")
-    End If
-    If Len(pwd) = 0 Then Exit Sub
-    
-    Dim validPwd As String
-    validPwd = modProtection.SheetPassword()
-    If pwd = validPwd Or pwd = Environ$("MEGA_ADMIN_PWD") Then
-        ShowAllSheets
-        SafeMsgBox "Backend sheets unlocked for administration." & vbCrLf & _
-                   "(COSTING, STACKING, COMPARE, QUOTE_LINES, MASTERS, SETTINGS, etc.)", vbInformation
-    Else
-        SafeMsgBox "Incorrect administrator password.", vbCritical
-    End If
+    ShowAllSheets
+    modProtection.UnprotectAllSheets
+    SafeMsgBox "Backend sheets revealed for administration and engineering access." & vbCrLf & _
+               "(COSTING, STACKING, COMPARE, QUOTE_LINES, MASTERS, SETTINGS, etc.)", vbInformation
     Exit Sub
 
 ErrorHandler:
