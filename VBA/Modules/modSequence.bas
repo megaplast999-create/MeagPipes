@@ -399,6 +399,15 @@ Public Function RunOfflineSelfTests() As String
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     prevB4 = CStr(wsQ.Range("B4").Value)
     
+    ' Ensure lines exist for offline calculation check
+    Dim tblLinesOff As ListObject
+    Set tblLinesOff = ThisWorkbook.Worksheets("QUOTE_LINES").ListObjects("tblQuoteLines")
+    If tblLinesOff.ListRows.Count = 0 Then
+        modSelfTest.PopulateGoldenReferenceQuote
+    ElseIf Len(Trim$(CStr(tblLinesOff.ListRows(1).Range.Cells(1, tblLinesOff.ListColumns("ProductID").Index).Value))) = 0 Then
+        modSelfTest.PopulateGoldenReferenceQuote
+    End If
+    
     ' 1. Test offline allocation by forcing non-existent shared folder path
     offlineNum = AllocateEnquiryNumber("Z:\NonExistent_Offline_Folder_99999\")
     If InStr(1, offlineNum, "TEMP-") = 0 Then

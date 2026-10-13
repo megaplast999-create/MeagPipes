@@ -21,7 +21,12 @@ Public Function SheetPassword() As String
 End Function
 
 Public Sub ConfigureCellLocking()
-    If Not ENABLE_SHEET_PROTECTION Then Exit Sub
+    If Not ENABLE_SHEET_PROTECTION Then
+        On Error Resume Next
+        ThisWorkbook.Worksheets("QUOTE").Range("A1:I100").Locked = False
+        On Error GoTo 0
+        Exit Sub
+    End If
     Dim wsQuote As Worksheet
     Dim wsLines As Worksheet
     Dim tblLines As ListObject
@@ -112,6 +117,7 @@ Public Sub ProtectSheet(ByVal ws As Worksheet, Optional ByVal userInterfaceOnly 
     On Error Resume Next
     If Not ENABLE_SHEET_PROTECTION Then
         ws.Unprotect ""
+        ws.UsedRange.Locked = False
         Exit Sub
     End If
     ' Protect without password so Excel never prompts the user for a password

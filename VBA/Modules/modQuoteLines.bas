@@ -41,9 +41,12 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
     Set wsLines = tableObject.Parent
     modProtection.UnprotectSheet wsLines
 
-    If tableObject.ListRows.Count = 1 And _
-       Len(Trim$(CStr(tableObject.ListRows(1).Range.Cells(1, tableObject.ListColumns("ProductID").Index).Value))) = 0 Then
-        Set lineObject = tableObject.ListRows(1)
+    If tableObject.ListRows.Count = 1 Then
+        If Len(Trim$(CStr(tableObject.ListRows(1).Range.Cells(1, tableObject.ListColumns("ProductID").Index).Value))) = 0 Then
+            Set lineObject = tableObject.ListRows(1)
+        Else
+            Set lineObject = tableObject.ListRows.Add
+        End If
     Else
         Set lineObject = tableObject.ListRows.Add
     End If
@@ -156,11 +159,24 @@ End Sub
 Private Sub ValidateThickness(ByVal family As String, ByVal thicknessMm As Double)
     Dim tableObject As ListObject
     Dim rowObject As ListRow
+    Dim hasActiveCol As Boolean
+    Dim actIdx As Long
+    
     Set tableObject = ThisWorkbook.Worksheets("MASTERS").ListObjects("tblThickness")
+    On Error Resume Next
+    actIdx = tableObject.ListColumns("Active").Index
+    hasActiveCol = (Err.Number = 0)
+    On Error GoTo 0
+    
     For Each rowObject In tableObject.ListRows
         If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Family").Index).Value), family, vbTextCompare) = 0 _
-            And (Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("ThicknessMM").Index).Value) - thicknessMm) <= 0.05) _
-            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+            And (Abs(CDbl(rowObject.Range.Cells(1, tableObject.ListColumns("ThicknessMM").Index).Value) - thicknessMm) <= 0.05) Then
+            If hasActiveCol Then
+                If StrComp(CStr(rowObject.Range.Cells(1, actIdx).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+            Else
+                Exit Sub
+            End If
+        End If
     Next rowObject
     Err.Raise vbObjectError + 1307, "ValidateThickness", "Thickness is not available for the selected family."
 End Sub
@@ -190,10 +206,23 @@ End Sub
 Private Sub ValidatePlant(ByVal plantId As String)
     Dim tableObject As ListObject
     Dim rowObject As ListRow
+    Dim hasActiveCol As Boolean
+    Dim actIdx As Long
+    
     Set tableObject = ThisWorkbook.Worksheets("PLANTS").ListObjects("tblPlants")
+    On Error Resume Next
+    actIdx = tableObject.ListColumns("Active").Index
+    hasActiveCol = (Err.Number = 0)
+    On Error GoTo 0
+    
     For Each rowObject In tableObject.ListRows
-        If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("PlantID").Index).Value), plantId, vbTextCompare) = 0 _
-            And StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("Active").Index).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+        If StrComp(CStr(rowObject.Range.Cells(1, tableObject.ListColumns("PlantID").Index).Value), plantId, vbTextCompare) = 0 Then
+            If hasActiveCol Then
+                If StrComp(CStr(rowObject.Range.Cells(1, actIdx).Value), "Yes", vbTextCompare) = 0 Then Exit Sub
+            Else
+                Exit Sub
+            End If
+        End If
     Next rowObject
     Err.Raise vbObjectError + 1310, "ValidatePlant", "Plant is not available in the active plant master."
 End Sub

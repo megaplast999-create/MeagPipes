@@ -443,6 +443,13 @@ Public Function RunSnapshotSelfTests() As String
     
     qId = "MKTG/ENQ/26-27/TEST-SNAP"
     
+    ' Ensure lines exist for snapshot testing
+    If tblLines.ListRows.Count = 0 Then
+        modSelfTest.PopulateGoldenReferenceQuote
+    ElseIf Len(Trim$(CStr(tblLines.ListRows(1).Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) = 0 Then
+        modSelfTest.PopulateGoldenReferenceQuote
+    End If
+    
     ' Clean any prior test snapshots
     On Error Resume Next
     Dim oldFile As String

@@ -1,5 +1,5 @@
 === MEGA PIPES QUOTATION SYSTEM - UNIFIED SELF-TEST SUITE ===
-Execution Date: 2026-10-13 11:50:56
+Execution Date: 2026-10-13 17:44:24
 ======================================================================
   [PASS] P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)
   [PASS] P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)
@@ -8,7 +8,7 @@ Execution Date: 2026-10-13 11:50:56
   [PASS] P7 Freight Engine (Methods A/B/C, Stacking, Trailers)
   [PASS] P8 Plant Engine (Eligibility, Road Distance, Override Audit)
   [PASS] P9 ORS Route Matrix Engine & Cache Lookup
-  [NEEDS_HUMAN] P9 Live ORS Network Integration - ORS_API_KEY environment variable not configured (cataloged in TESTS/NEEDS_HUMAN.md)
+  [PASS] P9 Live ORS Network Integration
   [PASS] P10 Competitor Engine (Floor Protection, Stale Badge, Yellow Highlight)
   [PASS] P11 COSTING Sheet Reproduction (Values-Only, Reference Layout)
   [PASS] P12 OFFER Sheet Reproduction (Unipro 27 Terms, Indian Words)
@@ -25,5 +25,5 @@ Execution Date: 2026-10-13 11:50:56
   [PASS] P23 Workbook Protection & Selective Cell Locking
   [NEEDS_HUMAN] P23 Production Security Passwords - MEGA_SHEET_PWD and MEGA_ADMIN_PWD required for production lockdown (cataloged in TESTS/NEEDS_HUMAN.md)
 ======================================================================
-SUMMARY: Total Evaluated: 23 | Passed: 20 | Needs Human: 3 | Failed: 0
+SUMMARY: Total Evaluated: 23 | Passed: 21 | Needs Human: 2 | Failed: 0
 

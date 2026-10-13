@@ -297,6 +297,17 @@ Public Sub SetupQuoteSheetUI()
     Set ws = ThisWorkbook.Worksheets("QUOTE")
     modProtection.UnprotectSheet ws
     
+    ' ── 1. Generous Column Widths for Clear, Un-congested Display ──
+    ws.Columns("A").ColumnWidth = 18    ' Header labels & Line ID
+    ws.Columns("B").ColumnWidth = 36    ' Header inputs & Pipe Specification
+    ws.Columns("C").ColumnWidth = 20    ' Coating (Ext / Int)
+    ws.Columns("D").ColumnWidth = 26    ' Summary metrics labels & Quantity
+    ws.Columns("E").ColumnWidth = 22    ' Summary metric values & Pipes
+    ws.Columns("F").ColumnWidth = 16    ' Weight (MT)
+    ws.Columns("G").ColumnWidth = 16    ' Unit Price
+    ws.Columns("H").ColumnWidth = 18    ' Line Total
+    ws.Columns("I").ColumnWidth = 14    ' Status
+    
     ' Clear old buttons on QUOTE
     Dim sIdx As Long
     For sIdx = ws.Shapes.Count To 1 Step -1
@@ -305,11 +316,39 @@ Public Sub SetupQuoteSheetUI()
         On Error GoTo 0
     Next sIdx
     
+    ' ── 2. Generous Row Heights to Prevent Congestion and Button Overlap ──
+    ws.Rows(3).RowHeight = 26          ' Summary Card Title
+    Dim rIdx As Long
+    For rIdx = 4 To 14
+        ws.Rows(rIdx).RowHeight = 21   ' Summary metrics rows
+    Next rIdx
+    
+    ws.Rows(15).RowHeight = 32          ' CALCULATE QUOTATION button
+    ws.Rows(16).RowHeight = 28          ' SAVE DRAFT / PREVIEW OFFER buttons
+    ws.Rows(17).RowHeight = 28          ' EXPORT PDF / < BACK TO HOME buttons
+    ws.Rows(18).RowHeight = 12          ' Spacer
+    ws.Rows(19).RowHeight = 12          ' Spacer
+    
+    ws.Rows(20).RowHeight = 24          ' PIPE REQUIREMENT section header
+    For rIdx = 21 To 31
+        ws.Rows(rIdx).RowHeight = 21    ' Product requirement inputs
+    Next rIdx
+    ws.Rows(22).RowHeight = 24
+    ws.Rows(23).RowHeight = 24          ' + ADD ITEM TO QUOTE spans rows 22-23 (total height = 48)
+    ws.Rows(24).RowHeight = 10          ' Spacer
+    ws.Rows(25).RowHeight = 28          ' - REMOVE LINE button
+    ws.Rows(26).RowHeight = 10          ' Spacer
+    ws.Rows(27).RowHeight = 28          ' CLEAR ALL LINES button
+    
+    ws.Rows(33).RowHeight = 28          ' Validation feedback banner
+    ws.Rows(35).RowHeight = 26          ' Section 3 Header
+    ws.Rows(36).RowHeight = 24          ' Line items column headers
+    
     ' Ensure master-driven dropdowns and validations are active
     modMasterData.SetupMasterDrivenHeader
     modDependentDropdowns.SetupDependentDropdownArchitecture
     
-    ' ── Action Buttons on QUOTE Console (placed in columns D-E rows 15-18) ──
+    ' ── 3. Quote Console Action Buttons (Crisp, Non-overlapping) ──
     AddModernButton ws, "btnQuoteCalc", "CALCULATE QUOTATION", "modUI.UI_CalculateQuotation", _
                     ws.Range("D15"), ws.Range("E15"), UI_GREEN_MID, UI_WHITE, True
                     
@@ -322,10 +361,10 @@ Public Sub SetupQuoteSheetUI()
     AddModernButton ws, "btnQuotePDF", "EXPORT PDF", "modUI.UI_ExportPDF", _
                     ws.Range("D17"), ws.Range("D17"), RGB(160, 60, 40), UI_WHITE, False
                     
-    AddModernButton ws, "btnQuoteHome", "← BACK TO HOME", "modUI.UI_BackToHome", _
+    AddModernButton ws, "btnQuoteHome", "< BACK TO HOME", "modUI.UI_BackToHome", _
                     ws.Range("E17"), ws.Range("E17"), UI_GRAY_DARK, UI_WHITE, False
                     
-    ' ── Item Entry Action Buttons (cols D-E next to rows 22-29) ──
+    ' ── 4. Item Entry Action Buttons ──
     AddModernButton ws, "btnQuoteAdd", "+ ADD ITEM TO QUOTE", "modUI.UI_AddItem", _
                     ws.Range("D22"), ws.Range("E23"), UI_GREEN_DARK, UI_WHITE, True
                     
@@ -335,24 +374,24 @@ Public Sub SetupQuoteSheetUI()
     AddModernButton ws, "btnQuoteClear", "CLEAR ALL LINES", "modUI.UI_ClearAllItems", _
                     ws.Range("D27"), ws.Range("E27"), RGB(120, 120, 120), UI_WHITE, False
                     
-    ' ── Validation Feedback Banner at Row 33 ──
-    With ws.Range("A33:E33")
+    ' ── 5. Validation Feedback Banner at Row 33 ──
+    With ws.Range("A33:I33")
         .Merge
         .Value = "Ready. Select specifications above and click '+ ADD ITEM TO QUOTE'."
         .Interior.Color = RGB(245, 248, 245)
-        .Font.Size = 9
+        .Font.Size = 9.5
         .Font.Color = UI_GREEN_DARK
         .Font.Bold = True
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlCenter
     End With
-    With ws.Range("A33:E33").Borders
+    With ws.Range("A33:I33").Borders
         .LineStyle = xlContinuous
         .Weight = xlThin
         .Color = RGB(180, 210, 180)
     End With
     
-    ' ── Section 3: Quotation Line Items Table Header ──
+    ' ── 6. Section 3: Quotation Line Items Table Header ──
     With ws.Range("A35:I35")
         .Merge
         .Value = "3. CURRENT QUOTATION LINE ITEMS"
@@ -379,16 +418,15 @@ Public Sub SetupQuoteSheetUI()
         .Interior.Color = UI_GREEN_MID
         .Font.Color = UI_WHITE
         .Font.Bold = True
-        .Font.Size = 9
+        .Font.Size = 9.5
         .HorizontalAlignment = xlCenter
     End With
     
     ' Populate active lines display
     RefreshQuoteLinesDisplay
     
-    ' Re-protect sheet with UserInterfaceOnly
-    modProtection.ConfigureCellLocking
-    modProtection.ProtectSheet ws, userInterfaceOnly:=True
+    ' Ensure all cells are unlocked and editable per user request
+    ws.Range("A1:I100").Locked = False
     
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreen
@@ -489,7 +527,8 @@ Public Sub RefreshQuoteLinesDisplay()
         wsQ.Range("A37").HorizontalAlignment = xlCenter
     End If
     
-    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    ' Leave cells unlocked and editable per user request
+    wsQ.Range("A36:I55").Locked = False
     Exit Sub
 ErrorHandler:
     On Error Resume Next
@@ -1054,6 +1093,11 @@ Private Sub AddModernButton(ByRef ws As Worksheet, ByVal btnName As String, _
             .TextRange.Font.Name = "Calibri"
             .VerticalAnchor = msoAnchorMiddle
             .HorizontalAnchor = msoAnchorCenter
+            .MarginLeft = 2
+            .MarginRight = 2
+            .MarginTop = 1
+            .MarginBottom = 1
+            .WordWrap = msoFalse
         End With
         .OnAction = macroName
     End With

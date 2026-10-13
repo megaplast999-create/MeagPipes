@@ -343,6 +343,15 @@ Public Function RunAllSelfTests() As String
     ' Unprotect all sheets for test execution
     modProtection.UnprotectAllSheets
     
+    ' Ensure golden reference quotation lines are present for self-test execution
+    Dim tblLinesCheck As ListObject
+    Set tblLinesCheck = ThisWorkbook.Worksheets("QUOTE_LINES").ListObjects("tblQuoteLines")
+    If tblLinesCheck.ListRows.Count = 0 Then
+        PopulateGoldenReferenceQuote
+    ElseIf Len(Trim$(CStr(tblLinesCheck.ListRows(1).Range.Cells(1, tblLinesCheck.ListColumns("ProductID").Index).Value))) = 0 Then
+        PopulateGoldenReferenceQuote
+    End If
+    
     ' Core Component Evaluations
     EvalTest "P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)", RunGoldenLegacy(), results, passCount, failCount, humanCount
     EvalTest "P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)", RunGoldenNormal(), results, passCount, failCount, humanCount
@@ -437,4 +446,56 @@ End Sub
 Private Sub EvalHuman(ByVal compName As String, ByVal reason As String, ByRef outLog As String, ByRef humC As Long)
     humC = humC + 1
     outLog = outLog & "  [NEEDS_HUMAN] " & compName & " - " & reason & vbCrLf
+End Sub
+
+Public Sub PopulateGoldenReferenceQuote()
+    Dim wsQ As Worksheet
+    Dim wsLines As Worksheet
+    Dim tblLines As ListObject
+    Dim prevEvents As Boolean
+    Dim prevScreen As Boolean
+    
+    prevEvents = Application.EnableEvents
+    prevScreen = Application.ScreenUpdating
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    Set tblLines = wsLines.ListObjects("tblQuoteLines")
+    
+    modProtection.UnprotectSheet wsQ
+    modProtection.UnprotectSheet wsLines
+    
+    ' Clear existing lines
+    If tblLines.ListRows.Count > 0 Then
+        On Error Resume Next
+        tblLines.DataBodyRange.Delete
+        On Error GoTo 0
+    End If
+    
+    ' Set Header
+    wsQ.Range("B4").Value = "MKTG/ENQ/26-27/594"
+    wsQ.Range("B5").Value = "2026-10-12"
+    wsQ.Range("B8").Value = "UNIPRO"
+    wsQ.Range("B9").Value = "Mr. Sharma"
+    wsQ.Range("B11").Value = "Project Site, Gujarat"
+    wsQ.Range("B14").Value = "P02"
+    wsQ.Range("B15").Value = "30 Days from Dispatch"
+    wsQ.Range("B16").Value = 30
+    wsQ.Range("B17").Value = "Metre"
+    wsQ.Range("B18").Value = "NORMAL"
+    
+    ' Add 4 Golden Lines
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1226, 8.4, "HSAW-002", 2000, "Metres", 12, "P02"
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1300, 8.4, "HSAW-002", 350, "Metres", 12, "P02"
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1350, 8.4, "HSAW-002", 500, "Metres", 12, "P02"
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1400, 8.4, "HSAW-002", 4400, "Metres", 12, "P02"
+    
+    ' Recalculate and refresh display
+    modQuote.RecalculateQuote
+    modUI.RefreshQuoteLinesDisplay
+    
+    Application.EnableEvents = prevEvents
+    Application.ScreenUpdating = prevScreen
 End Sub

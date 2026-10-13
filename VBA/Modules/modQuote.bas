@@ -238,17 +238,24 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     prevAlerts = Application.DisplayAlerts
     Application.DisplayAlerts = False
     
+    ' Enforce generous column widths for clear, un-congested display
+    ws.Columns("D").ColumnWidth = 26
+    ws.Columns("E").ColumnWidth = 22
+
     ' Title header
     If Not ws.Range("D3:E3").MergeCells Then
         ws.Range("D3:E3").Merge
     End If
     With ws.Range("D3")
         .Value = "LIVE QUOTATION SUMMARY"
-        .Interior.Color = RGB(26, 94, 56) ' DarkGreen
+        .Interior.Color = RGB(26, 82, 45) ' Deep Forest Green
         .Font.Color = RGB(255, 255, 255)
         .Font.Bold = True
+        .Font.Size = 11
         .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
     End With
+    ws.Rows(3).RowHeight = 26
     
     ' Metrics
     ws.Range("D4").Value = "Total Metres"
@@ -270,7 +277,6 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     ws.Range("D8").Value = "Subtotal (Excl. GST)"
     ws.Range("E8").Value = summary.TotalExclGST
     ws.Range("E8").NumberFormat = "#,##0.00"
-    ws.Range("E8").Font.Bold = True
     
     ws.Range("D9").Value = "GST @ 18%"
     ws.Range("E9").Value = summary.GSTAmount
@@ -279,8 +285,6 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     ws.Range("D10").Value = "Grand Total (Incl. GST)"
     ws.Range("E10").Value = summary.GrandTotalInclGST
     ws.Range("E10").NumberFormat = "#,##0.00"
-    ws.Range("D10:E10").Font.Bold = True
-    ws.Range("D10:E10").Interior.Color = RGB(255, 255, 0) ' Yellow highlight
     
     ws.Range("D11").Value = "Workflow Status"
     Dim curWf As String
@@ -302,16 +306,46 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     ws.Range("D14").Value = "Valid Lines"
     ws.Range("E14").Value = CStr(summary.ValidLineCount) & " / " & CStr(summary.LineCount)
     
-    ' Borders and styling
-    With ws.Range("D3:E14")
-        .Borders.LineStyle = xlContinuous
-        .Borders.Weight = xlThin
-        .Font.Name = "Calibri"
-        .Font.Size = 10
+    ' Professional formatting with elegant contrast and generous spacing
+    Dim r As Long
+    For r = 4 To 14
+        ws.Rows(r).RowHeight = 21
+        If r = 10 Then
+            ' Grand Total Row: High-visibility soft gold card accent with rich amber text
+            ws.Range("D10:E10").Interior.Color = RGB(255, 243, 205) ' Soft warm gold
+            ws.Range("D10:E10").Font.Color = RGB(120, 60, 0)       ' Rich dark amber
+            ws.Range("D10:E10").Font.Bold = True
+            ws.Range("D10:E10").Font.Size = 11
+        ElseIf r = 8 Then
+            ' Subtotal row
+            ws.Range("D8:E8").Interior.Color = RGB(242, 248, 242)   ' Soft mint
+            ws.Range("D8:E8").Font.Color = RGB(20, 50, 20)
+            ws.Range("D8:E8").Font.Bold = True
+            ws.Range("D8:E8").Font.Size = 10
+        Else
+            ws.Range("D" & r & ":E" & r).Interior.Color = IIf(r Mod 2 = 0, RGB(250, 252, 250), RGB(255, 255, 255))
+            ws.Range("D" & r & ":E" & r).Font.Color = RGB(40, 40, 40)
+            ws.Range("D" & r & ":E" & r).Font.Bold = False
+            ws.Range("D" & r & ":E" & r).Font.Size = 10
+        End If
+        ws.Range("D" & r).HorizontalAlignment = xlLeft
+        ws.Range("E" & r).HorizontalAlignment = xlRight
+    Next r
+    ws.Range("E11").HorizontalAlignment = xlCenter
+    ws.Range("E12").HorizontalAlignment = xlCenter
+    ws.Range("E14").HorizontalAlignment = xlCenter
+    
+    ' Subtle refined borders
+    With ws.Range("D3:E14").Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = RGB(190, 215, 190)
     End With
     
+    ' Leave cells unlocked and editable per user request
+    ws.Range("D3:E14").Locked = False
+    
     Application.DisplayAlerts = prevAlerts
-    modProtection.ProtectSheet ws, userInterfaceOnly:=True
 End Sub
 
 Public Sub RecalculateQuote()
