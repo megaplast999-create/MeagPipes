@@ -1,20 +1,22 @@
 from pathlib import Path
 import zipfile
 import xml.etree.ElementTree as ET
+import openpyxl
 
 
 NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
 ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = ROOT / "DEV" / "Mega_Pipes_Quotation_DEV.xlsm"
 EXPECTED_SHEETS = [
-    "START", "QUOTE", "QUOTE_LINES", "COSTING", "OFFER", "MASTERS",
+    "COMPARE", "START", "QUOTE", "QUOTE_LINES", "COSTING", "OFFER", "MASTERS",
     "SETTINGS", "CUSTOMERS", "PLANTS", "DISTANCE_CACHE", "QUOTE_LOG",
 ]
 EXPECTED_TABLES = {
     "tblProducts", "tblSizes", "tblThickness", "tblGrades",
     "tblExternalCoatings", "tblInternalCoatings", "tblPlants",
     "tblCustomers", "tblPaymentTerms", "tblSettings", "tblQuoteLines",
-    "tblDistanceCache", "tblQuoteLog",
+    "tblDistanceCache", "tblQuoteLog", "tblPlantProducts",
+    "tblStacking", "tblSlabs", "tblCompPrices",
 }
 
 
@@ -35,25 +37,13 @@ def test_macro_enabled_package_and_structure():
 
 
 def test_customer_master_has_one_nonblank_customer():
-    with zipfile.ZipFile(WORKBOOK) as archive:
-        shared = ET.fromstring(archive.read("xl/sharedStrings.xml"))
-        strings = [
-            "".join(t.text or "" for t in item.iter(f"{{{NS['m']}}}t"))
-            for item in shared
-        ]
-        sheet = ET.fromstring(archive.read("xl/worksheets/sheet8.xml"))
-        rows = sheet.findall(".//m:sheetData/m:row", NS)
-        customer_ids = []
-        for row in rows[1:]:
-            values = []
-            for cell in row.findall("m:c", NS):
-                value = cell.find("m:v", NS)
-                if value is None:
-                    values.append("")
-                elif cell.attrib.get("t") == "s":
-                    values.append(strings[int(value.text)])
-                else:
-                    values.append(value.text or "")
-            if values and values[0].strip():
-                customer_ids.append(values[0])
-        assert customer_ids == ["C001"]
+    wb = openpyxl.load_workbook(WORKBOOK, data_only=True)
+    ws = wb["CUSTOMERS"]
+    tbl = ws.tables["tblCustomers"]
+    min_col, min_row, max_col, max_row = openpyxl.utils.range_boundaries(tbl.ref)
+    customer_ids = [
+        ws.cell(r, min_col).value
+        for r in range(min_row + 1, max_row + 1)
+        if ws.cell(r, min_col).value
+    ]
+    assert customer_ids == ["C001"]
