@@ -314,3 +314,148 @@ Public Function RunSequenceSelfTests() As String
 TestFail:
     RunSequenceSelfTests = "FAIL: Exception - " & Err.Description
 End Function
+
+' ============================================================
+' P17 OFFLINE MODE & NUMBER RECONCILIATION
+' ============================================================
+
+Public Function ReconcileTempQuote(ByVal tempEnquiryNo As String, Optional ByVal sharedPath As String = "") As String
+    Dim newEnquiryNo As String
+    Dim wsQ As Worksheet
+    Dim wsLog As Worksheet
+    Dim tblLog As ListObject
+    Dim newRow As ListRow
+    Dim curUser As String
+    
+    If InStr(1, tempEnquiryNo, "TEMP-", vbTextCompare) = 0 Then
+        ' Already official number
+        ReconcileTempQuote = tempEnquiryNo
+        Exit Function
+    End If
+    
+    ' Allocate official sequential number from shared counter
+    newEnquiryNo = AllocateEnquiryNumber(sharedPath)
+    
+    ' If still got a TEMP number (e.g. shared folder still unavailable), return original temp
+    If InStr(1, newEnquiryNo, "TEMP-", vbTextCompare) > 0 Then
+        ReconcileTempQuote = tempEnquiryNo
+        Exit Function
+    End If
+    
+    ' Update QUOTE sheet if active quote matches tempEnquiryNo
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    If StrComp(Trim$(CStr(wsQ.Range("B4").Value)), Trim$(tempEnquiryNo), vbTextCompare) = 0 Then
+        wsQ.Range("B4").Value = newEnquiryNo
+    End If
+    
+    ' Log reconciliation to tblQuoteLog
+    curUser = Environ$("USERNAME")
+    If Len(curUser) = 0 Then curUser = "User"
+    
+    On Error Resume Next
+    Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    Set tblLog = wsLog.ListObjects("tblQuoteLog")
+    If Not tblLog Is Nothing Then
+        If tblLog.ListRows.Count = 1 And Len(Trim$(CStr(tblLog.ListRows(1).Range.Cells(1, tblLog.ListColumns("Action").Index).Value))) = 0 Then
+            Set newRow = tblLog.ListRows(1)
+        Else
+            Set newRow = tblLog.ListRows.Add
+        End If
+        With newRow.Range
+            .Cells(1, tblLog.ListColumns("LogID").Index).Value = "LOG-" & Format$(newRow.Index, "00000")
+            .Cells(1, tblLog.ListColumns("QuoteID").Index).Value = newEnquiryNo
+            .Cells(1, tblLog.ListColumns("Timestamp").Index).Value = Now
+            .Cells(1, tblLog.ListColumns("User").Index).Value = curUser
+            .Cells(1, tblLog.ListColumns("Action").Index).Value = "TEMP_RECONCILE"
+            .Cells(1, tblLog.ListColumns("OldValue").Index).Value = tempEnquiryNo
+            .Cells(1, tblLog.ListColumns("NewValue").Index).Value = newEnquiryNo
+            .Cells(1, tblLog.ListColumns("SheetName").Index).Value = "QUOTE"
+            .Cells(1, tblLog.ListColumns("Status").Index).Value = "RECONCILED"
+            .Cells(1, tblLog.ListColumns("Notes").Index).Value = "Reconciled offline TEMP identifier to official number"
+        End With
+    End If
+    On Error GoTo 0
+    
+    ReconcileTempQuote = newEnquiryNo
+End Function
+
+Public Function RunOfflineSelfTests() As String
+    Dim tempFolder As String
+    Dim counterDir As String
+    Dim counterFile As String
+    Dim fso As Object
+    Dim offlineNum As String
+    Dim reconNum As String
+    Dim wsQ As Worksheet
+    Dim prevB4 As String
+    
+    On Error GoTo TestFail
+    
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    prevB4 = CStr(wsQ.Range("B4").Value)
+    
+    ' 1. Test offline allocation by forcing non-existent shared folder path
+    offlineNum = AllocateEnquiryNumber("Z:\NonExistent_Offline_Folder_99999\")
+    If InStr(1, offlineNum, "TEMP-") = 0 Then
+        RunOfflineSelfTests = "FAIL: Expected TEMP number for offline network, got " & offlineNum
+        Exit Function
+    End If
+    
+    ' Set active quote to this TEMP number
+    wsQ.Range("B4").Value = offlineNum
+    
+    ' Verify quote calculations continue working offline
+    Dim dummyHead As QuoteHeaderData
+    Dim dummySum As QuoteSummaryData
+    dummyHead = ReadQuoteSheet()
+    dummySum = CalcAllLines(dummyHead)
+    If dummySum.GrandTotalInclGST = 0 Then
+        RunOfflineSelfTests = "FAIL: Offline calculation produced 0"
+        Exit Function
+    End If
+    
+    ' 2. Test reconciliation upon reconnecting to shared network folder
+    tempFolder = Environ$("TEMP") & "\MegaPipes_OfflineRecon_" & Format(Now, "hhnnss") & "\"
+    counterDir = tempFolder & "Counter\"
+    counterFile = counterDir & "enquiry_26-27.txt"
+    
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FolderExists(tempFolder) Then fso.CreateFolder tempFolder
+    If Not fso.FolderExists(counterDir) Then fso.CreateFolder counterDir
+    
+    ' Seed counter at 850
+    Dim f As Integer: f = FreeFile
+    Open counterFile For Output As #f
+    Print #f, "850";
+    Close #f
+    
+    reconNum = ReconcileTempQuote(offlineNum, tempFolder)
+    If reconNum <> "MKTG/ENQ/26-27/850" Then
+        RunOfflineSelfTests = "FAIL: Expected reconciled number MKTG/ENQ/26-27/850, got " & reconNum
+        Exit Function
+    End If
+    
+    ' Verify B4 was updated
+    If StrComp(Trim$(CStr(wsQ.Range("B4").Value)), "MKTG/ENQ/26-27/850", vbTextCompare) <> 0 Then
+        RunOfflineSelfTests = "FAIL: Quote cell B4 was not updated to reconciled number"
+        Exit Function
+    End If
+    
+    ' Clean up
+    On Error Resume Next
+    fso.DeleteFile counterFile, True
+    fso.DeleteFolder counterDir, True
+    fso.DeleteFolder tempFolder, True
+    wsQ.Range("B4").Value = prevB4
+    On Error GoTo 0
+    
+    RunOfflineSelfTests = "PASS"
+    Exit Function
+    
+TestFail:
+    On Error Resume Next
+    wsQ.Range("B4").Value = prevB4
+    On Error GoTo 0
+    RunOfflineSelfTests = "FAIL: Exception - " & Err.Description
+End Function
+
