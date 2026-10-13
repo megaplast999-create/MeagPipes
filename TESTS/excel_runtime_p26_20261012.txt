@@ -1,0 +1,16 @@
+=== P26 REAL-WORLD GOLDEN QUOTATION REAL EXCEL VERIFICATION ===
+Reference Workbook: C:\Users\Administrator\Desktop\automation\reference\MKTGENQ26-27-594_-_Unipro_CS.xlsx
+DEV Workbook: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\DEV\Mega_Pipes_Quotation_DEV.xlsm
+Legacy Grand Total: INR 178,657,900 (Expected: 178,657,900, Diff: 0)
+Legacy Total Metres: 7,250 MTR (Expected: 7,250 MTR, Diff: 0)
+Legacy Line 1: INR 22681 / m (Expected: 22,681, Diff: 0)
+Legacy Line 2: INR 23914 / m (Expected: 23,914, Diff: 0)
+Legacy Line 3: INR 24748 / m (Expected: 24,748, Diff: 0)
+Legacy Line 4: INR 25580 / m (Expected: 25,580, Diff: 0)
+Normal Option 1 Grand Total: INR 178,801,050 (Expected: 178,801,050, Diff: 0)
+Normal Line 4: INR 25,581 / m (Expected: 25,581, Diff: 0)
+RunGoldenLegacy: PASS
+RunGoldenNormal: PASS
+RunOfferSelfTests: PASS
+RunCostingSelfTests: PASS
+P26 REAL-WORLD GOLDEN QUOTATION VALIDATION: ALL PASS!
