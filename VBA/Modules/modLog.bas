@@ -1,6 +1,37 @@
 Attribute VB_Name = "modLog"
 Option Explicit
 
+Private mIsLogging As Boolean
+
+' ============================================================
+' P22 USER IDENTITY ENGINE
+' ============================================================
+
+Public Function GetCurrentUser() As String
+    Dim u As String
+    u = Trim$(Environ$("USERNAME"))
+    If Len(u) = 0 Then
+        On Error Resume Next
+        u = Trim$(Application.UserName)
+        On Error GoTo 0
+    End If
+    If Len(u) = 0 Then u = "User"
+    
+    ' Sanitize for safe filesystem and log usage
+    u = Replace(u, "\", "_")
+    u = Replace(u, "/", "_")
+    u = Replace(u, ":", "_")
+    u = Replace(u, "*", "_")
+    u = Replace(u, "?", "_")
+    u = Replace(u, """", "_")
+    u = Replace(u, "<", "_")
+    u = Replace(u, ">", "_")
+    u = Replace(u, "|", "_")
+    u = Replace(u, " ", "_")
+    
+    GetCurrentUser = u
+End Function
+
 ' ============================================================
 ' Mega Pipes Quotation System
 ' Module: modLog
@@ -124,8 +155,7 @@ Public Function SaveQuote(ByVal enquiryNo As String, Optional ByVal revNum As Lo
         revNum = GetRevision(enquiryNo, sharedFolder)
     End If
     
-    curUser = Environ$("USERNAME")
-    If Len(curUser) = 0 Then curUser = "User"
+    curUser = GetCurrentUser()
     
     cleanNo = Replace(Replace(enquiryNo, "/", "_"), "\", "_")
     fName = cleanNo & "_R" & CStr(revNum) & "_" & curUser & ".xlsx"
@@ -346,8 +376,7 @@ Public Function LoadQuote(ByVal snapshotPathOrEnquiryNo As String, Optional ByVa
     Application.DisplayAlerts = True
     
     ' Log snapshot load to tblQuoteLog
-    curUser = Environ$("USERNAME")
-    If Len(curUser) = 0 Then curUser = "User"
+    curUser = GetCurrentUser()
     
     On Error Resume Next
     Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
@@ -508,8 +537,6 @@ End Function
 ' P20 AUDIT LOGGING ENGINE
 ' ============================================================
 
-Private mIsLogging As Boolean
-
 Public Function LogAction(ByVal quoteId As String, ByVal actionName As String, _
                           Optional ByVal oldVal As String = "", _
                           Optional ByVal newVal As String = "", _
@@ -534,8 +561,7 @@ Public Function LogAction(ByVal quoteId As String, ByVal actionName As String, _
     safeNew = MaskSecrets(newVal)
     safeNotes = MaskSecrets(notesText)
     
-    curUser = Environ$("USERNAME")
-    If Len(curUser) = 0 Then curUser = "User"
+    curUser = GetCurrentUser()
     
     Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
     Set tblLog = wsLog.ListObjects("tblQuoteLog")
@@ -651,5 +677,82 @@ Public Function RunAuditSelfTests() As String
     
 TestFail:
     RunAuditSelfTests = "FAIL: Exception - " & Err.Description
+End Function
+
+Public Function RunIdentitySelfTests() As String
+    Dim u As String
+    Dim testId As String
+    Dim wsLog As Worksheet
+    Dim tblLog As ListObject
+    Dim r As Long
+    Dim loggedUser As String
+    Dim foundRow As ListRow
+    
+    On Error GoTo TestFail
+    
+    ' 1. Verify GetCurrentUser returns non-empty string
+    u = GetCurrentUser()
+    If Len(u) = 0 Then
+        RunIdentitySelfTests = "FAIL: GetCurrentUser returned empty string"
+        Exit Function
+    End If
+    
+    ' 2. Verify no invalid filesystem characters
+    If InStr(u, "\") > 0 Or InStr(u, "/") > 0 Or InStr(u, ":") > 0 Or _
+       InStr(u, "*") > 0 Or InStr(u, "?") > 0 Or InStr(u, """") > 0 Or _
+       InStr(u, "<") > 0 Or InStr(u, ">") > 0 Or InStr(u, "|") > 0 Or InStr(u, " ") > 0 Then
+        RunIdentitySelfTests = "FAIL: GetCurrentUser contains unescaped invalid character"
+        Exit Function
+    End If
+    
+    ' 3. Verify LogAction captures GetCurrentUser in tblQuoteLog
+    testId = LogAction("Q-TEST-IDENTITY", "TEST_IDENTITY", "Old", "New", "QUOTE", "SUCCESS", "Identity self-test")
+    If Len(testId) = 0 Then
+        RunIdentitySelfTests = "FAIL: LogAction returned empty ID"
+        Exit Function
+    End If
+    
+    Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    Set tblLog = wsLog.ListObjects("tblQuoteLog")
+    
+    For r = tblLog.ListRows.Count To 1 Step -1
+        If StrComp(Trim$(CStr(tblLog.ListRows(r).Range.Cells(1, tblLog.ListColumns("LogID").Index).Value)), testId, vbTextCompare) = 0 Then
+            Set foundRow = tblLog.ListRows(r)
+            loggedUser = Trim$(CStr(foundRow.Range.Cells(1, tblLog.ListColumns("User").Index).Value))
+            Exit For
+        End If
+    Next r
+    
+    If foundRow Is Nothing Then
+        RunIdentitySelfTests = "FAIL: Test log row not found in tblQuoteLog"
+        Exit Function
+    End If
+    
+    If StrComp(loggedUser, u, vbTextCompare) <> 0 Then
+        RunIdentitySelfTests = "FAIL: Logged user mismatch: expected '" & u & "', got '" & loggedUser & "'"
+        foundRow.Delete
+        Exit Function
+    End If
+    
+    ' Clean up test row
+    foundRow.Delete
+    
+    ' 4. Verify username alone does NOT bypass admin authorization
+    Dim expectedAdminPwd As String
+    expectedAdminPwd = modAdmin.AdminPassword()
+    If Len(expectedAdminPwd) > 0 Then
+        Dim transRes As String
+        transRes = modApproval.TransitionQuoteState("Approved", "Testing unauthorized user", "wrong_password")
+        If Left$(transRes, 5) <> "ERROR" Then
+            RunIdentitySelfTests = "FAIL: Username allowed unauthorized approval bypass without correct password"
+            Exit Function
+        End If
+    End If
+    
+    RunIdentitySelfTests = "PASS"
+    Exit Function
+
+TestFail:
+    RunIdentitySelfTests = "FAIL: Exception - " & Err.Description
 End Function
 

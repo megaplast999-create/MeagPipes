@@ -34,6 +34,7 @@ REGRESSION_MACROS = [
     "RunExportSelfTests",
     "RunDocumentNumberingSelfTests",
     "RunAuditSelfTests",
+    "RunApprovalSelfTests",
 ]
 
 def run_phase(module_path=None, module_name=None, test_macro=None, phase_name="PHASE TEST", output_log=None, save_wb=False, notes=None):
