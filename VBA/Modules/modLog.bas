@@ -404,8 +404,17 @@ Public Function RunSnapshotSelfTests() As String
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
     Set fso = CreateObject("Scripting.FileSystemObject")
     
-    qId = Trim$(CStr(wsQ.Range("B4").Value))
-    If Len(qId) = 0 Then qId = "MKTG/ENQ/26-27/596"
+    qId = "MKTG/ENQ/26-27/TEST-SNAP"
+    
+    ' Clean any prior test snapshots
+    On Error Resume Next
+    Dim oldFile As String
+    oldFile = Dir(GetQuotesDir() & "*TEST-SNAP*.xlsx")
+    Do While Len(oldFile) > 0
+        fso.DeleteFile GetQuotesDir() & oldFile, True
+        oldFile = Dir()
+    Loop
+    On Error GoTo 0
     
     ' Step 1: Record original verified grand total
     origTotal = CDbl(wsQ.Range("E8").Value)
@@ -481,6 +490,12 @@ Public Function RunSnapshotSelfTests() As String
         RunSnapshotSelfTests = "FAIL: Expected next revision 2, got " & CStr(revNext)
         Exit Function
     End If
+    
+    ' Clean up test files
+    On Error Resume Next
+    If fso.FileExists(snapPath) Then fso.DeleteFile snapPath, True
+    If fso.FileExists(snapPathR1) Then fso.DeleteFile snapPathR1, True
+    On Error GoTo 0
     
     RunSnapshotSelfTests = "PASS"
     Exit Function
