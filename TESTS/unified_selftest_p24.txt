@@ -1,0 +1,29 @@
+=== MEGA PIPES QUOTATION SYSTEM - UNIFIED SELF-TEST SUITE ===
+Execution Date: 2026-10-13 11:25:46
+======================================================================
+  [PASS] P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)
+  [PASS] P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)
+  [PASS] P2 Invalid Geometry Guard
+  [PASS] P2 Invalid Master Combination Guard
+  [PASS] P7 Freight Engine (Methods A/B/C, Stacking, Trailers)
+  [PASS] P8 Plant Engine (Eligibility, Road Distance, Override Audit)
+  [PASS] P9 ORS Route Matrix Engine & Cache Lookup
+  [NEEDS_HUMAN] P9 Live ORS Network Integration - ORS_API_KEY environment variable not configured (cataloged in TESTS/NEEDS_HUMAN.md)
+  [PASS] P10 Competitor Engine (Floor Protection, Stale Badge, Yellow Highlight)
+  [PASS] P11 COSTING Sheet Reproduction (Values-Only, Reference Layout)
+  [PASS] P12 OFFER Sheet Reproduction (Unipro 27 Terms, Indian Words)
+  [PASS] P13 Sequence Allocation Engine & File Locking
+  [NEEDS_HUMAN] P13 Production Shared Network Folder - Production UNC path required for multi-machine deployment (cataloged in TESTS/NEEDS_HUMAN.md)
+  [PASS] P14 Snapshot Engine & Immutable Quote Reload
+  [PASS] P15 Master Synchronisation & Schema Validation
+  [PASS] P17 Offline Quoting & Reconnection Reconciliation
+  [PASS] P18 Export Engine (PDF, Sanitized Customer Excel, Internal Excel)
+  [PASS] P19 Document Numbering Idempotency & Debounce
+  [PASS] P20 Audit Logging & Password Masking
+  [PASS] P21 Admin & Approval Workflow State Machine
+  [PASS] P22 User Identity & Filesystem Sanitization
+  [PASS] P23 Workbook Protection & Selective Cell Locking
+  [NEEDS_HUMAN] P23 Production Security Passwords - MEGA_SHEET_PWD and MEGA_ADMIN_PWD required for production lockdown (cataloged in TESTS/NEEDS_HUMAN.md)
+======================================================================
+SUMMARY: Total Evaluated: 23 | Passed: 20 | Needs Human: 3 | Failed: 0
+

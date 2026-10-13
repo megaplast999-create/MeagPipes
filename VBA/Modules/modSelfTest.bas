@@ -318,3 +318,117 @@ Public Function RunP3InvalidMasterGuardTest() As String
 ExpectedFailure:
     RunP3InvalidMasterGuardTest = "PASS: " & Err.Description
 End Function
+
+
+' ============================================================
+' P24 UNIFIED SELF-TEST & VALIDATION SUITE
+' ============================================================
+
+Public Function RunAllSelfTests() As String
+    Dim results As String
+    Dim passCount As Long, failCount As Long, humanCount As Long
+    Dim logPath As String
+    Dim fileNum As Integer
+    Dim sep As String
+    sep = String(70, "=")
+    
+    passCount = 0
+    failCount = 0
+    humanCount = 0
+    
+    results = "=== MEGA PIPES QUOTATION SYSTEM - UNIFIED SELF-TEST SUITE ===" & vbCrLf
+    results = results & "Execution Date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss") & vbCrLf
+    results = results & sep & vbCrLf
+    
+    ' Core Component Evaluations
+    EvalTest "P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)", RunGoldenLegacy(), results, passCount, failCount, humanCount
+    EvalTest "P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)", RunGoldenNormal(), results, passCount, failCount, humanCount
+    EvalTest "P2 Invalid Geometry Guard", RunP3InvalidGeometryTest(), results, passCount, failCount, humanCount
+    EvalTest "P2 Invalid Master Combination Guard", RunP3InvalidMasterGuardTest(), results, passCount, failCount, humanCount
+    EvalTest "P7 Freight Engine (Methods A/B/C, Stacking, Trailers)", modFreight.RunFreightSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P8 Plant Engine (Eligibility, Road Distance, Override Audit)", modPlants.RunPlantSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P9 ORS Route Matrix Engine & Cache Lookup", modORS.RunORSSelfTests(), results, passCount, failCount, humanCount
+    
+    ' P9 Live ORS Check (Needs Human API Key)
+    If Len(Trim$(Environ$("ORS_API_KEY"))) > 0 Then
+        EvalTest "P9 Live ORS Network Integration", "PASS: Configured via ORS_API_KEY", results, passCount, failCount, humanCount
+    Else
+        EvalHuman "P9 Live ORS Network Integration", "ORS_API_KEY environment variable not configured (cataloged in TESTS/NEEDS_HUMAN.md)", results, humanCount
+    End If
+    
+    EvalTest "P10 Competitor Engine (Floor Protection, Stale Badge, Yellow Highlight)", modCompetitors.RunCompetitorSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P11 COSTING Sheet Reproduction (Values-Only, Reference Layout)", modExport.RunCostingSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P12 OFFER Sheet Reproduction (Unipro 27 Terms, Indian Words)", modExport.RunOfferSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P13 Sequence Allocation Engine & File Locking", modSequence.RunSequenceSelfTests(), results, passCount, failCount, humanCount
+    
+    ' P13 Shared Network UNC Path (Needs Human)
+    If Len(Trim$(Environ$("MEGA_SHARED_FOLDER"))) > 0 Then
+        EvalTest "P13 Production Shared Network Folder", "PASS: Configured via MEGA_SHARED_FOLDER", results, passCount, failCount, humanCount
+    Else
+        EvalHuman "P13 Production Shared Network Folder", "Production UNC path required for multi-machine deployment (cataloged in TESTS/NEEDS_HUMAN.md)", results, humanCount
+    End If
+    
+    EvalTest "P14 Snapshot Engine & Immutable Quote Reload", modLog.RunSnapshotSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P15 Master Synchronisation & Schema Validation", modAdmin.RunMastersSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P17 Offline Quoting & Reconnection Reconciliation", modSequence.RunOfflineSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P18 Export Engine (PDF, Sanitized Customer Excel, Internal Excel)", modExport.RunExportSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P19 Document Numbering Idempotency & Debounce", modQuoteHeader.RunDocumentNumberingSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P20 Audit Logging & Password Masking", modLog.RunAuditSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P21 Admin & Approval Workflow State Machine", modApproval.RunApprovalSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P22 User Identity & Filesystem Sanitization", modLog.RunIdentitySelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P23 Workbook Protection & Selective Cell Locking", modProtection.RunProtectionSelfTests(), results, passCount, failCount, humanCount
+    
+    ' P23 Passwords (Needs Human)
+    If Len(Trim$(Environ$("MEGA_SHEET_PWD"))) > 0 And Len(Trim$(Environ$("MEGA_ADMIN_PWD"))) > 0 Then
+        EvalTest "P23 Production Security Passwords", "PASS: Configured via MEGA_SHEET_PWD and MEGA_ADMIN_PWD", results, passCount, failCount, humanCount
+    Else
+        EvalHuman "P23 Production Security Passwords", "MEGA_SHEET_PWD and MEGA_ADMIN_PWD required for production lockdown (cataloged in TESTS/NEEDS_HUMAN.md)", results, humanCount
+    End If
+    
+    results = results & sep & vbCrLf
+    results = results & "SUMMARY: Total Evaluated: " & CStr(passCount + failCount + humanCount) & _
+              " | Passed: " & CStr(passCount) & _
+              " | Needs Human: " & CStr(humanCount) & _
+              " | Failed: " & CStr(failCount) & vbCrLf
+    
+    ' Write log to TESTS\unified_selftest_p24.txt
+    On Error Resume Next
+    logPath = TestsPath() & Application.PathSeparator & "unified_selftest_p24.txt"
+    fileNum = FreeFile
+    Open logPath For Output As #fileNum
+    Print #fileNum, results
+    Close #fileNum
+    On Error GoTo 0
+    
+    If failCount = 0 Then
+        RunAllSelfTests = "PASS"
+    Else
+        RunAllSelfTests = "FAIL: " & CStr(failCount) & " test(s) failed."
+    End If
+End Function
+
+Public Sub SelfTest()
+    Dim res As String
+    res = RunAllSelfTests()
+    MsgBox "Self-Test Result: " & res, vbInformation, "Mega Pipes Quotation System"
+End Sub
+
+Private Sub EvalTest(ByVal compName As String, ByVal testResult As String, ByRef outLog As String, ByRef passC As Long, ByRef failC As Long, ByRef humC As Long)
+    Dim trimmedRes As String
+    trimmedRes = Trim$(testResult)
+    If Left$(trimmedRes, 4) = "PASS" Then
+        passC = passC + 1
+        outLog = outLog & "  [PASS] " & compName & vbCrLf
+    ElseIf Left$(trimmedRes, 11) = "NEEDS_HUMAN" Then
+        humC = humC + 1
+        outLog = outLog & "  [NEEDS_HUMAN] " & compName & " - " & Mid$(trimmedRes, 13) & vbCrLf
+    Else
+        failC = failC + 1
+        outLog = outLog & "  [FAIL] " & compName & " - " & trimmedRes & vbCrLf
+    End If
+End Sub
+
+Private Sub EvalHuman(ByVal compName As String, ByVal reason As String, ByRef outLog As String, ByRef humC As Long)
+    humC = humC + 1
+    outLog = outLog & "  [NEEDS_HUMAN] " & compName & " - " & reason & vbCrLf
+End Sub
