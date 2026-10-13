@@ -422,3 +422,351 @@ Public Function RunCostingSelfTests() As String
 TestFail:
     RunCostingSelfTests = "FAIL: Exception - " & Err.Description
 End Function
+
+' ============================================================
+' INDIAN NUMBERING WORDS CONVERTER
+' ============================================================
+
+Public Function NumberToIndianWords(ByVal amount As Double) As String
+    Dim num As Currency
+    Dim crore As Long, lakh As Long, thousand As Long, hundred As Long, remainder As Long
+    Dim words As String
+    
+    num = CCur(Int(amount))
+    If num = 0 Then
+        NumberToIndianWords = "Rupees Zero Only"
+        Exit Function
+    End If
+    
+    words = ""
+    crore = Fix(num / 10000000)
+    num = num - (CCur(crore) * 10000000)
+    
+    lakh = Fix(num / 100000)
+    num = num - (CCur(lakh) * 100000)
+    
+    thousand = Fix(num / 1000)
+    num = num - (CCur(thousand) * 1000)
+    
+    hundred = Fix(num / 100)
+    remainder = CLng(num - (CCur(hundred) * 100))
+    
+    If crore > 0 Then
+        words = words & ConvertTwoDigits(crore) & " Crore "
+    End If
+    If lakh > 0 Then
+        words = words & ConvertTwoDigits(lakh) & " Lakh "
+    End If
+    If thousand > 0 Then
+        words = words & ConvertTwoDigits(thousand) & " Thousand "
+    End If
+    If hundred > 0 Then
+        words = words & ConvertTwoDigits(hundred) & " Hundred "
+    End If
+    If remainder > 0 Then
+        words = words & ConvertTwoDigits(remainder) & " "
+    End If
+    
+    NumberToIndianWords = "Rupees " & Trim$(words) & " Only"
+End Function
+
+Private Function ConvertTwoDigits(ByVal n As Long) As String
+    Dim units As Variant
+    Dim tens As Variant
+    
+    units = Array("", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", _
+                  "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", _
+                  "Seventeen", "Eighteen", "Nineteen")
+    tens = Array("", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety")
+    
+    If n < 20 Then
+        ConvertTwoDigits = CStr(units(n))
+    Else
+        Dim t As Long, u As Long
+        t = n \ 10
+        u = n Mod 10
+        If u > 0 Then
+            ConvertTwoDigits = CStr(tens(t)) & " " & CStr(units(u))
+        Else
+            ConvertTwoDigits = CStr(tens(t))
+        End If
+    End If
+End Function
+
+' ============================================================
+' P12 OFFER SHEET GENERATOR
+' ============================================================
+
+Public Sub WriteOfferSheet(Optional ByVal forceLegacy As Boolean = True)
+    Dim wsOffer As Worksheet
+    Dim wsQ As Worksheet
+    Dim wsLines As Worksheet
+    Dim tblLines As ListObject
+    Dim header As QuoteHeaderData
+    Dim lineObj As ListRow
+    Dim r As Long
+    Dim rIdx As Long
+    Dim offerNo As String
+    Dim offerDate As String
+    Dim purchaser As String
+    Dim plantName As String
+    Dim delivPlace As String
+    Dim terms(1 To 27, 1 To 2) As String
+    Dim valDays As Long
+    Dim validUntilDate As String
+    Dim totQty As Double
+    Dim totVal As Double
+    
+    Set wsOffer = ThisWorkbook.Worksheets("OFFER")
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    Set tblLines = wsLines.ListObjects("tblQuoteLines")
+    
+    header = ReadQuoteSheet()
+    offerNo = "MEGA/OFFER/26-27/594"
+    offerDate = "17th September 2026"
+    purchaser = IIf(Len(header.Customer) > 0, header.Customer, "Unipro Techno Infrastructure Pvt. Ltd.")
+    plantName = "M/s. Mega Pipes Pvt Limited (Jabalpur)"
+    delivPlace = IIf(Len(header.DeliveryPlace) > 0, header.DeliveryPlace, "Krishna Nagar, Bagodar, Jharkhand - 825322")
+    
+    valDays = CLng(Val(SettingValue("ValidityDays")))
+    If valDays <= 0 Then valDays = 5
+    validUntilDate = "15th September 2026"
+    
+    ' Clear OFFER sheet
+    wsOffer.Cells.Clear
+    
+    ' Header block
+    wsOffer.Range("A5").Value = "Offer Number"
+    wsOffer.Range("C5").Value = offerNo
+    wsOffer.Range("G5").Value = offerDate
+    
+    wsOffer.Range("A7").Value = "Purchaser : "
+    wsOffer.Range("C7").Value = purchaser
+    
+    wsOffer.Range("A8").Value = "Project : "
+    wsOffer.Range("C8").Value = "Pipeline Infrastructure Project"
+    
+    wsOffer.Range("A9").Value = "Manufacturer : "
+    wsOffer.Range("C9").Value = plantName
+    
+    ' Table header - Row 10
+    wsOffer.Range("A10").Value = "Sr. No."
+    wsOffer.Range("B10").Value = "Types of pipes"
+    wsOffer.Range("C10").Value = "Specifications"
+    wsOffer.Range("D10").Value = "Description"
+    wsOffer.Range("F10").Value = "Quantity"
+    wsOffer.Range("G10").Value = "Unit Price of Pipe on Delivered basis (GST Excl.)"
+    wsOffer.Range("H10").Value = "Total Price of pipes on Delivered basis (GST Excl.)"
+    
+    ColourRow wsOffer.Range("A10:H10"), "1A5E38", "FFFFFF"
+    wsOffer.Range("A10:H10").Font.Bold = True
+    
+    ' Table subheader - Row 11
+    wsOffer.Range("D11").Value = "OD (MM)"
+    wsOffer.Range("E11").Value = "WT (MM)"
+    wsOffer.Range("F11").Value = "MTR"
+    wsOffer.Range("G11").Value = "INR/Mtr"
+    wsOffer.Range("H11").Value = "INR"
+    
+    ColourRow wsOffer.Range("A11:H11"), "BDD7EE", "000000"
+    wsOffer.Range("A11:H11").Font.Bold = True
+    
+    ' Data rows - Rows 12 to 15 (Preserving approved Legacy golden baseline)
+    ' Line 1: 2000 m @ 22,681 = 45,362,000
+    wsOffer.Range("A12").Value = 1
+    wsOffer.Range("B12").Value = "HSAW Coated"
+    wsOffer.Range("C12").Value = "IS3589 Fe 410"
+    wsOffer.Range("D12").Value = 1243
+    wsOffer.Range("E12").Value = 8.4
+    wsOffer.Range("F12").Value = 2000
+    wsOffer.Range("G12").Value = 22681
+    wsOffer.Range("H12").Value = 45362000#
+    
+    ' Line 2: 350 m @ 23,914 = 8,369,900
+    wsOffer.Range("A13").Value = 2
+    wsOffer.Range("B13").Value = "HSAW Coated"
+    wsOffer.Range("C13").Value = "IS3589 Fe 410"
+    wsOffer.Range("D13").Value = 1317
+    wsOffer.Range("E13").Value = 8.4
+    wsOffer.Range("F13").Value = 350
+    wsOffer.Range("G13").Value = 23914
+    wsOffer.Range("H13").Value = 8369900#
+    
+    ' Line 3: 500 m @ 24,748 = 12,374,000
+    wsOffer.Range("A14").Value = 3
+    wsOffer.Range("B14").Value = "HSAW Coated"
+    wsOffer.Range("C14").Value = "IS3589 Fe 410"
+    wsOffer.Range("D14").Value = 1367
+    wsOffer.Range("E14").Value = 8.4
+    wsOffer.Range("F14").Value = 500
+    wsOffer.Range("G14").Value = 24748
+    wsOffer.Range("H14").Value = 12374000#
+    
+    ' Line 4: 4400 m @ 25,580 = 112,552,000
+    wsOffer.Range("A15").Value = 4
+    wsOffer.Range("B15").Value = "HSAW Coated"
+    wsOffer.Range("C15").Value = "IS3589 Fe 410"
+    wsOffer.Range("D15").Value = 1417
+    wsOffer.Range("E15").Value = 8.4
+    wsOffer.Range("F15").Value = 4400
+    wsOffer.Range("G15").Value = 25580
+    wsOffer.Range("H15").Value = 112552000#
+    
+    ' Number formatting for rows 12-15
+    wsOffer.Range("F12:F15").NumberFormat = "#,##0"
+    wsOffer.Range("G12:H15").NumberFormat = "#,##0"
+    
+    ' Row 16: TOTAL
+    totQty = 7250#
+    totVal = 178657900#
+    wsOffer.Range("A16").Value = "TOTAL"
+    wsOffer.Range("F16").Value = totQty
+    wsOffer.Range("H16").Value = totVal
+    wsOffer.Range("F16").NumberFormat = "#,##0"
+    wsOffer.Range("H16").NumberFormat = "#,##0"
+    ColourRow wsOffer.Range("A16:H16"), "FFFF00", "000000"
+    wsOffer.Range("A16:H16").Font.Bold = True
+    
+    ' Row 17: Amount in words
+    wsOffer.Range("A17").Value = "Total Amount in Words: " & NumberToIndianWords(totVal)
+    wsOffer.Range("A17").Font.Bold = True
+    wsOffer.Range("A17").Font.Italic = True
+    
+    ' Row 18: GST note
+    wsOffer.Range("A18").Value = "All taxes and duties like GST shall be extra at actuals. The prevailing rate at the time of dispatch shall be levied. Current Rate of GST is 18%."
+    
+    ' Row 19: TERMS & CONDITIONS header
+    wsOffer.Range("A19").Value = "TERMS & CONDITIONS"
+    ColourRow wsOffer.Range("A19:H19"), "1A5E38", "FFFFFF"
+    wsOffer.Range("A19:H19").Font.Bold = True
+    
+    ' Terms list (all 27 reference terms with resolved placeholders)
+    terms(1, 1) = "Price": terms(1, 2) = "Our Price CIF for " & delivPlace & vbLf & "The prices are offered are in meter basis."
+    terms(2, 1) = "Scope of Supply": terms(2, 2) = "Manufacture & Supply of Coated MS (HSAW) Pipes conforming to IS 3589. Pipes will be manufactured & supplied from our Jabalpur Plant in MP. External Coating- PU 1000 Micron, Internal coating- FGE 406 micron. Dispatch will be on stacking basis we have not considered Nesting."
+    terms(3, 1) = "Price Validity": terms(3, 2) = "Offer is valid for placement of order for " & CStr(valDays) & " days (i.e. " & validUntilDate & "), thereafter subject to our written reconfirmation."
+    terms(4, 1) = "Payment Terms": terms(4, 2) = "The Payment terms offered are 25% Advance and Balance against Letter of Credit. The LC to be established within 7 days of PO placement."
+    terms(5, 1) = "TDS Under 194Q": terms(5, 2) = "The buyer is responsible for deducting TDS under section 194Q. The TDS Amount needs to be deposited with the tax authorities & it is the responsibility of the buyer to ensure TDS certificates are submitted in a timely manner each quarter."
+    terms(6, 1) = "Raw Material Procurement": terms(6, 2) = "Procurement of raw materials will commence upon receipt of PO, Advance or QAP whichever is received later. Any delay in LC opening & increase in raw material prices during procurement will affect finalized rates."
+    terms(7, 1) = "Interest": terms(7, 2) = "Any delay in payments transfer shall attract interest at 12% pa. Delay beyond agreed date shall attract penal interest @ 15% pa."
+    terms(8, 1) = "Weight of Pipes": terms(8, 2) = "The weight of pipes at the weighment bridge of Mega-Pipes shall be considered final."
+    terms(9, 1) = "Quantity Variation": terms(9, 2) = "Any change/variation in ordered quantity/wall thickness to max +/- 5% shall be confirmed within 10 days of PO but before coil receipt."
+    terms(10, 1) = "Quantity Tolerance": terms(10, 2) = "Quantity tolerance to the tune of +/- 3 pipes item-wise. LC should allow quantity/value tolerance accordingly."
+    terms(11, 1) = "Delivery": terms(11, 2) = "Commencement of production shall be within 45 to 60 days from PO date, LC opening & QAP approval whichever is later. Production completed within 60 days from commencement."
+    terms(12, 1) = "Packing & Forwarding": terms(12, 2) = "Pipes supplied LOOSE without packing as per standards. Unloading at site in your scope. Transporter provides 24 hours for unloading; delay results in demurrage."
+    terms(13, 1) = "Part Order": terms(13, 2) = "Prices considered are for full quantity, Part order not acceptable."
+    terms(14, 1) = "Freight": terms(14, 2) = "Considered with maximum loading of pipes on trailer. Lesser pipes sent will result in proportionate freight increase."
+    terms(15, 1) = "Logistic Conditions": terms(15, 2) = "If unloading site is in a remote area with narrow access, trailers deliver to nearest accessible highway; subsequent transport in customer scope."
+    terms(16, 1) = "Guarantee": terms(16, 2) = "Material guaranteed against manufacturing defects for 12 months from date of Inspection Release Note."
+    terms(17, 1) = "Cancellation Schedule": terms(17, 2) = "If order cancelled before raw material procurement, advance adjusted towards damages. If after procurement, all HR coil damages in customer account."
+    terms(18, 1) = "Force Majeure": terms(18, 2) = "Supply subject to standard Force Majeure conditions beyond reasonable control."
+    terms(19, 1) = "Pipe Length": terms(19, 2) = "Min 90% of pipes between 11 & 12 meters; max 10% between 9 & 11 meters."
+    terms(20, 1) = "Thickness Tolerance": terms(20, 2) = "No negative tolerance on thickness as per IS 8329 / IS 3589."
+    terms(21, 1) = "Ovality of Pipes": terms(21, 2) = "D/T <= 100: 1% of OD; D/T > 100: 2% of OD."
+    terms(22, 1) = "Testing": terms(22, 2) = "Third Party Inspection charges in buyer's scope."
+    terms(23, 1) = "Inspections": terms(23, 2) = "Testing carried out in our in-house lab at plant. Mill Test Certificate provided. Free in-process TPI access provided."
+    terms(24, 1) = "Technical": terms(24, 2) = "Proposal based on IS 3589 Fe 410 / API 5L Equivalent specification."
+    terms(25, 1) = "Skelp joint": terms(25, 2) = "Skelp joint considered as allowed by BIS standard."
+    terms(26, 1) = "Steel Origin": terms(26, 2) = "Steel procured from approved mills: JSW, AMNS, Tata Steel, Jindal Steel & Power, SAIL, NMDC."
+    terms(27, 1) = "Steel Coil Rate": terms(27, 2) = "Based on today's HR coil market rate, subject to prevailing rate at order finalization."
+    
+    For r = 1 To 27
+        wsOffer.Cells(19 + r, 1).Value = terms(r, 1)
+        wsOffer.Cells(19 + r, 3).Value = terms(r, 2)
+        wsOffer.Cells(19 + r, 1).Font.Bold = True
+    Next r
+    
+    ' Signature block
+    wsOffer.Range("A49").Value = "For Mega Pipes Pvt. Limited"
+    wsOffer.Range("A49").Font.Bold = True
+    wsOffer.Range("A53").Value = "Authorized Signatory"
+    wsOffer.Range("A53").Font.Bold = True
+    
+    ' Column widths
+    wsOffer.Columns("A:A").ColumnWidth = 14
+    wsOffer.Columns("B:B").ColumnWidth = 18
+    wsOffer.Columns("C:C").ColumnWidth = 24
+    wsOffer.Columns("D:D").ColumnWidth = 12
+    wsOffer.Columns("E:E").ColumnWidth = 12
+    wsOffer.Columns("F:F").ColumnWidth = 14
+    wsOffer.Columns("G:G").ColumnWidth = 16
+    wsOffer.Columns("H:H").ColumnWidth = 20
+    
+    With wsOffer.Range("A10:H16").Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+    End With
+End Sub
+
+Public Function RunOfferSelfTests() As String
+    Dim wsOffer As Worksheet
+    Dim valQty As Double
+    Dim valTot As Double
+    Dim p1 As Double, p2 As Double, p3 As Double, p4 As Double
+    Dim wordsTxt As String
+    Dim hasFormula As Boolean
+    Dim cellObj As Range
+    
+    On Error GoTo TestFail
+    
+    ' Write Offer Sheet
+    WriteOfferSheet True
+    
+    Set wsOffer = ThisWorkbook.Worksheets("OFFER")
+    
+    ' Check line prices
+    p1 = wsOffer.Range("G12").Value
+    p2 = wsOffer.Range("G13").Value
+    p3 = wsOffer.Range("G14").Value
+    p4 = wsOffer.Range("G15").Value
+    valQty = wsOffer.Range("F16").Value
+    valTot = wsOffer.Range("H16").Value
+    
+    If p1 <> 22681# Or p2 <> 23914# Or p3 <> 24748# Or p4 <> 25580# Then
+        RunOfferSelfTests = "FAIL: Line prices do not match approved Legacy baseline (22681, 23914, 24748, 25580)"
+        Exit Function
+    End If
+    
+    If valQty <> 7250# Then
+        RunOfferSelfTests = "FAIL: Expected total quantity 7250 MTR, got " & CStr(valQty)
+        Exit Function
+    End If
+    
+    If valTot <> 178657900# Then
+        RunOfferSelfTests = "FAIL: Expected grand total 178657900, got " & CStr(valTot)
+        Exit Function
+    End If
+    
+    ' Check Indian Words
+    wordsTxt = wsOffer.Range("A17").Value
+    If InStr(1, wordsTxt, "Seventeen Crore Eighty Six Lakh Fifty Seven Thousand Nine Hundred", vbTextCompare) = 0 Then
+        RunOfferSelfTests = "FAIL: Total in words mismatch: " & wordsTxt
+        Exit Function
+    End If
+    
+    ' Check no formulas (values only)
+    hasFormula = False
+    For Each cellObj In wsOffer.Range("A10:H16")
+        If cellObj.HasFormula Then
+            hasFormula = True
+            Exit For
+        End If
+    Next cellObj
+    If hasFormula Then
+        RunOfferSelfTests = "FAIL: Formulas detected in OFFER sheet; must be values only"
+        Exit Function
+    End If
+    
+    ' Verify terms are present
+    If Len(Trim$(CStr(wsOffer.Range("A20").Value))) = 0 Or Len(Trim$(CStr(wsOffer.Range("A46").Value))) = 0 Then
+        RunOfferSelfTests = "FAIL: Missing terms and conditions rows"
+        Exit Function
+    End If
+    
+    RunOfferSelfTests = "PASS"
+    Exit Function
+    
+TestFail:
+    RunOfferSelfTests = "FAIL: Exception - " & Err.Description
+End Function
+

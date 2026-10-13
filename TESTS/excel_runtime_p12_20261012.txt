@@ -1,0 +1,31 @@
+=== P12 OFFER SHEET REAL EXCEL VERIFICATION ===
+Offer Number (C5): MEGA/OFFER/26-27/594
+Offer Date (G5): 17th September 2026
+Purchaser (C7): Unipro Techno Infrastructure Pvt Ltd
+Manufacturer (C9): M/s. Mega Pipes Pvt Limited (Jabalpur)
+Header Row 10: Sr. No. | Types of pipes | Specifications | Description | None | Quantity | Unit Price of Pipe on Delivered basis (GST Excl.) | Total Price of pipes on Delivered basis (GST Excl.)
+Subheader Row 11: None | None | None | OD (MM) | WT (MM) | MTR | INR/Mtr | INR
+Line 1: 1 | HSAW Coated | IS3589 Fe 410 | 1243 | 8.4 | 2000 | 22681 | 45362000
+Line 2: 2 | HSAW Coated | IS3589 Fe 410 | 1317 | 8.4 | 350 | 23914 | 8369900
+Line 3: 3 | HSAW Coated | IS3589 Fe 410 | 1367 | 8.4 | 500 | 24748 | 12374000
+Line 4: 4 | HSAW Coated | IS3589 Fe 410 | 1417 | 8.4 | 4400 | 25580 | 112552000
+Total Row 16: TOTAL | None | None | None | None | 7250 | None | 178657900
+Words (A17): Total Amount in Words: Rupees Seventeen Crore Eighty Six Lakh Fifty Seven Thousand Nine Hundred Only
+GST Note (A18): All taxes and duties like GST shall be extra at actuals. The prevailing rate at the time of dispatch shall be levied. Current Rate of GST is 18%.
+Terms Header (A19): TERMS & CONDITIONS
+Term 1 (A20:C20): Price -> Our Price CIF for Krishna Nagar, Bagodar, Jharkhand - 825322
+The prices are offered are in meter basis.
+Term 27 (A46:C46): Steel Coil Rate -> Based on today's HR coil market rate, subject to prevailing rate at order finalization.
+Signature Block (A49, A53): For Mega Pipes Pvt. Limited | Authorized Signatory
+Formula count on OFFER sheet: 0 (Expected: 0, values only)
+Executing Regression Suites...
+RunOfferSelfTests: PASS
+RunCostingSelfTests: PASS
+RunCompetitorSelfTests: PASS
+RunORSSelfTests: PASS
+RunPlantSelfTests: PASS
+RunFreightSelfTests: PASS
+RunGoldenNormal: PASS
+RunGoldenLegacy: PASS
+DEV workbook saved with compiled modExport and generated OFFER sheet.
+P12 OFFER SHEET VERIFICATION: ALL PASS!
