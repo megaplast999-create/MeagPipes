@@ -1,0 +1,22 @@
+=== P11 COSTING SHEET REAL EXCEL VERIFICATION ===
+4 golden lines populated and recalculated on QUOTE sheet.
+Imported modExport successfully (423 lines).
+Compiled VBAProject: Enabled=False
+Executing RunCostingSelfTests...
+RunCostingSelfTests Result: PASS
+COSTING Sheet Generated Values:
+  Line 1 Price/M: 22689.0 (Expected 22689 in Normal Option 1)
+  Line 2 Price/M: 24109.0 (Expected 24109 in Normal Option 1)
+  Line 3 Price/M: 24857.0 (Expected 24857 in Normal Option 1)
+  Line 4 Price/M: 25581.0 (Expected 25581 in Normal Option 1)
+  Grand Total: 178801050.0 (Expected 178801050 in Normal Option 1)
+  Total Row Fill Color: 65535.0 (Expected 65535 / Yellow)
+Executing Regression Suites...
+RunCompetitorSelfTests Result: PASS
+RunORSSelfTests Result: PASS
+RunPlantSelfTests Result: PASS
+RunFreightSelfTests Result: PASS
+RunGoldenNormal Result: PASS
+RunGoldenLegacy Result: PASS
+DEV workbook saved with compiled modExport and generated COSTING sheet.
+P11 COSTING SHEET VERIFICATION: ALL PASS!
