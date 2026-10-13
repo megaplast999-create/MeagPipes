@@ -1,0 +1,28 @@
+=== P6 QUOTE WORKFLOW REAL EXCEL RUNTIME TEST ===
+Step 1: Clearing quote lines
+Line count after clear: 1
+Step 2: Adding 4 golden lines
+Added line 1: ID=1226, Qty=2000
+Added line 2: ID=1300, Qty=350
+Added line 3: ID=1350, Qty=500
+Added line 4: ID=1400, Qty=4400
+Step 3: Executing RecalculateQuote
+Live Summary - Total Metres: 7250.0
+Live Summary - Total Weight (MT): 2031.03581121
+Live Summary - Total Pipes: 606.0
+Live Summary - Total Trailers: 153.0
+Live Summary - Subtotal (Excl GST): 178801050.0
+Live Summary - GST (18%): 32184189.0
+Live Summary - Grand Total (Incl GST): 210985239.0
+Live Summary - Workflow Status: VALID
+Step 3 Verification: PASS (Option 1 totals match exactly!)
+Step 4: Testing line edit workflow
+After edit Line 1 Qty=1000 - Metres: 6250.0, Subtotal: 156112050.0
+Step 4 Edit Verification: PASS
+Step 5: Testing line delete workflow
+After deleting L0002 - Metres: 6900.0, Lines: 3
+Step 5 Delete Verification: PASS
+Step 6: Resetting and verifying golden tests
+RunGoldenNormal: PASS
+RunGoldenLegacy: PASS
+Step 6 Golden Verification: PASS

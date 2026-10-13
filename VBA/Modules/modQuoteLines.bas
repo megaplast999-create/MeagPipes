@@ -37,9 +37,14 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
     ValidateQuantityUnit quantityUnit
     ValidatePlant plantId
 
-    Set lineObject = tableObject.ListRows.Add
+    If tableObject.ListRows.Count = 1 And _
+       Len(Trim$(CStr(tableObject.ListRows(1).Range.Cells(1, tableObject.ListColumns("ProductID").Index).Value))) = 0 Then
+        Set lineObject = tableObject.ListRows(1)
+    Else
+        Set lineObject = tableObject.ListRows.Add
+    End If
     With lineObject.Range
-        .Cells(1, tableObject.ListColumns("LineID").Index).Value = "L" & Format$(tableObject.ListRows.Count, "0000")
+        .Cells(1, tableObject.ListColumns("LineID").Index).Value = "L" & Format$(lineObject.Index, "0000")
         .Cells(1, tableObject.ListColumns("QuoteID").Index).Value = quoteId
         .Cells(1, tableObject.ListColumns("ProductID").Index).Value = productId
         .Cells(1, tableObject.ListColumns("Family").Index).Value = family
