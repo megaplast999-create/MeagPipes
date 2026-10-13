@@ -1,0 +1,37 @@
+# Mega Pipes Quotation System — Git ignore rules
+
+# ── Credentials & Secrets ──────────────────────────────────────────────────────
+# NEVER commit API keys, passwords, or credentials.
+# All secrets must be stored as Windows environment variables only.
+.env
+.env.*
+*.env
+secrets.txt
+credentials.txt
+
+# ── Python Artifacts ──────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# ── Excel Lock Files (temporary Excel lock files) ─────────────────────────────
+~$*.xlsm
+~$*.xlsx
+~$*.xls
+
+# ── OS & Editor Artifacts ─────────────────────────────────────────────────────
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.tmp
+*.bak
+*.swp
+
+# ── Log files (runtime traces — not test evidence) ────────────────────────────
+TESTS/clear_trace.log
+TESTS/recalc_trace.log

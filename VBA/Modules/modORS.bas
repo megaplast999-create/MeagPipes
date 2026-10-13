@@ -150,6 +150,8 @@ End Function
 Public Function GetORSKey() As String
     ' Security requirement: NEVER hardcode key. Read only from environment variable.
     GetORSKey = Environ$("ORS_API_KEY")
+
+
 End Function
 
 Public Function BuildMatrixRequestBody(ByVal plantLon As Double, ByVal plantLat As Double, _
