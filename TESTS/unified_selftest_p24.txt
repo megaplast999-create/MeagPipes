@@ -1,5 +1,5 @@
 === MEGA PIPES QUOTATION SYSTEM - UNIFIED SELF-TEST SUITE ===
-Execution Date: 2026-10-13 11:36:32
+Execution Date: 2026-10-13 11:50:56
 ======================================================================
   [PASS] P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)
   [PASS] P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)
