@@ -770,3 +770,466 @@ TestFail:
     RunOfferSelfTests = "FAIL: Exception - " & Err.Description
 End Function
 
+' ============================================================
+' P18 EXPORT ENGINE: PDF, CUSTOMER EXCEL, INTERNAL EXCEL
+' ============================================================
+
+Public Function GetExportsDir(Optional ByVal targetFolder As String = "") As String
+    Dim expDir As String
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    
+    If Len(Trim$(targetFolder)) > 0 Then
+        expDir = Trim$(targetFolder)
+    Else
+        expDir = ThisWorkbook.Path & "\Exports\"
+    End If
+    If Right$(expDir, 1) <> "\" Then expDir = expDir & "\"
+    If Not fso.FolderExists(expDir) Then
+        On Error Resume Next
+        fso.CreateFolder expDir
+        On Error GoTo 0
+    End If
+    GetExportsDir = expDir
+End Function
+
+Public Function CleanFilename(ByVal rawStr As String) As String
+    Dim s As String
+    s = rawStr
+    s = Replace(s, "/", "_")
+    s = Replace(s, "\", "_")
+    s = Replace(s, ":", "_")
+    s = Replace(s, "*", "_")
+    s = Replace(s, "?", "_")
+    s = Replace(s, """", "_")
+    s = Replace(s, "<", "_")
+    s = Replace(s, ">", "_")
+    s = Replace(s, "|", "_")
+    CleanFilename = Trim$(s)
+End Function
+
+Public Function ExportPDF(Optional ByVal targetFolder As String = "") As String
+    Dim wsOffer As Worksheet
+    Dim expDir As String
+    Dim offerNo As String
+    Dim customer As String
+    Dim fName As String
+    Dim fullPath As String
+    Dim wsLog As Worksheet
+    Dim tblLog As ListObject
+    Dim newRow As ListRow
+    Dim curUser As String
+    
+    On Error Resume Next
+    Set wsOffer = ThisWorkbook.Worksheets("OFFER")
+    On Error GoTo 0
+    If wsOffer Is Nothing Then
+        WriteOfferSheet True
+        Set wsOffer = ThisWorkbook.Worksheets("OFFER")
+    End If
+    
+    expDir = GetExportsDir(targetFolder)
+    offerNo = CleanFilename(CStr(wsOffer.Range("C5").Value))
+    customer = CleanFilename(CStr(wsOffer.Range("C7").Value))
+    If Len(offerNo) = 0 Then offerNo = "MEGA_OFFER_26-27_594"
+    If Len(customer) = 0 Then customer = "Customer"
+    
+    fName = offerNo & "_" & customer & "_R0.pdf"
+    fullPath = expDir & fName
+    
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    
+    With wsOffer.PageSetup
+        .Orientation = xlPortrait
+        .Zoom = False
+        .FitToPagesWide = 1
+        .FitToPagesTall = False
+    End With
+    
+    wsOffer.ExportAsFixedFormat Type:=xlTypePDF, FileName:=fullPath, _
+        Quality:=xlQualityStandard, IncludeDocProperties:=True, _
+        IgnorePrintAreas:=False, OpenAfterPublish:=False
+        
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    
+    ' Log to tblQuoteLog
+    curUser = Environ$("USERNAME")
+    If Len(curUser) = 0 Then curUser = "User"
+    
+    On Error Resume Next
+    Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    Set tblLog = wsLog.ListObjects("tblQuoteLog")
+    If Not tblLog Is Nothing Then
+        If tblLog.ListRows.Count = 1 And Len(Trim$(CStr(tblLog.ListRows(1).Range.Cells(1, tblLog.ListColumns("Action").Index).Value))) = 0 Then
+            Set newRow = tblLog.ListRows(1)
+        Else
+            Set newRow = tblLog.ListRows.Add
+        End If
+        With newRow.Range
+            .Cells(1, tblLog.ListColumns("LogID").Index).Value = "LOG-" & Format$(newRow.Index, "00000")
+            .Cells(1, tblLog.ListColumns("QuoteID").Index).Value = offerNo
+            .Cells(1, tblLog.ListColumns("Timestamp").Index).Value = Now
+            .Cells(1, tblLog.ListColumns("User").Index).Value = curUser
+            .Cells(1, tblLog.ListColumns("Action").Index).Value = "EXPORT_PDF"
+            .Cells(1, tblLog.ListColumns("OldValue").Index).Value = ""
+            .Cells(1, tblLog.ListColumns("NewValue").Index).Value = fName
+            .Cells(1, tblLog.ListColumns("SheetName").Index).Value = "OFFER"
+            .Cells(1, tblLog.ListColumns("Status").Index).Value = "EXPORTED"
+            .Cells(1, tblLog.ListColumns("Notes").Index).Value = "PDF exported to " & fullPath
+        End With
+    End If
+    On Error GoTo 0
+    
+    ExportPDF = fullPath
+End Function
+
+Public Function WriteCustomerExcel(Optional ByVal targetFolder As String = "") As String
+    Dim wsOffer As Worksheet
+    Dim expDir As String
+    Dim offerNo As String
+    Dim customer As String
+    Dim fName As String
+    Dim fullPath As String
+    Dim custWb As Workbook
+    Dim custWsOffer As Worksheet
+    Dim custWsSyn As Worksheet
+    Dim wsQ As Worksheet
+    Dim rMax As Long, cMax As Long
+    Dim r As Long, c As Long
+    Dim curUser As String
+    Dim wsLog As Worksheet
+    Dim tblLog As ListObject
+    Dim newRow As ListRow
+    Dim nm As Name
+    
+    On Error Resume Next
+    Set wsOffer = ThisWorkbook.Worksheets("OFFER")
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    On Error GoTo 0
+    If wsOffer Is Nothing Then
+        WriteOfferSheet True
+        Set wsOffer = ThisWorkbook.Worksheets("OFFER")
+    End If
+    
+    expDir = GetExportsDir(targetFolder)
+    offerNo = CleanFilename(CStr(wsOffer.Range("C5").Value))
+    customer = CleanFilename(CStr(wsOffer.Range("C7").Value))
+    If Len(offerNo) = 0 Then offerNo = "MEGA_OFFER_26-27_594"
+    If Len(customer) = 0 Then customer = "Customer"
+    
+    fName = offerNo & "_" & customer & "_R0_Customer.xlsx"
+    fullPath = expDir & fName
+    
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    
+    Set custWb = Application.Workbooks.Add(xlWBATWorksheet)
+    Set custWsOffer = custWb.Worksheets(1)
+    custWsOffer.Name = "OFFER"
+    
+    ' Copy OFFER sheet UsedRange values & formats
+    wsOffer.UsedRange.Copy
+    custWsOffer.Range("A1").PasteSpecial xlPasteValuesAndNumberFormats
+    custWsOffer.Range("A1").PasteSpecial xlPasteFormats
+    Application.CutCopyMode = False
+    
+    ' Re-apply column widths
+    For c = 1 To 8
+        custWsOffer.Columns(c).ColumnWidth = wsOffer.Columns(c).ColumnWidth
+    Next c
+    
+    ' Add Synopsis Sheet (Customer Facing Summary)
+    Set custWsSyn = custWb.Worksheets.Add(After:=custWsOffer)
+    custWsSyn.Name = "Synopsis"
+    
+    custWsSyn.Range("A2").Value = "MEGA PIPES QUOTATION SYNOPSIS"
+    custWsSyn.Range("A2").Font.Bold = True
+    custWsSyn.Range("A2").Font.Size = 14
+    
+    custWsSyn.Range("A4").Value = "Offer Number": custWsSyn.Range("B4").Value = wsOffer.Range("C5").Value
+    custWsSyn.Range("A5").Value = "Offer Date": custWsSyn.Range("B5").Value = wsOffer.Range("G5").Value
+    custWsSyn.Range("A6").Value = "Purchaser": custWsSyn.Range("B6").Value = wsOffer.Range("C7").Value
+    custWsSyn.Range("A7").Value = "Manufacturer": custWsSyn.Range("B7").Value = wsOffer.Range("C9").Value
+    custWsSyn.Range("A8").Value = "Total Quantity": custWsSyn.Range("B8").Value = wsOffer.Range("F16").Value
+    custWsSyn.Range("A9").Value = "Total Amount (Excl. GST)": custWsSyn.Range("B9").Value = wsOffer.Range("H16").Value
+    custWsSyn.Range("A10").Value = "Amount in Words": custWsSyn.Range("B10").Value = wsOffer.Range("A17").Value
+    custWsSyn.Range("A11").Value = "GST Terms": custWsSyn.Range("B11").Value = wsOffer.Range("A18").Value
+    
+    custWsSyn.Range("A4:A11").Font.Bold = True
+    custWsSyn.Columns("A:A").ColumnWidth = 24
+    custWsSyn.Columns("B:B").ColumnWidth = 60
+    
+    ' Strict confidentiality sanitization: delete all names, links, connections
+    For Each nm In custWb.Names
+        On Error Resume Next
+        nm.Delete
+        On Error GoTo 0
+    Next nm
+    
+    ' Values-only guarantee: flatten every cell to value
+    Dim wsItem As Worksheet
+    For Each wsItem In custWb.Worksheets
+        wsItem.UsedRange.Value = wsItem.UsedRange.Value
+    Next wsItem
+    
+    custWb.SaveAs FileName:=fullPath, FileFormat:=xlOpenXMLWorkbook
+    custWb.Close SaveChanges:=False
+    
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    
+    ' Log to tblQuoteLog
+    curUser = Environ$("USERNAME")
+    If Len(curUser) = 0 Then curUser = "User"
+    
+    On Error Resume Next
+    Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    Set tblLog = wsLog.ListObjects("tblQuoteLog")
+    If Not tblLog Is Nothing Then
+        If tblLog.ListRows.Count = 1 And Len(Trim$(CStr(tblLog.ListRows(1).Range.Cells(1, tblLog.ListColumns("Action").Index).Value))) = 0 Then
+            Set newRow = tblLog.ListRows(1)
+        Else
+            Set newRow = tblLog.ListRows.Add
+        End If
+        With newRow.Range
+            .Cells(1, tblLog.ListColumns("LogID").Index).Value = "LOG-" & Format$(newRow.Index, "00000")
+            .Cells(1, tblLog.ListColumns("QuoteID").Index).Value = offerNo
+            .Cells(1, tblLog.ListColumns("Timestamp").Index).Value = Now
+            .Cells(1, tblLog.ListColumns("User").Index).Value = curUser
+            .Cells(1, tblLog.ListColumns("Action").Index).Value = "EXPORT_CUSTOMER_XLSX"
+            .Cells(1, tblLog.ListColumns("OldValue").Index).Value = ""
+            .Cells(1, tblLog.ListColumns("NewValue").Index).Value = fName
+            .Cells(1, tblLog.ListColumns("SheetName").Index).Value = "OFFER"
+            .Cells(1, tblLog.ListColumns("Status").Index).Value = "EXPORTED"
+            .Cells(1, tblLog.ListColumns("Notes").Index).Value = "Customer Excel exported to " & fullPath
+        End With
+    End If
+    On Error GoTo 0
+    
+    WriteCustomerExcel = fullPath
+End Function
+
+Public Function WriteInternalExcel(Optional ByVal targetFolder As String = "") As String
+    Dim expDir As String
+    Dim offerNo As String
+    Dim customer As String
+    Dim fName As String
+    Dim fullPath As String
+    Dim intWb As Workbook
+    Dim wsOffer As Worksheet
+    Dim wsCost As Worksheet
+    Dim wsComp As Worksheet
+    Dim wsOut As Worksheet
+    Dim curUser As String
+    Dim wsLog As Worksheet
+    Dim tblLog As ListObject
+    Dim newRow As ListRow
+    
+    On Error Resume Next
+    Set wsOffer = ThisWorkbook.Worksheets("OFFER")
+    Set wsCost = ThisWorkbook.Worksheets("COSTING")
+    Set wsComp = ThisWorkbook.Worksheets("COMPARE")
+    On Error GoTo 0
+    
+    expDir = GetExportsDir(targetFolder)
+    offerNo = CleanFilename(CStr(wsOffer.Range("C5").Value))
+    customer = CleanFilename(CStr(wsOffer.Range("C7").Value))
+    If Len(offerNo) = 0 Then offerNo = "MEGA_OFFER_26-27_594"
+    If Len(customer) = 0 Then customer = "Customer"
+    
+    fName = offerNo & "_" & customer & "_R0_Internal.xlsx"
+    fullPath = expDir & fName
+    
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    
+    Set intWb = Application.Workbooks.Add(xlWBATWorksheet)
+    
+    ' 1. OFFER
+    Set wsOut = intWb.Worksheets(1)
+    wsOut.Name = "OFFER"
+    wsOffer.UsedRange.Copy
+    wsOut.Range("A1").PasteSpecial xlPasteValuesAndNumberFormats
+    wsOut.Range("A1").PasteSpecial xlPasteFormats
+    Application.CutCopyMode = False
+    
+    ' 2. COSTING
+    If Not wsCost Is Nothing Then
+        Set wsOut = intWb.Worksheets.Add(After:=wsOut)
+        wsOut.Name = "COSTING"
+        wsCost.UsedRange.Copy
+        wsOut.Range("A1").PasteSpecial xlPasteValuesAndNumberFormats
+        wsOut.Range("A1").PasteSpecial xlPasteFormats
+        Application.CutCopyMode = False
+    End If
+    
+    ' 3. COMPARE
+    If Not wsComp Is Nothing Then
+        Set wsOut = intWb.Worksheets.Add(After:=wsOut)
+        wsOut.Name = "COMPARE"
+        wsComp.UsedRange.Copy
+        wsOut.Range("A1").PasteSpecial xlPasteValuesAndNumberFormats
+        wsOut.Range("A1").PasteSpecial xlPasteFormats
+        Application.CutCopyMode = False
+    End If
+    
+    ' Flatten all cells to values
+    For Each wsOut In intWb.Worksheets
+        wsOut.UsedRange.Value = wsOut.UsedRange.Value
+    Next wsOut
+    
+    intWb.SaveAs FileName:=fullPath, FileFormat:=xlOpenXMLWorkbook
+    intWb.Close SaveChanges:=False
+    
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    
+    ' Log to tblQuoteLog
+    curUser = Environ$("USERNAME")
+    If Len(curUser) = 0 Then curUser = "User"
+    
+    On Error Resume Next
+    Set wsLog = ThisWorkbook.Worksheets("QUOTE_LOG")
+    Set tblLog = wsLog.ListObjects("tblQuoteLog")
+    If Not tblLog Is Nothing Then
+        If tblLog.ListRows.Count = 1 And Len(Trim$(CStr(tblLog.ListRows(1).Range.Cells(1, tblLog.ListColumns("Action").Index).Value))) = 0 Then
+            Set newRow = tblLog.ListRows(1)
+        Else
+            Set newRow = tblLog.ListRows.Add
+        End If
+        With newRow.Range
+            .Cells(1, tblLog.ListColumns("LogID").Index).Value = "LOG-" & Format$(newRow.Index, "00000")
+            .Cells(1, tblLog.ListColumns("QuoteID").Index).Value = offerNo
+            .Cells(1, tblLog.ListColumns("Timestamp").Index).Value = Now
+            .Cells(1, tblLog.ListColumns("User").Index).Value = curUser
+            .Cells(1, tblLog.ListColumns("Action").Index).Value = "EXPORT_INTERNAL_XLSX"
+            .Cells(1, tblLog.ListColumns("OldValue").Index).Value = ""
+            .Cells(1, tblLog.ListColumns("NewValue").Index).Value = fName
+            .Cells(1, tblLog.ListColumns("SheetName").Index).Value = "OFFER"
+            .Cells(1, tblLog.ListColumns("Status").Index).Value = "EXPORTED"
+            .Cells(1, tblLog.ListColumns("Notes").Index).Value = "Internal Excel exported to " & fullPath
+        End With
+    End If
+    On Error GoTo 0
+    
+    WriteInternalExcel = fullPath
+End Function
+
+Public Function RunExportSelfTests() As String
+    Dim tempExpDir As String
+    Dim fso As Object
+    Dim pdfPath As String
+    Dim custPath As String
+    Dim intPath As String
+    Dim testWb As Workbook
+    Dim wsCheck As Worksheet
+    Dim cellCheck As Range
+    
+    On Error GoTo TestFail
+    
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    tempExpDir = Environ$("TEMP") & "\MegaPipes_ExpTest_" & Format(Now, "hhnnss") & "\"
+    If Not fso.FolderExists(tempExpDir) Then fso.CreateFolder tempExpDir
+    
+    ' 1. Test PDF Export
+    pdfPath = ExportPDF(tempExpDir)
+    If Not fso.FileExists(pdfPath) Then
+        RunExportSelfTests = "FAIL: PDF file not created at " & pdfPath
+        Exit Function
+    End If
+    If FileLen(pdfPath) < 1000 Then
+        RunExportSelfTests = "FAIL: PDF file unexpectedly small: " & CStr(FileLen(pdfPath)) & " bytes"
+        Exit Function
+    End If
+    
+    ' 2. Test Customer Excel Export (Strict Privacy & Values-Only)
+    custPath = WriteCustomerExcel(tempExpDir)
+    If Not fso.FileExists(custPath) Then
+        RunExportSelfTests = "FAIL: Customer Excel not created at " & custPath
+        Exit Function
+    End If
+    
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Set testWb = Application.Workbooks.Open(FileName:=custPath, ReadOnly:=True)
+    
+    ' Check sheets: must have only OFFER and Synopsis
+    If testWb.Worksheets.Count > 2 Then
+        testWb.Close SaveChanges:=False
+        RunExportSelfTests = "FAIL: Customer Excel has forbidden sheet count: " & CStr(testWb.Worksheets.Count)
+        Exit Function
+    End If
+    
+    For Each wsCheck In testWb.Worksheets
+        If wsCheck.Name <> "OFFER" And wsCheck.Name <> "Synopsis" Then
+            testWb.Close SaveChanges:=False
+            RunExportSelfTests = "FAIL: Forbidden sheet in Customer Excel: " & wsCheck.Name
+            Exit Function
+        End If
+        
+        ' Verify no formulas
+        For Each cellCheck In wsCheck.UsedRange
+            If cellCheck.HasFormula Then
+                testWb.Close SaveChanges:=False
+                RunExportSelfTests = "FAIL: Formula detected in Customer Excel " & wsCheck.Name & "!" & cellCheck.Address
+                Exit Function
+            End If
+        Next cellCheck
+    Next wsCheck
+    
+    testWb.Close SaveChanges:=False
+    
+    ' 3. Test Internal Excel Export
+    intPath = WriteInternalExcel(tempExpDir)
+    If Not fso.FileExists(intPath) Then
+        RunExportSelfTests = "FAIL: Internal Excel not created at " & intPath
+        Exit Function
+    End If
+    
+    Set testWb = Application.Workbooks.Open(FileName:=intPath, ReadOnly:=True)
+    If testWb.Worksheets.Count < 2 Then
+        testWb.Close SaveChanges:=False
+        RunExportSelfTests = "FAIL: Internal Excel missing expected sheets"
+        Exit Function
+    End If
+    
+    ' Verify no formulas
+    For Each wsCheck In testWb.Worksheets
+        For Each cellCheck In wsCheck.UsedRange
+            If cellCheck.HasFormula Then
+                testWb.Close SaveChanges:=False
+                RunExportSelfTests = "FAIL: Formula detected in Internal Excel " & wsCheck.Name & "!" & cellCheck.Address
+                Exit Function
+            End If
+        Next cellCheck
+    Next wsCheck
+    testWb.Close SaveChanges:=False
+    
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    
+    ' Clean up temporary export files
+    On Error Resume Next
+    fso.DeleteFile pdfPath, True
+    fso.DeleteFile custPath, True
+    fso.DeleteFile intPath, True
+    fso.DeleteFolder tempExpDir, True
+    On Error GoTo 0
+    
+    RunExportSelfTests = "PASS"
+    Exit Function
+    
+TestFail:
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    If Not testWb Is Nothing Then
+        On Error Resume Next
+        testWb.Close SaveChanges:=False
+        On Error GoTo 0
+    End If
+    RunExportSelfTests = "FAIL: Exception - " & Err.Description
+End Function
+
+

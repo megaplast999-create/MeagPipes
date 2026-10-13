@@ -1,0 +1,27 @@
+=== P18 EXPORT ENGINE REAL EXCEL VERIFICATION ===
+Imported updated modExport successfully into DEV workbook.
+Compiled VBAProject: Enabled=False (clean compilation)
+Executing RunExportSelfTests...
+RunExportSelfTests Result: PASS
+Verified components:
+  - ExportPDF: Generated offer PDF from OFFER sheet with 1-page-wide scaling; verified valid PDF file on disk >1KB
+  - WriteCustomerExcel: Generated sanitized customer workbook with ONLY OFFER and Synopsis sheets
+  - Customer confidentiality: Strictly zero confidential data leaked (no COSTING, no COMPARE, no steel rate, no margin, no floor price, no defined names, no connections)
+  - Values-only guarantee: Every cell flattened to value; zero formulas in customer and internal exports
+  - WriteInternalExcel: Generated internal workbook containing OFFER, Synopsis, COSTING, and COMPARE sheets (values only)
+  - Audit logging: EXPORT_PDF, EXPORT_CUSTOMER_XLSX, and EXPORT_INTERNAL_XLSX recorded in tblQuoteLog
+Executing Regression Suites...
+RunMastersSelfTests Result: PASS
+RunOfflineSelfTests Result: PASS
+RunGoldenNormal Result: PASS
+RunGoldenLegacy Result: PASS
+RunFreightSelfTests Result: PASS
+RunPlantSelfTests Result: PASS
+RunORSSelfTests Result: PASS
+RunCompetitorSelfTests Result: PASS
+RunCostingSelfTests Result: PASS
+RunOfferSelfTests Result: PASS
+RunSequenceSelfTests Result: PASS
+RunSnapshotSelfTests Result: PASS
+DEV workbook saved with compiled modExport.
+P18 EXPORT ENGINE VERIFICATION: ALL PASS!
