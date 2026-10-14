@@ -120,7 +120,7 @@ Public Sub RefreshCustomerFields()
 
     With customerRow.Range
         ThisWorkbook.Worksheets("QUOTE").Range("B9").Value = .Cells(1, TableColumnIndex("tblCustomers", "ContactPerson")).Value
-        ThisWorkbook.Worksheets("QUOTE").Range("B11").Value = .Cells(1, TableColumnIndex("tblCustomers", "Address")).Value
+        ThisWorkbook.Worksheets("QUOTE").Range("B10").Value = .Cells(1, TableColumnIndex("tblCustomers", "Address")).Value
     End With
 End Sub
 
@@ -152,15 +152,44 @@ Private Function FindTableRow(ByVal sheetName As String, ByVal tableName As Stri
     Dim tableObject As ListObject
     Dim rowObject As ListRow
     Dim columnNumber As Long
+    Dim cellVal As String
+    
     Set tableObject = ThisWorkbook.Worksheets(sheetName).ListObjects(tableName)
     If tableObject.DataBodyRange Is Nothing Then Exit Function
     columnNumber = tableObject.ListColumns(columnName).Index
+    
+    ' Pass 1: Exact match
     For Each rowObject In tableObject.ListRows
-        If StrComp(Trim$(CStr(rowObject.Range.Cells(1, columnNumber).Value)), expectedValue, vbTextCompare) = 0 Then
+        cellVal = Trim$(CStr(rowObject.Range.Cells(1, columnNumber).Value))
+        If StrComp(cellVal, expectedValue, vbTextCompare) = 0 Then
             Set FindTableRow = rowObject
             Exit Function
         End If
     Next rowObject
+    
+    ' Pass 2: Substring or prefix match
+    For Each rowObject In tableObject.ListRows
+        cellVal = Trim$(CStr(rowObject.Range.Cells(1, columnNumber).Value))
+        If InStr(1, cellVal, expectedValue, vbTextCompare) > 0 Or InStr(1, expectedValue, cellVal, vbTextCompare) > 0 Then
+            Set FindTableRow = rowObject
+            Exit Function
+        End If
+    Next rowObject
+    
+    ' Pass 3: Check CustomerID column if present
+    On Error Resume Next
+    Dim idCol As Long
+    idCol = tableObject.ListColumns("CustomerID").Index
+    If Err.Number = 0 Then
+        For Each rowObject In tableObject.ListRows
+            cellVal = Trim$(CStr(rowObject.Range.Cells(1, idCol).Value))
+            If StrComp(cellVal, expectedValue, vbTextCompare) = 0 Then
+                Set FindTableRow = rowObject
+                Exit Function
+            End If
+        Next rowObject
+    End If
+    On Error GoTo 0
 End Function
 
 Private Function TableColumnIndex(ByVal tableName As String, ByVal columnName As String) As Long

@@ -389,6 +389,9 @@ Public Function RunAllSelfTests() As String
     EvalTest "P21 Admin & Approval Workflow State Machine", modApproval.RunApprovalSelfTests(), results, passCount, failCount, humanCount
     EvalTest "P22 User Identity & Filesystem Sanitization", modLog.RunIdentitySelfTests(), results, passCount, failCount, humanCount
     EvalTest "P23 Workbook Protection & Selective Cell Locking", modProtection.RunProtectionSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P1.4 SYNOPSIS Report Generation & Layout", modSynopsis.RunSynopsisSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P0.4 Dynamic Multi-Size Quotation Lines", modQuoteLines.RunMultiSizeSelfTests(), results, passCount, failCount, humanCount
+    EvalTest "P0.4 Custom Pipe Size Geometry Validation", modQuoteLines.RunCustomSizeSelfTests(), results, passCount, failCount, humanCount
     
     ' P23 Passwords (Needs Human)
     If Len(Trim$(Environ$("MEGA_SHEET_PWD"))) > 0 And Len(Trim$(Environ$("MEGA_ADMIN_PWD"))) > 0 Then

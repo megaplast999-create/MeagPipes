@@ -239,8 +239,8 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     Application.DisplayAlerts = False
     
     ' Enforce generous column widths for clear, un-congested display
-    ws.Columns("D").ColumnWidth = 26
-    ws.Columns("E").ColumnWidth = 22
+    ws.Columns("D").ColumnWidth = 28
+    ws.Columns("E").ColumnWidth = 24
 
     ' Title header
     If Not ws.Range("D3:E3").MergeCells Then
@@ -304,7 +304,8 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     ws.Range("E13").Value = header.PlantID
     
     ws.Range("D14").Value = "Valid Lines"
-    ws.Range("E14").Value = CStr(summary.ValidLineCount) & " / " & CStr(summary.LineCount)
+    ws.Range("E14").NumberFormat = "@"
+    ws.Range("E14").Value = CStr(summary.ValidLineCount) & " of " & CStr(summary.LineCount)
     
     ' Professional formatting with elegant contrast and generous spacing
     Dim r As Long

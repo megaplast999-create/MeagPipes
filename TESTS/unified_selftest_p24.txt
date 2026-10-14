@@ -1,5 +1,5 @@
 === MEGA PIPES QUOTATION SYSTEM - UNIFIED SELF-TEST SUITE ===
-Execution Date: 2026-10-13 17:44:24
+Execution Date: 2026-10-14 15:52:21
 ======================================================================
   [PASS] P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)
   [PASS] P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)
@@ -23,7 +23,10 @@ Execution Date: 2026-10-13 17:44:24
   [PASS] P21 Admin & Approval Workflow State Machine
   [PASS] P22 User Identity & Filesystem Sanitization
   [PASS] P23 Workbook Protection & Selective Cell Locking
+  [PASS] P1.4 SYNOPSIS Report Generation & Layout
+  [PASS] P0.4 Dynamic Multi-Size Quotation Lines
+  [PASS] P0.4 Custom Pipe Size Geometry Validation
   [NEEDS_HUMAN] P23 Production Security Passwords - MEGA_SHEET_PWD and MEGA_ADMIN_PWD required for production lockdown (cataloged in TESTS/NEEDS_HUMAN.md)
 ======================================================================
-SUMMARY: Total Evaluated: 23 | Passed: 21 | Needs Human: 2 | Failed: 0
+SUMMARY: Total Evaluated: 26 | Passed: 24 | Needs Human: 2 | Failed: 0
 

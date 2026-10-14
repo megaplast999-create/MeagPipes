@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = ROOT / "DEV" / "Mega_Pipes_Quotation_DEV.xlsm"
 EXPECTED_SHEETS = [
     "COMPARE", "START", "QUOTE", "QUOTE_LINES", "COSTING", "OFFER", "MASTERS",
-    "SETTINGS", "CUSTOMERS", "PLANTS", "DISTANCE_CACHE", "QUOTE_LOG",
+    "SETTINGS", "CUSTOMERS", "PLANTS", "DISTANCE_CACHE", "QUOTE_LOG", "SYNOPSIS",
 ]
 EXPECTED_TABLES = {
     "tblProducts", "tblSizes", "tblThickness", "tblGrades",
