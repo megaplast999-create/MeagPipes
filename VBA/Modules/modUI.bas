@@ -83,7 +83,8 @@ Public Sub BuildStartScreen()
     Set ws = ThisWorkbook.Worksheets("START")
     modProtection.UnprotectSheet ws
     
-    ' Remove old shapes / buttons to cleanly refresh
+    ' Clear all existing cells & shapes to completely wipe any prior ghost text
+    ws.Cells.Clear
     Dim sIdx As Long
     For sIdx = ws.Shapes.Count To 1 Step -1
         On Error Resume Next
@@ -91,22 +92,39 @@ Public Sub BuildStartScreen()
         On Error GoTo 0
     Next sIdx
     
+    ' Page setup for perfect 1-page display and print
+    On Error Resume Next
+    Application.PrintCommunication = False
+    With ws.PageSetup
+        .Orientation = xlPortrait
+        .Zoom = False
+        .FitToPagesWide = 1
+        .FitToPagesTall = 1
+        .PrintArea = "$A$1:$G$35"
+        .LeftMargin = Application.InchesToPoints(0.4)
+        .RightMargin = Application.InchesToPoints(0.4)
+        .TopMargin = Application.InchesToPoints(0.5)
+        .BottomMargin = Application.InchesToPoints(0.5)
+    End With
+    Application.PrintCommunication = True
+    On Error GoTo 0
+    
     ws.Range("A1:G35").Interior.Color = RGB(248, 250, 248)
     ws.Range("A1:G35").Font.Name = "Calibri"
     
     ' Column widths
-    ws.Columns("A").ColumnWidth = 3
+    ws.Columns("A").ColumnWidth = 4
     ws.Columns("B").ColumnWidth = 22
     ws.Columns("C").ColumnWidth = 22
     ws.Columns("D").ColumnWidth = 22
     ws.Columns("E").ColumnWidth = 22
     ws.Columns("F").ColumnWidth = 22
-    ws.Columns("G").ColumnWidth = 3
+    ws.Columns("G").ColumnWidth = 4
     
     ' Title Banner (B2:F3)
     ws.Range("B2:F3").Merge
     With ws.Range("B2")
-        .Value = "MEGA PIPES — COMMERCIAL ESTIMATION SYSTEM"
+        .Value = "MEGA PIPES - COMMERCIAL ESTIMATION SYSTEM"
         .Interior.Color = UI_GREEN_DARK
         .Font.Color = UI_WHITE
         .Font.Bold = True
@@ -118,7 +136,7 @@ Public Sub BuildStartScreen()
     ' Subtitle (B4:F4)
     ws.Range("B4:F4").Merge
     With ws.Range("B4")
-        .Value = "Automated Welded Steel Pipe Quotation Engine  |  Version 2.0"
+        .Value = "Automated Welded Steel Pipe Quotation Engine | Version 2.0"
         .Interior.Color = UI_GREEN_MID
         .Font.Color = UI_WHITE
         .Font.Size = 9.5
@@ -132,7 +150,7 @@ Public Sub BuildStartScreen()
     If Len(qNum) = 0 Then qNum = "None (Click NEW QUOTATION)"
     qCust = Trim$(CStr(ThisWorkbook.Worksheets("QUOTE").Range("B8").Value))
     If Len(qCust) = 0 Then qCust = "Not Selected"
-    qTotal = "₹" & Format$(Val(ThisWorkbook.Worksheets("QUOTE").Range("E10").Value), "#,##0")
+    qTotal = "Rs. " & Format$(Val(ThisWorkbook.Worksheets("QUOTE").Range("E10").Value), "#,##0")
     qMode = Trim$(CStr(ThisWorkbook.Worksheets("QUOTE").Range("E12").Value))
     If Len(qMode) = 0 Then qMode = "NORMAL (Option 1)"
     
@@ -196,7 +214,7 @@ Public Sub BuildStartScreen()
     AddModernButton ws, "btnStartExcel", "EXPORT CUSTOMER EXCEL", "modUI.UI_ExportCustomerExcel", _
                     ws.Range("D22"), ws.Range("F22"), RGB(0, 110, 160), UI_WHITE, False
                     
-    AddModernButton ws, "btnStartAdmin", "ADMIN / BACK OFFICE ACCESS ▸", "modUI.UI_AdminUnlock", _
+    AddModernButton ws, "btnStartAdmin", "ADMIN / BACK OFFICE ACCESS", "modUI.UI_AdminUnlock", _
                     ws.Range("B24"), ws.Range("F24"), UI_GRAY_DARK, UI_WHITE, False
                     
     ' Notification Banner
@@ -220,7 +238,7 @@ Public Sub BuildStartScreen()
     ' Footer
     With ws.Range("B30:F30")
         .Merge
-        .Value = "Mega Pipes Quotation System  |  Confidential & Proprietary  |  All Rights Reserved"
+        .Value = "Mega Pipes Quotation System | Confidential & Proprietary | All Rights Reserved"
         .Font.Size = 7.5
         .Font.Color = RGB(150, 150, 150)
         .HorizontalAlignment = xlCenter
@@ -256,18 +274,8 @@ Public Sub SetupQuoteSheetUI()
     Set ws = ThisWorkbook.Worksheets("QUOTE")
     modProtection.UnprotectSheet ws
     
-    ' ── 1. Column Widths for Clear, High-Visibility Form ──
-    ws.Columns("A").ColumnWidth = 20    ' Header labels & Line ID
-    ws.Columns("B").ColumnWidth = 38    ' Header inputs & Pipe Specification
-    ws.Columns("C").ColumnWidth = 4     ' Clean spacer column
-    ws.Columns("D").ColumnWidth = 28    ' Summary labels & Action col 1
-    ws.Columns("E").ColumnWidth = 24    ' Summary values & Action col 2
-    ws.Columns("F").ColumnWidth = 18    ' Table Weight MT / Action col 3
-    ws.Columns("G").ColumnWidth = 18    ' Table Unit Price / Action col 4
-    ws.Columns("H").ColumnWidth = 20    ' Table Line Total / Action col 5
-    ws.Columns("I").ColumnWidth = 14    ' Table Status
-    
-    ' Clear old buttons / shapes on QUOTE
+    ' Clear all existing cells & shapes to completely wipe prior ghost blocks and old tables
+    ws.Cells.Clear
     Dim sIdx As Long
     For sIdx = ws.Shapes.Count To 1 Step -1
         On Error Resume Next
@@ -275,46 +283,76 @@ Public Sub SetupQuoteSheetUI()
         On Error GoTo 0
     Next sIdx
     
-    ' ── 2. Generous Row Heights to Prevent Clipping & Overlaps ──
-    ws.Rows(1).RowHeight = 24           ' Top brand title
-    ws.Rows(2).RowHeight = 10           ' Spacer
-    ws.Rows(3).RowHeight = 26           ' Card headers
+    ' Configure page setup for crisp single-screen / 1-page landscape fit
+    On Error Resume Next
+    Application.PrintCommunication = False
+    With ws.PageSetup
+        .Orientation = xlLandscape
+        .Zoom = False
+        .FitToPagesWide = 1
+        .FitToPagesTall = 1
+        .PrintArea = "$A$1:$I$52"
+        .LeftMargin = Application.InchesToPoints(0.25)
+        .RightMargin = Application.InchesToPoints(0.25)
+        .TopMargin = Application.InchesToPoints(0.3)
+        .BottomMargin = Application.InchesToPoints(0.3)
+    End With
+    Application.PrintCommunication = True
+    On Error GoTo 0
+    
+    ' ── 1. Unified 9-Column Grid (Total Width = 140) ──
+    ws.Columns("A").ColumnWidth = 18    ' Line ID / Left card labels
+    ws.Columns("B").ColumnWidth = 28    ' Specification / Left card inputs
+    ws.Columns("C").ColumnWidth = 22    ' Coating (Ext/Int) / Left card inputs merged B:C
+    ws.Columns("D").ColumnWidth = 18    ' Table Quantity / Summary labels
+    ws.Columns("E").ColumnWidth = 14    ' Table Pipes / Summary values
+    ws.Columns("F").ColumnWidth = 14    ' Table Weight MT / Right card panel
+    ws.Columns("G").ColumnWidth = 16    ' Table Unit Price / Right card panel
+    ws.Columns("H").ColumnWidth = 18    ' Table Line Total / Right card panel
+    ws.Columns("I").ColumnWidth = 12    ' Table Status / Right card panel
+    
+    ' ── 2. Row Heights ──
+    ws.Rows(1).RowHeight = 26           ' Top brand title
+    ws.Rows(2).RowHeight = 8            ' Spacer
+    ws.Rows(3).RowHeight = 24           ' Block 1 card headers
     For rIdx = 4 To 17
-        ws.Rows(rIdx).RowHeight = 21    ' Header card and summary card rows
+        ws.Rows(rIdx).RowHeight = 21    ' Block 1 card content
     Next rIdx
-    
     ws.Rows(18).RowHeight = 10          ' Spacer
-    ws.Rows(19).RowHeight = 30          ' Action Ribbon Row 1 (Calculate, Save, Offer)
-    ws.Rows(20).RowHeight = 8           ' Spacer
-    ws.Rows(21).RowHeight = 30          ' Action Ribbon Row 2 (Synopsis, PDF, Excel)
-    ws.Rows(22).RowHeight = 8           ' Spacer
-    ws.Rows(23).RowHeight = 30          ' Action Ribbon Row 3 (Multi-sizes, Custom size, Back)
-    ws.Rows(24).RowHeight = 12          ' Spacer
-    
-    ws.Rows(25).RowHeight = 24          ' Section 2 Header (Product item entry)
-    For rIdx = 26 To 36
-        ws.Rows(rIdx).RowHeight = 21    ' Product inputs & item buttons
+    ws.Rows(19).RowHeight = 24          ' Block 2 card headers
+    For rIdx = 20 To 33
+        ws.Rows(rIdx).RowHeight = 21    ' Block 2 inputs and button tiers
     Next rIdx
+    ws.Rows(34).RowHeight = 10          ' Spacer
+    ws.Rows(35).RowHeight = 26          ' Validation feedback banner
+    ws.Rows(36).RowHeight = 10          ' Spacer
+    ws.Rows(37).RowHeight = 24          ' Section 3: Table title header
+    ws.Rows(38).RowHeight = 22          ' Table column titles
     
-    ws.Rows(37).RowHeight = 12          ' Spacer
-    ws.Rows(38).RowHeight = 28          ' Validation feedback banner
-    ws.Rows(39).RowHeight = 12          ' Spacer
-    ws.Rows(40).RowHeight = 26          ' Section 3: Quotation Lines table header
-    ws.Rows(41).RowHeight = 24          ' Table column titles
+    ' ── Top Brand Title Banner (A1:I1) ──
+    ws.Range("A1:I1").Merge
+    With ws.Range("A1")
+        .Value = "MEGA PIPES - COMMERCIAL ESTIMATION SYSTEM"
+        .Interior.Color = UI_GREEN_DARK
+        .Font.Color = UI_WHITE
+        .Font.Bold = True
+        .Font.Size = 13
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+    End With
     
-    ' ── 3. Section 1 Left Card: Quotation Header Details (Rows 3-17) ──
-    If Not ws.Range("A3:B3").MergeCells Then ws.Range("A3:B3").Merge
+    ' ── 3. Block 1 Left Card: Quotation Header Details (Rows 3-17) ──
+    ws.Range("A3:C3").Merge
     With ws.Range("A3")
         .Value = "1. QUOTATION HEADER DETAILS"
         .Interior.Color = UI_GREEN_DARK
         .Font.Color = UI_WHITE
         .Font.Bold = True
-        .Font.Size = 11
+        .Font.Size = 10.5
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlCenter
     End With
     
-    ' Row labels (Column A)
     ws.Range("A4").Value = "Quotation Number"
     ws.Range("A5").Value = "Enquiry Date"
     ws.Range("A6").Value = "Type of Enquiry"
@@ -332,7 +370,7 @@ Public Sub SetupQuoteSheetUI()
     
     With ws.Range("A4:A17")
         .Font.Name = "Calibri"
-        .Font.Size = 10
+        .Font.Size = 9.5
         .Font.Bold = True
         .Font.Color = RGB(30, 45, 30)
         .HorizontalAlignment = xlLeft
@@ -341,33 +379,32 @@ Public Sub SetupQuoteSheetUI()
     
     For rIdx = 4 To 17
         ws.Range("A" & rIdx).Interior.Color = IIf(rIdx Mod 2 = 0, RGB(245, 248, 245), RGB(255, 255, 255))
+        ws.Range("B" & rIdx & ":C" & rIdx).Merge
         ws.Range("B" & rIdx).Interior.Color = RGB(255, 255, 255)
         ws.Range("B" & rIdx).Font.Name = "Calibri"
-        ws.Range("B" & rIdx).Font.Size = 10
+        ws.Range("B" & rIdx).Font.Size = 9.5
         ws.Range("B" & rIdx).HorizontalAlignment = xlLeft
         ws.Range("B" & rIdx).VerticalAlignment = xlCenter
     Next rIdx
     
-    ' Card borders
-    With ws.Range("A3:B17").Borders
+    With ws.Range("A3:C17").Borders
         .LineStyle = xlContinuous
         .Weight = xlThin
         .Color = RGB(180, 210, 180)
     End With
     
-    ' Read-only formatting for Quotation Number
     ws.Range("B4").Interior.Color = RGB(242, 245, 248)
     ws.Range("B4").Font.Bold = True
     ws.Range("B4").Font.Color = UI_NAVY
     
-    ' ── 4. Section 1 Right Card: Live Quotation Summary Console (Rows 3-14) ──
-    If Not ws.Range("D3:E3").MergeCells Then ws.Range("D3:E3").Merge
+    ' ── 4. Block 1 Middle Card: Live Quotation Summary Console (D3:E17) ──
+    ws.Range("D3:E3").Merge
     With ws.Range("D3")
         .Value = "LIVE QUOTATION SUMMARY"
         .Interior.Color = RGB(26, 82, 45)
         .Font.Color = UI_WHITE
         .Font.Bold = True
-        .Font.Size = 11
+        .Font.Size = 10.5
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlCenter
     End With
@@ -386,62 +423,115 @@ Public Sub SetupQuoteSheetUI()
     
     With ws.Range("D4:D14")
         .Font.Name = "Calibri"
-        .Font.Size = 10
+        .Font.Size = 9.5
         .Font.Bold = False
         .Font.Color = RGB(40, 40, 40)
         .HorizontalAlignment = xlLeft
         .VerticalAlignment = xlCenter
     End With
     
+    For rIdx = 4 To 14
+        ws.Range("D" & rIdx & ":E" & rIdx).Interior.Color = IIf(rIdx Mod 2 = 0, RGB(250, 252, 250), RGB(255, 255, 255))
+        ws.Range("E" & rIdx).Font.Name = "Calibri"
+        ws.Range("E" & rIdx).Font.Size = 9.5
+        ws.Range("E" & rIdx).HorizontalAlignment = xlRight
+        ws.Range("E" & rIdx).VerticalAlignment = xlCenter
+    Next rIdx
+    
     ws.Range("D8:E8").Font.Bold = True
+    ws.Range("D8:E8").Interior.Color = RGB(242, 248, 242)
     ws.Range("D10:E10").Font.Bold = True
     ws.Range("D10:E10").Font.Size = 11
-    ws.Range("D10:E10").Interior.Color = RGB(255, 243, 205) ' Soft Gold Accent
+    ws.Range("D10:E10").Interior.Color = RGB(255, 243, 205)
     ws.Range("D10:E10").Font.Color = RGB(120, 60, 0)
     
-    ' Prevent auto-date conversion on E14
+    ws.Range("E11").HorizontalAlignment = xlCenter
+    ws.Range("E12").HorizontalAlignment = xlCenter
     ws.Range("E14").NumberFormat = "@"
+    ws.Range("E14").HorizontalAlignment = xlCenter
     
-    With ws.Range("D3:E14").Borders
+    ws.Range("D15:E17").Merge
+    With ws.Range("D15")
+        .Value = "COMMERCIAL STATUS:" & vbCrLf & "QUOTATION CONSOLE READY"
+        .Font.Name = "Calibri"
+        .Font.Size = 9
+        .Font.Bold = True
+        .Font.Color = UI_GREEN_DARK
+        .Interior.Color = RGB(238, 248, 238)
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    
+    With ws.Range("D3:E17").Borders
         .LineStyle = xlContinuous
         .Weight = xlThin
         .Color = RGB(190, 215, 190)
     End With
     
-    ' ── 5. Action Ribbon (Rows 19, 21, 23 Across Columns D to I) ──
-    ' Row 19: Primary Estimation Actions
-    AddModernButton ws, "btnQuoteCalc", "CALCULATE QUOTATION", "modUI.UI_CalculateQuotation", _
-                    ws.Range("D19"), ws.Range("E19"), UI_GREEN_MID, UI_WHITE, True
-                    
-    AddModernButton ws, "btnQuoteSave", "SAVE DRAFT", "modUI.UI_SaveDraft", _
-                    ws.Range("F19"), ws.Range("G19"), UI_BLUE, UI_WHITE, False
-                    
-    AddModernButton ws, "btnQuotePreview", "PREVIEW OFFER", "modUI.UI_PreviewOffer", _
-                    ws.Range("H19"), ws.Range("I19"), RGB(90, 110, 130), UI_WHITE, False
-                    
-    ' Row 21: Document Output Actions
-    AddModernButton ws, "btnQuoteSynopsis", "PREVIEW SYNOPSIS", "modUI.UI_PreviewSynopsis", _
-                    ws.Range("D21"), ws.Range("E21"), UI_TEAL, UI_WHITE, True
-                    
-    AddModernButton ws, "btnQuotePDF", "EXPORT PDF", "modUI.UI_ExportPDF", _
-                    ws.Range("F21"), ws.Range("G21"), RGB(160, 60, 40), UI_WHITE, False
-                    
-    AddModernButton ws, "btnQuoteExcel", "EXPORT EXCEL", "modUI.UI_ExportCustomerExcel", _
-                    ws.Range("H21"), ws.Range("I21"), RGB(0, 110, 160), UI_WHITE, False
-                    
-    ' Row 23: Advanced Line Item & Navigation Actions
-    AddModernButton ws, "btnQuoteMultiSizes", "ADD MULTIPLE SIZES", "modUI.UI_AddMultipleSizes", _
-                    ws.Range("D23"), ws.Range("E23"), RGB(40, 120, 90), UI_WHITE, False
-                    
-    AddModernButton ws, "btnQuoteCustomSize", "CUSTOM PIPE SIZE", "modUI.UI_CustomSize", _
-                    ws.Range("F23"), ws.Range("G23"), RGB(120, 110, 40), UI_WHITE, False
-                    
-    AddModernButton ws, "btnQuoteHome", "← BACK TO START", "modUI.UI_BackToHome", _
-                    ws.Range("H23"), ws.Range("I23"), UI_GRAY_DARK, UI_WHITE, False
-                    
-    ' ── 6. Section 2: Pipe Requirement Input Box (Rows 25-36) ──
-    If Not ws.Range("A25:B25").MergeCells Then ws.Range("A25:B25").Merge
-    With ws.Range("A25")
+    ' ── 5. Block 1 Right Card: Quotation Capacity & Guidelines (F3:I17) ──
+    ws.Range("F3:I3").Merge
+    With ws.Range("F3")
+        .Value = "QUOTATION CAPACITY & STATUS"
+        .Interior.Color = RGB(26, 82, 45)
+        .Font.Color = UI_WHITE
+        .Font.Bold = True
+        .Font.Size = 10.5
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+    End With
+    
+    ws.Range("F4:I8").Merge
+    With ws.Range("F4")
+        .Value = "QUOTATION CAPACITY" & vbCrLf & "0 of 10 sizes added" & vbCrLf & "(10 sizes remaining)"
+        .Font.Name = "Calibri"
+        .Font.Bold = True
+        .Font.Size = 11
+        .Font.Color = RGB(80, 100, 80)
+        .Interior.Color = RGB(245, 248, 245)
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    
+    ws.Range("F9:I13").Merge
+    With ws.Range("F9")
+        .Value = "ESTIMATION GUIDELINES:" & vbCrLf & _
+                 "- Up to 10 pipe sizes supported per quote." & vbCrLf & _
+                 "- Click 'CALCULATE QUOTATION' after modifying lines." & vbCrLf & _
+                 "- Review Offer & Synopsis before PDF export."
+        .Font.Name = "Calibri"
+        .Font.Size = 8.5
+        .Font.Color = RGB(60, 75, 60)
+        .Interior.Color = RGB(252, 254, 252)
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    
+    ws.Range("F14:I17").Merge
+    With ws.Range("F14")
+        .Value = "SYSTEM CAPABILITIES:" & vbCrLf & _
+                 "- Multi-plant freight optimization (P01 / P02)" & vbCrLf & _
+                 "- Full support for custom diameters & wall thickness"
+        .Font.Name = "Calibri"
+        .Font.Size = 8.5
+        .Font.Color = RGB(70, 70, 70)
+        .Interior.Color = RGB(248, 250, 248)
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    
+    With ws.Range("F3:I17").Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = RGB(190, 215, 190)
+    End With
+    
+    ' ── 6. Block 2 Left Card: Pipe Requirement Input Box (Rows 19-33) ──
+    ws.Range("A19:C19").Merge
+    With ws.Range("A19")
         .Value = "2. ADD / CONFIGURE PIPE LINE ITEM"
         .Interior.Color = UI_GREEN_DARK
         .Font.Color = UI_WHITE
@@ -451,19 +541,19 @@ Public Sub SetupQuoteSheetUI()
         .VerticalAlignment = xlCenter
     End With
     
-    ws.Range("A26").Value = "Product Standard"
-    ws.Range("A27").Value = "Pipe Family"
-    ws.Range("A28").Value = "Diameter Basis"
-    ws.Range("A29").Value = "Size (mm)"
-    ws.Range("A30").Value = "Wall Thickness (mm)"
-    ws.Range("A31").Value = "Steel Grade"
-    ws.Range("A32").Value = "External Coating"
-    ws.Range("A33").Value = "Internal Coating"
-    ws.Range("A34").Value = "Quantity"
-    ws.Range("A35").Value = "Quantity Unit"
-    ws.Range("A36").Value = "Pipe Length (m)"
+    ws.Range("A20").Value = "Product Standard"
+    ws.Range("A21").Value = "Pipe Family"
+    ws.Range("A22").Value = "Diameter Basis"
+    ws.Range("A23").Value = "Size (mm)"
+    ws.Range("A24").Value = "Wall Thickness (mm)"
+    ws.Range("A25").Value = "Steel Grade"
+    ws.Range("A26").Value = "External Coating"
+    ws.Range("A27").Value = "Internal Coating"
+    ws.Range("A28").Value = "Quantity"
+    ws.Range("A29").Value = "Quantity Unit"
+    ws.Range("A30").Value = "Pipe Length (m)"
     
-    With ws.Range("A26:A36")
+    With ws.Range("A20:A30")
         .Font.Name = "Calibri"
         .Font.Size = 9.5
         .Font.Bold = True
@@ -472,8 +562,9 @@ Public Sub SetupQuoteSheetUI()
         .VerticalAlignment = xlCenter
     End With
     
-    For rIdx = 26 To 36
+    For rIdx = 20 To 30
         ws.Range("A" & rIdx).Interior.Color = IIf(rIdx Mod 2 = 0, RGB(248, 250, 248), RGB(255, 255, 255))
+        ws.Range("B" & rIdx & ":C" & rIdx).Merge
         ws.Range("B" & rIdx).Interior.Color = RGB(255, 255, 255)
         ws.Range("B" & rIdx).Font.Name = "Calibri"
         ws.Range("B" & rIdx).Font.Size = 9.5
@@ -481,40 +572,88 @@ Public Sub SetupQuoteSheetUI()
         ws.Range("B" & rIdx).VerticalAlignment = xlCenter
     Next rIdx
     
-    With ws.Range("A25:B36").Borders
+    ws.Range("A31:C33").Merge
+    With ws.Range("A31")
+        .Value = "Tip: Select Family & Basis to populate standard sizes." & vbCrLf & _
+                 "For non-standard OD/ID or WT, click 'CUSTOM PIPE SIZE'."
+        .Font.Name = "Calibri"
+        .Font.Size = 8.5
+        .Font.Italic = True
+        .Font.Color = RGB(100, 100, 100)
+        .Interior.Color = RGB(250, 250, 250)
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .WrapText = True
+    End With
+    
+    With ws.Range("A19:C33").Borders
         .LineStyle = xlContinuous
         .Weight = xlThin
         .Color = RGB(180, 210, 180)
     End With
     
-    ' Line Item Controls on Right of Section 2 (Rows 26-36)
+    ' ── 7. Block 2 Right Card: Command Center & Actions (Rows 19-33) ──
+    ws.Range("D19:I19").Merge
+    With ws.Range("D19")
+        .Value = "QUOTATION COMMAND CENTER & ACTIONS"
+        .Interior.Color = UI_GREEN_DARK
+        .Font.Color = UI_WHITE
+        .Font.Bold = True
+        .Font.Size = 10.5
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+    End With
+    
+    ws.Range("D20:I33").Interior.Color = RGB(250, 252, 250)
+    With ws.Range("D19:I33").Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = RGB(180, 210, 180)
+    End With
+    
+    ' Tier 1 (Rows 20-21): Line Item Operations
     AddModernButton ws, "btnQuoteAdd", "+ ADD ITEM TO QUOTE", "modUI.UI_AddItem", _
-                    ws.Range("D26"), ws.Range("E26"), UI_GREEN_DARK, UI_WHITE, True
-                    
+                    ws.Range("D20"), ws.Range("E21"), UI_GREEN_MID, UI_WHITE, True
     AddModernButton ws, "btnQuoteDuplicate", "DUPLICATE ITEM", "modUI.UI_DuplicateItem", _
-                    ws.Range("D27"), ws.Range("D27"), RGB(40, 110, 80), UI_WHITE, False
-                    
+                    ws.Range("F20"), ws.Range("G21"), RGB(40, 120, 90), UI_WHITE, True
     AddModernButton ws, "btnQuoteEdit", "EDIT SELECTED LINE", "modUI.UI_EditItem", _
-                    ws.Range("E27"), ws.Range("E27"), UI_BLUE, UI_WHITE, False
+                    ws.Range("H20"), ws.Range("I21"), UI_BLUE, UI_WHITE, True
                     
+    ' Tier 2 (Rows 23-24): Line Item Cleaners
     AddModernButton ws, "btnQuoteRemove", "- REMOVE LINE", "modUI.UI_RemoveItem", _
-                    ws.Range("D28"), ws.Range("D28"), RGB(180, 60, 60), UI_WHITE, False
-                    
+                    ws.Range("D23"), ws.Range("E24"), RGB(170, 60, 50), UI_WHITE, True
     AddModernButton ws, "btnQuoteClearLine", "CLEAR LINE INPUTS", "modUI.UI_ClearLine", _
-                    ws.Range("E28"), ws.Range("E28"), RGB(100, 100, 100), UI_WHITE, False
-                    
-    AddModernButton ws, "btnQuoteRecalc", "RECALCULATE", "modUI.UI_Recalculate", _
-                    ws.Range("D29"), ws.Range("D29"), UI_ORANGE, UI_WHITE, True
-                    
-    AddModernButton ws, "btnQuoteReset", "RESET DRAFT", "modUI.UI_ResetDraft", _
-                    ws.Range("E29"), ws.Range("E29"), RGB(140, 70, 70), UI_WHITE, False
-                    
+                    ws.Range("F23"), ws.Range("G24"), RGB(110, 120, 130), UI_WHITE, False
     AddModernButton ws, "btnQuoteClear", "CLEAR ALL LINES", "modUI.UI_ClearAllItems", _
-                    ws.Range("D30"), ws.Range("E30"), RGB(120, 120, 120), UI_WHITE, False
+                    ws.Range("H23"), ws.Range("I24"), RGB(90, 90, 90), UI_WHITE, False
                     
-    ' ── 7. Section: Validation Feedback Banner at Row 38 ──
-    If Not ws.Range("A38:I38").MergeCells Then ws.Range("A38:I38").Merge
-    With ws.Range("A38")
+    ' Tier 3 (Rows 26-27): Quotation & Calculation
+    AddModernButton ws, "btnQuoteCalc", "CALCULATE QUOTATION", "modUI.UI_CalculateQuotation", _
+                    ws.Range("D26"), ws.Range("E27"), UI_GREEN_DARK, UI_WHITE, True
+    AddModernButton ws, "btnQuoteSave", "SAVE DRAFT", "modUI.UI_SaveDraft", _
+                    ws.Range("F26"), ws.Range("G27"), UI_NAVY, UI_WHITE, True
+    AddModernButton ws, "btnQuoteReset", "RESET DRAFT", "modUI.UI_ResetDraft", _
+                    ws.Range("H26"), ws.Range("I27"), RGB(140, 80, 50), UI_WHITE, False
+                    
+    ' Tier 4 (Rows 29-30): Document Previews & Custom Sizes
+    AddModernButton ws, "btnQuotePreview", "PREVIEW OFFER", "modUI.UI_PreviewOffer", _
+                    ws.Range("D29"), ws.Range("E30"), RGB(70, 100, 130), UI_WHITE, True
+    AddModernButton ws, "btnQuoteSynopsis", "PREVIEW SYNOPSIS", "modUI.UI_PreviewSynopsis", _
+                    ws.Range("F29"), ws.Range("G30"), UI_TEAL, UI_WHITE, True
+    AddModernButton ws, "btnQuoteCustomSize", "CUSTOM PIPE SIZE", "modUI.UI_CustomSize", _
+                    ws.Range("H29"), ws.Range("I30"), RGB(160, 120, 20), UI_WHITE, True
+                    
+    ' Tier 5 (Rows 32-33): Exports & Navigation
+    AddModernButton ws, "btnQuotePDF", "EXPORT PDF", "modUI.UI_ExportPDF", _
+                    ws.Range("D32"), ws.Range("E33"), RGB(160, 45, 35), UI_WHITE, True
+    AddModernButton ws, "btnQuoteExcel", "EXPORT EXCEL", "modUI.UI_ExportCustomerExcel", _
+                    ws.Range("F32"), ws.Range("G33"), RGB(20, 110, 160), UI_WHITE, True
+    AddModernButton ws, "btnQuoteHome", "<- BACK TO START", "modUI.UI_BackToHome", _
+                    ws.Range("H32"), ws.Range("I33"), UI_GRAY_DARK, UI_WHITE, True
+                    
+    ' ── 8. Validation Feedback Banner at Row 35 ──
+    ws.Range("A35:I35").Merge
+    With ws.Range("A35")
         .Value = "Ready. Select specifications above and click '+ ADD ITEM TO QUOTE'."
         .Interior.Color = RGB(245, 248, 245)
         .Font.Size = 9.5
@@ -523,15 +662,15 @@ Public Sub SetupQuoteSheetUI()
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlCenter
     End With
-    With ws.Range("A38:I38").Borders
+    With ws.Range("A35:I35").Borders
         .LineStyle = xlContinuous
         .Weight = xlThin
         .Color = RGB(180, 210, 180)
     End With
     
-    ' ── 8. Section 3: Quotation Line Items Table Header (Row 40-41) ──
-    If Not ws.Range("A40:I40").MergeCells Then ws.Range("A40:I40").Merge
-    With ws.Range("A40")
+    ' ── 9. Block 3: Quotation Line Items Table Header (Rows 37-38) ──
+    ws.Range("A37:I37").Merge
+    With ws.Range("A37")
         .Value = "3. CURRENT QUOTATION LINE ITEMS"
         .Interior.Color = UI_GREEN_DARK
         .Font.Color = UI_WHITE
@@ -541,17 +680,17 @@ Public Sub SetupQuoteSheetUI()
         .VerticalAlignment = xlCenter
     End With
     
-    ws.Range("A41").Value = "Line ID"
-    ws.Range("B41").Value = "Pipe Specification"
-    ws.Range("C41").Value = "Coating (Ext / Int)"
-    ws.Range("D41").Value = "Quantity"
-    ws.Range("E41").Value = "Pipes"
-    ws.Range("F41").Value = "Weight (MT)"
-    ws.Range("G41").Value = "Unit Price"
-    ws.Range("H41").Value = "Line Total"
-    ws.Range("I41").Value = "Status"
+    ws.Range("A38").Value = "Line ID"
+    ws.Range("B38").Value = "Pipe Specification"
+    ws.Range("C38").Value = "Coating (Ext / Int)"
+    ws.Range("D38").Value = "Quantity"
+    ws.Range("E38").Value = "Pipes"
+    ws.Range("F38").Value = "Weight (MT)"
+    ws.Range("G38").Value = "Unit Price"
+    ws.Range("H38").Value = "Line Total"
+    ws.Range("I38").Value = "Status"
     
-    With ws.Range("A41:I41")
+    With ws.Range("A38:I38")
         .Interior.Color = UI_GREEN_MID
         .Font.Color = UI_WHITE
         .Font.Bold = True
@@ -597,13 +736,13 @@ Public Sub RefreshQuoteLinesDisplay()
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
     
-    ' Clear previous display rows (42 to 75)
-    wsQ.Range("A42:I75").UnMerge
-    wsQ.Range("A42:I75").ClearContents
-    wsQ.Range("A42:I75").Interior.Color = xlNone
-    wsQ.Range("A42:I75").Borders.LineStyle = xlNone
+    ' Clear previous display rows (39 to 75)
+    wsQ.Range("A39:I75").UnMerge
+    wsQ.Range("A39:I75").ClearContents
+    wsQ.Range("A39:I75").Interior.Color = xlNone
+    wsQ.Range("A39:I75").Borders.LineStyle = xlNone
     
-    outRow = 42
+    outRow = 39
     If tblLines.ListRows.Count > 0 Then
         For Each rObj In tblLines.ListRows
             Dim pId As String
@@ -637,9 +776,12 @@ Public Sub RefreshQuoteLinesDisplay()
                 wsQ.Cells(outRow, 3).Value = extC & " / " & intC
                 wsQ.Cells(outRow, 4).Value = Format$(qty, "#,##0") & " " & unt
                 wsQ.Cells(outRow, 5).Value = pcs
-                wsQ.Cells(outRow, 6).Value = Format$(mt, "#,##0.00")
-                wsQ.Cells(outRow, 7).Value = "₹" & Format$(prc, "#,##0")
-                wsQ.Cells(outRow, 8).Value = "₹" & Format$(tot, "#,##0")
+                wsQ.Cells(outRow, 6).Value = mt
+                wsQ.Cells(outRow, 6).NumberFormat = "#,##0.00"
+                wsQ.Cells(outRow, 7).Value = prc
+                wsQ.Cells(outRow, 7).NumberFormat = "[$₹-4009]#,##0"
+                wsQ.Cells(outRow, 8).Value = tot
+                wsQ.Cells(outRow, 8).NumberFormat = "[$₹-4009]#,##0"
                 wsQ.Cells(outRow, 9).Value = st
                 
                 ' Row styling
@@ -652,6 +794,9 @@ Public Sub RefreshQuoteLinesDisplay()
                     .Interior.Color = IIf(outRow Mod 2 = 0, RGB(248, 252, 248), RGB(255, 255, 255))
                 End With
                 wsQ.Cells(outRow, 1).HorizontalAlignment = xlCenter
+                wsQ.Cells(outRow, 2).HorizontalAlignment = xlLeft
+                wsQ.Cells(outRow, 3).HorizontalAlignment = xlCenter
+                wsQ.Cells(outRow, 4).HorizontalAlignment = xlRight
                 wsQ.Cells(outRow, 5).HorizontalAlignment = xlRight
                 wsQ.Cells(outRow, 6).HorizontalAlignment = xlRight
                 wsQ.Cells(outRow, 7).HorizontalAlignment = xlRight
@@ -663,72 +808,63 @@ Public Sub RefreshQuoteLinesDisplay()
         Next rObj
     End If
     
-    If outRow = 42 Then
-        wsQ.Rows(42).RowHeight = 26
-        wsQ.Range("A42:I42").Merge
-        wsQ.Range("A42").Value = "(No quotation lines added yet. Use Section 2 above to select product and click '+ ADD ITEM TO QUOTE')"
-        wsQ.Range("A42").Font.Italic = True
-        wsQ.Range("A42").Font.Size = 9.5
-        wsQ.Range("A42").Font.Color = RGB(120, 120, 120)
-        wsQ.Range("A42").HorizontalAlignment = xlCenter
+    If outRow = 39 Then
+        wsQ.Rows(39).RowHeight = 26
+        wsQ.Range("A39:I39").Merge
+        wsQ.Range("A39").Value = "(No quotation lines added yet. Use Section 2 above to select product and click '+ ADD ITEM TO QUOTE')"
+        wsQ.Range("A39").Font.Italic = True
+        wsQ.Range("A39").Font.Size = 9.5
+        wsQ.Range("A39").Font.Color = RGB(120, 120, 120)
+        wsQ.Range("A39").HorizontalAlignment = xlCenter
+        outRow = 40
     End If
     
-    Dim lineCount As Long
-    lineCount = outRow - 42
-    If lineCount < 0 Then lineCount = 0
+    Dim actLines As Long, rL As ListRow
+    actLines = 0
+    For Each rL In tblLines.ListRows
+        If Len(Trim$(CStr(rL.Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) > 0 Then
+            actLines = actLines + 1
+        End If
+    Next rL
     
-    ' Update Capacity Indicator Console (D32:E34)
-    If Not wsQ.Range("D32:E34").MergeCells Then wsQ.Range("D32:E34").Merge
-    With wsQ.Range("D32")
-        If lineCount = 0 Then
-            .Value = "Capacity: 0 of 10 sizes added" & vbCrLf & "(10 remaining)"
+    ' Update Capacity Indicator Console on F4:I8
+    If Not wsQ.Range("F4:I8").MergeCells Then wsQ.Range("F4:I8").Merge
+    With wsQ.Range("F4")
+        If actLines = 0 Then
+            .Value = "QUOTATION CAPACITY" & vbCrLf & "0 of 10 sizes added" & vbCrLf & "(10 sizes remaining)"
             .Font.Color = RGB(80, 100, 80)
             .Interior.Color = RGB(245, 248, 245)
-        ElseIf lineCount < 10 Then
-            .Value = "Capacity: " & lineCount & " of 10 sizes added" & vbCrLf & "(" & (10 - lineCount) & " remaining)"
+        ElseIf actLines < 10 Then
+            .Value = "QUOTATION CAPACITY" & vbCrLf & actLines & " of 10 sizes added" & vbCrLf & "(" & (10 - actLines) & " sizes remaining)"
             .Font.Color = UI_GREEN_DARK
             .Interior.Color = RGB(235, 245, 235)
         Else
-            .Value = "Capacity: 10 of 10 sizes added" & vbCrLf & "(MAXIMUM REACHED)"
+            .Value = "QUOTATION CAPACITY" & vbCrLf & "10 of 10 sizes added" & vbCrLf & "(MAXIMUM CAPACITY REACHED)"
             .Font.Color = RGB(170, 40, 0)
             .Interior.Color = RGB(255, 242, 230)
         End If
         .Font.Name = "Calibri"
         .Font.Bold = True
-        .Font.Size = 10
+        .Font.Size = 11
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlCenter
         .WrapText = True
     End With
-    With wsQ.Range("D32:E34").Borders
+    With wsQ.Range("F4:I8").Borders
         .LineStyle = xlContinuous
         .Weight = xlThin
         .Color = RGB(180, 210, 180)
     End With
     
-    ' Helper hint (D35:E36)
-    If Not wsQ.Range("D35:E36").MergeCells Then wsQ.Range("D35:E36").Merge
-    With wsQ.Range("D35")
-        .Value = "Standard sizes use dropdowns." & vbCrLf & "For custom OD/ID or WT, click 'CUSTOM PIPE SIZE'."
-        .Font.Name = "Calibri"
-        .Font.Size = 8.5
-        .Font.Italic = True
-        .Font.Color = RGB(100, 100, 100)
-        .HorizontalAlignment = xlCenter
-        .VerticalAlignment = xlCenter
-        .WrapText = True
-        .Interior.Color = RGB(250, 250, 250)
-    End With
-    
     ' Summary Card E14
     wsQ.Range("E14").NumberFormat = "@"
-    wsQ.Range("E14").Value = CStr(lineCount) & " of 10 sizes added"
+    wsQ.Range("E14").Value = CStr(actLines) & " of 10"
     wsQ.Range("E14").Font.Bold = True
     
-    ' Section 3 Header A40
-    wsQ.Range("A40").Value = "3. CURRENT QUOTATION LINE ITEMS (" & CStr(lineCount) & " of 10 sizes added)"
+    ' Section 3 Header A37
+    wsQ.Range("A37").Value = "3. CURRENT QUOTATION LINE ITEMS (" & CStr(actLines) & " of 10 sizes added)"
     
-    wsQ.Range("A41:I75").Locked = False
+    wsQ.Range("A1:I120").Locked = False
     Exit Sub
 ErrorHandler:
     On Error Resume Next
@@ -770,18 +906,18 @@ Public Sub UI_NewQuotation()
     wsQ.Range("B16").Value = "Metres"
     wsQ.Range("B17").Value = "NORMAL (Option 1)"
     
-    ' Clean input cells in product requirement area (Rows 26-36)
-    wsQ.Range("B26").Value = "IS-3589-2001"
-    wsQ.Range("B27").Value = "HSAW"
-    wsQ.Range("B28").Value = "ID"
-    wsQ.Range("B29").Value = 1226
-    wsQ.Range("B30").Value = 8.4
-    wsQ.Range("B31").Value = "Fe 410"
-    wsQ.Range("B32").Value = "PU 1000 micron"
-    wsQ.Range("B33").Value = "Food grade epoxy 406 micron"
-    wsQ.Range("B34").Value = 2000
-    wsQ.Range("B35").Value = "Metres"
-    wsQ.Range("B36").Value = 12#
+    ' Clean input cells in product requirement area (Rows 20-30)
+    wsQ.Range("B20").Value = "IS-3589-2001"
+    wsQ.Range("B21").Value = "HSAW"
+    wsQ.Range("B22").Value = "ID"
+    wsQ.Range("B23").Value = 1226
+    wsQ.Range("B24").Value = 8.4
+    wsQ.Range("B25").Value = "Fe 410"
+    wsQ.Range("B26").Value = "PU 1000 micron"
+    wsQ.Range("B27").Value = "Food grade epoxy 406 micron"
+    wsQ.Range("B28").Value = 2000
+    wsQ.Range("B29").Value = "Metres"
+    wsQ.Range("B30").Value = 12#
     
     ' Clear quote lines table
     modQuote.ClearQuoteLines
@@ -814,7 +950,7 @@ Public Sub UI_OpenQuotation()
     If Application.DisplayAlerts Then
         enquiryNo = InputBox("Enter Enquiry Reference number to open:" & vbCrLf & _
                              "(e.g. MKTGENQ26-27-001 or MKTG/ENQ/26-27/594)", _
-                             "Mega Pipes — Open Quotation", "")
+                             "Mega Pipes - Open Quotation", "")
     End If
                          
     enquiryNo = Trim$(enquiryNo)
@@ -872,22 +1008,22 @@ Public Sub UI_AddItem()
         SafeMsgBox "Quotation capacity reached: A quotation supports up to 10 product lines." & vbCrLf & _
                    "Currently " & CStr(activeCount) & " of 10 sizes are added." & vbCrLf & _
                    "An 11th line cannot be added. Please remove an existing line or edit an existing line.", _
-                   vbExclamation, "Mega Pipes — Line Limit"
+                   vbExclamation, "Mega Pipes - Line Limit"
         Exit Sub
     End If
     
-    ' Read inputs from Rows 27-36
-    fam = Trim$(CStr(wsQ.Range("B27").Value))
+    ' Read inputs from Rows 20-30
+    fam = Trim$(CStr(wsQ.Range("B21").Value))
     If Len(fam) = 0 Then fam = "HSAW"
-    bas = UCase$(Trim$(CStr(wsQ.Range("B28").Value)))
+    bas = UCase$(Trim$(CStr(wsQ.Range("B22").Value)))
     If Len(bas) = 0 Then bas = "ID"
-    sz = Val(wsQ.Range("B29").Value)
-    wt = Val(wsQ.Range("B30").Value)
-    grd = Trim$(CStr(wsQ.Range("B31").Value))
-    extC = Trim$(CStr(wsQ.Range("B32").Value))
-    intC = Trim$(CStr(wsQ.Range("B33").Value))
-    qty = Val(wsQ.Range("B34").Value)
-    unt = Trim$(CStr(wsQ.Range("B35").Value))
+    sz = Val(wsQ.Range("B23").Value)
+    wt = Val(wsQ.Range("B24").Value)
+    grd = Trim$(CStr(wsQ.Range("B25").Value))
+    extC = Trim$(CStr(wsQ.Range("B26").Value))
+    intC = Trim$(CStr(wsQ.Range("B27").Value))
+    qty = Val(wsQ.Range("B28").Value)
+    unt = Trim$(CStr(wsQ.Range("B29").Value))
     If Len(unt) = 0 Then unt = "Metres"
     
     ' Plant resolution from B13
@@ -954,7 +1090,7 @@ Public Sub UI_AddItem()
     RefreshQuoteLinesDisplay
     
     ' Clear quantity cell for next entry
-    wsQ.Range("B34").Value = 0
+    wsQ.Range("B28").Value = 0
     
     Dim totLines As Long
     totLines = ThisWorkbook.Worksheets("QUOTE_LINES").ListObjects("tblQuoteLines").ListRows.Count
@@ -1203,9 +1339,9 @@ Public Sub UI_ClearLine()
     Dim wsQ As Worksheet
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     
-    wsQ.Range("B29").Value = 0          ' Size
-    wsQ.Range("B30").Value = 0          ' Thickness
-    wsQ.Range("B34").Value = 0          ' Quantity
+    wsQ.Range("B23").Value = 0          ' Size
+    wsQ.Range("B24").Value = 0          ' Thickness
+    wsQ.Range("B28").Value = 0          ' Quantity
     
     SetFeedbackBanner "Line entry inputs cleared. Enter size, thickness, and quantity to add an item.", UI_GREEN_DARK
     Exit Sub
@@ -1221,7 +1357,7 @@ Public Sub UI_Recalculate()
     RefreshQuoteLinesDisplay
     
     Dim grandTotal As String
-    grandTotal = "₹" & Format$(Val(ThisWorkbook.Worksheets("QUOTE").Range("E10").Value), "#,##0")
+    grandTotal = "Rs. " & Format$(Val(ThisWorkbook.Worksheets("QUOTE").Range("E10").Value), "#,##0")
     SetFeedbackBanner "Quotation recalculated. Grand Total: " & grandTotal, UI_GREEN_DARK
     Application.ScreenUpdating = True
     Exit Sub
@@ -1237,7 +1373,7 @@ Public Sub UI_ResetDraft()
         ans = MsgBox("Are you sure you want to reset this draft?" & vbCrLf & vbCrLf & _
                      "This will clear unsaved quotation inputs and lines." & vbCrLf & _
                      "(Previously saved quotations and snapshots will NOT be affected.)", _
-                     vbYesNo + vbQuestion + vbDefaultButton2, "Mega Pipes — Reset Draft")
+                     vbYesNo + vbQuestion + vbDefaultButton2, "Mega Pipes - Reset Draft")
         If ans <> vbYes Then Exit Sub
     End If
     
@@ -1247,9 +1383,9 @@ Public Sub UI_ResetDraft()
     
     Dim wsQ As Worksheet
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
-    wsQ.Range("B29").Value = 0
-    wsQ.Range("B30").Value = 0
-    wsQ.Range("B34").Value = 0
+    wsQ.Range("B23").Value = 0
+    wsQ.Range("B24").Value = 0
+    wsQ.Range("B28").Value = 0
     
     RefreshQuoteLinesDisplay
     SetFeedbackBanner "Quotation draft reset. Enter new quotation details.", UI_GREEN_DARK
@@ -1353,13 +1489,13 @@ Public Sub UI_CalculateQuotation()
     RefreshQuoteLinesDisplay
     
     Dim grandTotal As String
-    grandTotal = "₹" & Format$(Val(wsQ.Range("E10").Value), "#,##0")
+    grandTotal = "Rs. " & Format$(Val(wsQ.Range("E10").Value), "#,##0")
     SetFeedbackBanner "Quotation calculated successfully! Grand Total: " & grandTotal & ". Ready for review or export.", UI_GREEN_DARK
     
     Application.ScreenUpdating = True
     SafeMsgBox "Quotation calculated successfully!" & vbCrLf & vbCrLf & _
                "Customer: " & cust & vbCrLf & _
-               "Subtotal (Excl GST): ₹" & Format$(Val(wsQ.Range("E8").Value), "#,##0") & vbCrLf & _
+               "Subtotal (Excl GST): Rs. " & Format$(Val(wsQ.Range("E8").Value), "#,##0") & vbCrLf & _
                "Grand Total (Incl GST): " & grandTotal, vbInformation
     Exit Sub
 
@@ -1528,7 +1664,7 @@ Private Sub SetFeedbackBanner(ByVal msg As String, ByVal colr As Long)
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Worksheets("QUOTE")
     modProtection.UnprotectSheet ws
-    With ws.Range("A38")
+    With ws.Range("A35")
         .Value = msg
         .Font.Color = colr
     End With

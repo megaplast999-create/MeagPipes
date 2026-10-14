@@ -17,11 +17,11 @@ Public Sub SetupDependentDropdownArchitecture()
     BuildHelperList "BasisList", "tblSizes", "Basis", "", 29
     BuildHelperList "ExternalCoatingList", "tblExternalCoatings", "CoatingName", "", 30
     BuildHelperList "InternalCoatingList", "tblInternalCoatings", "CoatingName", "", 31
-    ApplyNamedListValidation quoteSheet.Range("B26"), "ProductList"
-    ApplyNamedListValidation quoteSheet.Range("B27"), "FamilyList"
-    ApplyNamedListValidation quoteSheet.Range("B28"), "BasisList"
-    ApplyNamedListValidation quoteSheet.Range("B32"), "ExternalCoatingList"
-    ApplyNamedListValidation quoteSheet.Range("B33"), "InternalCoatingList"
+    ApplyNamedListValidation quoteSheet.Range("B20"), "ProductList"
+    ApplyNamedListValidation quoteSheet.Range("B21"), "FamilyList"
+    ApplyNamedListValidation quoteSheet.Range("B22"), "BasisList"
+    ApplyNamedListValidation quoteSheet.Range("B26"), "ExternalCoatingList"
+    ApplyNamedListValidation quoteSheet.Range("B27"), "InternalCoatingList"
     SetupQuoteLineDropdowns
     modProtection.ProtectSheet quoteSheet, userInterfaceOnly:=True
     modProtection.ProtectSheet wsM, userInterfaceOnly:=True
@@ -46,24 +46,24 @@ Public Sub SetupQuoteLineDropdowns()
     modProtection.UnprotectSheet wsM
     modProtection.UnprotectSheet quoteSheet
 
-    family = Trim$(CStr(quoteSheet.Range("B27").Value2))
-    basis = UCase$(Trim$(CStr(quoteSheet.Range("B28").Value2)))
+    family = Trim$(CStr(quoteSheet.Range("B21").Value2))
+    basis = UCase$(Trim$(CStr(quoteSheet.Range("B22").Value2)))
     If Len(family) = 0 Then family = "HSAW"
     If Len(basis) = 0 Then basis = "ID"
 
     If Len(family) > 0 And (basis = "ID" Or basis = "OD") Then
         BuildSizeHelperList family, basis, 32
-        ApplyNamedListValidation quoteSheet.Range("B29"), "Sizes_" & family & "_" & basis
+        ApplyNamedListValidation quoteSheet.Range("B23"), "Sizes_" & family & "_" & basis
     End If
 
     If Len(family) > 0 Then
         BuildFilteredHelperList "WT_" & family, "tblThickness", "Family", "ThicknessMM", family, 33
         BuildFilteredHelperList "Grades_" & family, "tblGrades", "Family", "GradeName", family, 34
-        ApplyNamedListValidation quoteSheet.Range("B30"), "WT_" & family
-        ApplyNamedListValidation quoteSheet.Range("B31"), "Grades_" & family
+        ApplyNamedListValidation quoteSheet.Range("B24"), "WT_" & family
+        ApplyNamedListValidation quoteSheet.Range("B25"), "Grades_" & family
     End If
-    ApplyPositiveValidation quoteSheet.Range("B34")
-    ApplyInlineValidation quoteSheet.Range("B35"), "Metres,MT,Nos", "Select Metres, MT, or Nos."
+    ApplyPositiveValidation quoteSheet.Range("B28")
+    ApplyInlineValidation quoteSheet.Range("B29"), "Metres,MT,Nos", "Select Metres, MT, or Nos."
     modProtection.ProtectSheet quoteSheet, userInterfaceOnly:=True
     modProtection.ProtectSheet wsM, userInterfaceOnly:=True
     Exit Sub

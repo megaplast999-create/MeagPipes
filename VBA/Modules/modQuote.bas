@@ -45,11 +45,18 @@ Public Function ReadQuoteSheet() As QuoteHeaderData
     header.QuoteDate = ws.Range("B5").Value
     header.Customer = Trim$(CStr(ws.Range("B8").Value))
     header.ContactPerson = Trim$(CStr(ws.Range("B9").Value))
-    header.DeliveryPlace = Trim$(CStr(ws.Range("B11").Value))
-    header.PlantID = Trim$(CStr(ws.Range("B14").Value))
-    header.PaymentTerms = Trim$(CStr(ws.Range("B15").Value))
-    header.ValidityDays = CLng(Val(ws.Range("B16").Value))
-    header.PriceBasis = Trim$(CStr(ws.Range("B17").Value))
+    header.DeliveryPlace = Trim$(CStr(ws.Range("B10").Value))
+    If Len(header.DeliveryPlace) = 0 Then header.DeliveryPlace = Trim$(CStr(ws.Range("B11").Value))
+    header.PlantID = Trim$(CStr(ws.Range("B13").Value))
+    If Len(header.PlantID) = 0 Then header.PlantID = Trim$(CStr(ws.Range("B14").Value))
+    header.PaymentTerms = Trim$(CStr(ws.Range("B14").Value))
+    If Len(header.PaymentTerms) = 0 Or IsNumeric(header.PaymentTerms) Then header.PaymentTerms = Trim$(CStr(ws.Range("B15").Value))
+    header.ValidityDays = CLng(Val(ws.Range("B15").Value))
+    If header.ValidityDays <= 0 Then header.ValidityDays = CLng(Val(ws.Range("B16").Value))
+    header.PriceBasis = Trim$(CStr(ws.Range("B16").Value))
+    If Len(header.PriceBasis) = 0 Or (header.PriceBasis <> "Metres" And header.PriceBasis <> "MT" And header.PriceBasis <> "Nos") Then
+        header.PriceBasis = Trim$(CStr(ws.Range("B17").Value))
+    End If
     If Len(header.PriceBasis) = 0 Then header.PriceBasis = "Metres"
     
     ' Check legacy mode switch from settings or header safely
@@ -238,9 +245,6 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     prevAlerts = Application.DisplayAlerts
     Application.DisplayAlerts = False
     
-    ' Enforce generous column widths for clear, un-congested display
-    ws.Columns("D").ColumnWidth = 28
-    ws.Columns("E").ColumnWidth = 24
 
     ' Title header
     If Not ws.Range("D3:E3").MergeCells Then

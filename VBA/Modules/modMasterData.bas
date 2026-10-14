@@ -15,12 +15,14 @@ Public Sub SetupQuoteHeader()
 
     ApplyNamedValidation ThisWorkbook.Worksheets("QUOTE").Range("B8"), "CustomerNames", _
         "Select a customer from tblCustomers."
-    ApplyNamedValidation ThisWorkbook.Worksheets("QUOTE").Range("B14"), "PlantNames", _
+    ApplyNamedValidation ThisWorkbook.Worksheets("QUOTE").Range("B13"), "PlantNames", _
         "Select a plant from tblPlants."
-    ApplyNamedValidation ThisWorkbook.Worksheets("QUOTE").Range("B15"), "PaymentTermDescriptions", _
+    ApplyNamedValidation ThisWorkbook.Worksheets("QUOTE").Range("B14"), "PaymentTermDescriptions", _
         "Select a payment term from tblPaymentTerms."
-    ApplyInlineValidation ThisWorkbook.Worksheets("QUOTE").Range("B17"), _
+    ApplyInlineValidation ThisWorkbook.Worksheets("QUOTE").Range("B16"), _
         "Metres,MT,Nos", "Select Metres, MT, or Nos."
+    ApplyInlineValidation ThisWorkbook.Worksheets("QUOTE").Range("B17"), _
+        "NORMAL (Option 1),LEGACY", "Select Pricing Mode."
     Exit Sub
 
 ErrorHandler:
@@ -28,7 +30,7 @@ ErrorHandler:
 End Sub
 
 Public Sub SetupPlantDropdown()
-    ApplyListValidation ThisWorkbook.Worksheets("QUOTE").Range("B14"), _
+    ApplyListValidation ThisWorkbook.Worksheets("QUOTE").Range("B13"), _
         TableColumnAddress("PLANTS", "tblPlants", "PlantName")
 End Sub
 

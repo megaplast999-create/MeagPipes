@@ -366,6 +366,15 @@ Public Function RunCostingSelfTests() As String
     
     On Error GoTo TestFail
     
+    ' Ensure golden quote is loaded if empty
+    Dim tblLines As ListObject
+    Set tblLines = ThisWorkbook.Worksheets("QUOTE_LINES").ListObjects("tblQuoteLines")
+    If tblLines.ListRows.Count = 0 Then
+        modSelfTest.PopulateGoldenReferenceQuote
+    ElseIf Len(Trim$(CStr(tblLines.ListRows(1).Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) = 0 Then
+        modSelfTest.PopulateGoldenReferenceQuote
+    End If
+    
     ' Generate COSTING sheet
     WriteCostingSheet
     
