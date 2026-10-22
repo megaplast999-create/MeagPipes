@@ -1,0 +1,583 @@
+{
+  "anchor": {
+    "PIN": "482001",
+    "Latitude": 23.16149,
+    "Longitude": 79.954832,
+    "OfficeName": "Jabalpur H.O",
+    "OfficeType": "HO",
+    "District": "JABALPUR",
+    "State": "MADHYA PRADESH",
+    "RecordCount": 25,
+    "ValidCoordCount": 25,
+    "QualityStatus": "MEDIUM",
+    "SpreadKM": 40.5,
+    "SelectionRule": "HO_PO_HUB_WITH_VARIATION",
+    "HasCoordinates": true
+  },
+  "radius_km": 50.0,
+  "metric": "STRAIGHT_LINE_KM",
+  "total_territory_pins": 32,
+  "pins": [
+    {
+      "PIN": "482001",
+      "OfficeName": "Jabalpur H.O",
+      "OfficeType": "HO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 0.0,
+      "Latitude": 23.16149,
+      "Longitude": 79.954832,
+      "RecordCount": 25
+    },
+    {
+      "PIN": "482007",
+      "OfficeName": "NDC Jabalpur",
+      "OfficeType": "PO",
+      "District": "NA",
+      "State": "NA",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 0.04,
+      "Latitude": 23.161436,
+      "Longitude": 79.955222,
+      "RecordCount": 1
+    },
+    {
+      "PIN": "482005",
+      "OfficeName": "Khamaria S.O (Jabalpur)",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 0.193,
+      "Latitude": 23.159806,
+      "Longitude": 79.954361,
+      "RecordCount": 5
+    },
+    {
+      "PIN": "482021",
+      "OfficeName": "R.F.R.C. S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 0.193,
+      "Latitude": 23.159806,
+      "Longitude": 79.954361,
+      "RecordCount": 7
+    },
+    {
+      "PIN": "483119",
+      "OfficeName": "Shahpura (Jabalpur) S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 0.193,
+      "Latitude": 23.159806,
+      "Longitude": 79.954361,
+      "RecordCount": 19
+    },
+    {
+      "PIN": "483113",
+      "OfficeName": "Patan S.O (Jabalpur)",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 0.193,
+      "Latitude": 23.159806,
+      "Longitude": 79.954361,
+      "RecordCount": 12
+    },
+    {
+      "PIN": "483105",
+      "OfficeName": "Katangi S.O (Jabalpur)",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 0.193,
+      "Latitude": 23.159806,
+      "Longitude": 79.954361,
+      "RecordCount": 4
+    },
+    {
+      "PIN": "483220",
+      "OfficeName": "Panagar S.O (Jabalpur)",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 0.193,
+      "Latitude": 23.159806,
+      "Longitude": 79.954361,
+      "RecordCount": 15
+    },
+    {
+      "PIN": "483440",
+      "OfficeName": "Sleemnabad S.O",
+      "OfficeType": "PO",
+      "District": "KATNI",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 1.067,
+      "Latitude": 23.17,
+      "Longitude": 79.95,
+      "RecordCount": 12
+    },
+    {
+      "PIN": "482002",
+      "OfficeName": "Ganjipura S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 2.543,
+      "Latitude": 23.170917,
+      "Longitude": 79.932167,
+      "RecordCount": 24
+    },
+    {
+      "PIN": "482011",
+      "OfficeName": "Gokulpur S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 3.143,
+      "Latitude": 23.183472,
+      "Longitude": 79.974167,
+      "RecordCount": 3
+    },
+    {
+      "PIN": "482020",
+      "OfficeName": "Bilhari S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 3.168,
+      "Latitude": 23.133917,
+      "Longitude": 79.962639,
+      "RecordCount": 1
+    },
+    {
+      "PIN": "482008",
+      "OfficeName": "Polipathar S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 4.508,
+      "Latitude": 23.127662,
+      "Longitude": 79.930526,
+      "RecordCount": 5
+    },
+    {
+      "PIN": "482004",
+      "OfficeName": "Adhartal S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 4.765,
+      "Latitude": 23.204306,
+      "Longitude": 79.952861,
+      "RecordCount": 7
+    },
+    {
+      "PIN": "482009",
+      "OfficeName": "Shobhapur S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 4.975,
+      "Latitude": 23.201389,
+      "Longitude": 79.976861,
+      "RecordCount": 2
+    },
+    {
+      "PIN": "482003",
+      "OfficeName": "Garha Bazar S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 5.802,
+      "Latitude": 23.161194,
+      "Longitude": 79.898083,
+      "RecordCount": 13
+    },
+    {
+      "PIN": "482010",
+      "OfficeName": "Richhai S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 8.679,
+      "Latitude": 23.237139,
+      "Longitude": 79.975722,
+      "RecordCount": 1
+    },
+    {
+      "PIN": "482051",
+      "OfficeName": "Bargi S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 20.392,
+      "Latitude": 22.99262,
+      "Longitude": 79.8771,
+      "RecordCount": 9
+    },
+    {
+      "PIN": "481666",
+      "OfficeName": "Beejadandi S.O",
+      "OfficeType": "PO",
+      "District": "MANDLA",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 28.086,
+      "Latitude": 22.983994,
+      "Longitude": 80.150165,
+      "RecordCount": 37
+    },
+    {
+      "PIN": "482056",
+      "OfficeName": "Bargi Nagar S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 28.357,
+      "Latitude": 22.911949,
+      "Longitude": 79.89768,
+      "RecordCount": 2
+    },
+    {
+      "PIN": "486111",
+      "OfficeName": "Mangawan S.O",
+      "OfficeType": "PO",
+      "District": "REWA",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 29.307,
+      "Latitude": 23.130639,
+      "Longitude": 79.670167,
+      "RecordCount": 16
+    },
+    {
+      "PIN": "483053",
+      "OfficeName": "Bheraghat S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "HIGH",
+      "DistanceKM": 29.307,
+      "Latitude": 23.130639,
+      "Longitude": 79.670167,
+      "RecordCount": 5
+    },
+    {
+      "PIN": "472115",
+      "OfficeName": "Khargapur S.O",
+      "OfficeType": "PO",
+      "District": "TIKAMGARH",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 36.974,
+      "Latitude": 22.9734,
+      "Longitude": 79.6568,
+      "RecordCount": 22
+    },
+    {
+      "PIN": "454335",
+      "OfficeName": "Nisarpur S.O",
+      "OfficeType": "PO",
+      "District": "DHAR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 37.928,
+      "Latitude": 23.1,
+      "Longitude": 79.59,
+      "RecordCount": 14
+    },
+    {
+      "PIN": "483110",
+      "OfficeName": "Kundam S.O",
+      "OfficeType": "PO",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 39.756,
+      "Latitude": 23.210861,
+      "Longitude": 80.340056,
+      "RecordCount": 21
+    },
+    {
+      "PIN": "483442",
+      "OfficeName": "Niwar S.O",
+      "OfficeType": "PO",
+      "District": "KATNI",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 45.639,
+      "Latitude": 23.37,
+      "Longitude": 79.57,
+      "RecordCount": 10
+    },
+    {
+      "PIN": "487881",
+      "OfficeName": "Sali Choka Road S.O",
+      "OfficeType": "PO",
+      "District": "NARSINGHPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 46.495,
+      "Latitude": 22.832192,
+      "Longitude": 79.674898,
+      "RecordCount": 12
+    },
+    {
+      "PIN": "481662",
+      "OfficeName": "Padariyanarayan Ganj S.O",
+      "OfficeType": "PO",
+      "District": "MANDLA",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 46.72,
+      "Latitude": 22.834203,
+      "Longitude": 80.241063,
+      "RecordCount": 26
+    },
+    {
+      "PIN": "483775",
+      "OfficeName": "Vijayraghavgarh S.O",
+      "OfficeType": "PO",
+      "District": "KATNI",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 49.377,
+      "Latitude": 23.18501,
+      "Longitude": 79.47248,
+      "RecordCount": 11
+    },
+    {
+      "PIN": "487118",
+      "OfficeName": "Gotegaon S.O",
+      "OfficeType": "PO",
+      "District": "NARSINGHPUR",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 49.399,
+      "Latitude": 23.064556,
+      "Longitude": 79.483444,
+      "RecordCount": 28
+    },
+    {
+      "PIN": "741404",
+      "OfficeName": "Ashanandapara Street SO",
+      "OfficeType": "PO",
+      "District": "NADIA",
+      "State": "WEST BENGAL",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 49.61,
+      "Latitude": 23.273611,
+      "Longitude": 80.424722,
+      "RecordCount": 18
+    },
+    {
+      "PIN": "470880",
+      "OfficeName": "Tendukheda S.O",
+      "OfficeType": "PO",
+      "District": "DAMOH",
+      "State": "MADHYA PRADESH",
+      "QualityStatus": "MEDIUM",
+      "DistanceKM": 49.736,
+      "Latitude": 23.396198,
+      "Longitude": 79.540333,
+      "RecordCount": 37
+    }
+  ],
+  "district_summary": {
+    "JABALPUR": 19,
+    "KATNI": 3,
+    "NARSINGHPUR": 2,
+    "MANDLA": 2,
+    "REWA": 1,
+    "NA": 1,
+    "DHAR": 1,
+    "DAMOH": 1,
+    "TIKAMGARH": 1,
+    "NADIA": 1
+  },
+  "state_summary": {
+    "MADHYA PRADESH": 30,
+    "NA": 1,
+    "WEST BENGAL": 1
+  },
+  "quality_summary": {
+    "MEDIUM": 24,
+    "HIGH": 8
+  },
+  "radial_clusters": {
+    "inner_0_15km": [
+      "482020",
+      "482005",
+      "482002",
+      "483440",
+      "482007",
+      "482001",
+      "482003",
+      "482004",
+      "482021",
+      "483119",
+      "483113",
+      "483105",
+      "483220",
+      "482008",
+      "482011",
+      "482010",
+      "482009"
+    ],
+    "middle_15_30km": [
+      "486111",
+      "483053",
+      "482051",
+      "482056",
+      "481666"
+    ],
+    "outer_30_50km": [
+      "487118",
+      "454335",
+      "470880",
+      "483442",
+      "483775",
+      "487881",
+      "472115",
+      "741404",
+      "483110",
+      "481662"
+    ]
+  },
+  "coverage_gaps": [
+    {
+      "PIN": "400113",
+      "OfficeName": "Delisle Road PO",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "483222",
+      "OfficeName": "Gandhi Gram B.O",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "483225",
+      "OfficeName": "Badkhera B.O",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "483334",
+      "OfficeName": "Gaura Khamaria B.O",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "483336",
+      "OfficeName": "Khitola B.O",
+      "District": "JABALPUR",
+      "State": "MADHYA PRADESH",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "500119",
+      "OfficeName": "Narsingi SO",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "500918",
+      "OfficeName": "NDC Sanathnagar",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "500931",
+      "OfficeName": "NDC Ibrahim Bagh Lines",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "500934",
+      "OfficeName": "NDC Banjarahills",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "500984",
+      "OfficeName": "NDC Kothaguda",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "500989",
+      "OfficeName": "NDC Chitrapuri Colony",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "504300",
+      "OfficeName": "BEJJUR SO",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "504314",
+      "OfficeName": "GADIGUDA SO",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    },
+    {
+      "PIN": "781041",
+      "OfficeName": "NDC Guwahati",
+      "District": "NA",
+      "State": "NA",
+      "Status": "UNRESOLVED",
+      "Reason": "Zero physical coordinates in official government directory"
+    }
+  ],
+  "screening_disclaimer": "GEOGRAPHICAL SCREENING NOTICE: This territory query identifies postal delivery zones within a 50.0 km straight-line radius of anchor PIN 482001. Inclusion does NOT imply confirmed sales leads, actual customer demand, or immediate commercial feasibility. Straight-line distance is an exploratory screening metric.",
+  "road_distance_note": "METRIC SEPARATION POLICY: Straight-line distance (STRAIGHT_LINE_KM) must NEVER be used for freight cost calculations, trailer logistics, or quotation pricing. All commercial freight calculations are governed exclusively by approved OpenRouteService driving-hgv road distances cached in tblDistanceCache."
+}
