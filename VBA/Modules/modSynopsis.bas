@@ -45,6 +45,11 @@ Public Sub BuildSynopsisSheet()
     
     modProtection.UnprotectSheet ws
     ws.Cells.Clear
+    ' ── Read Presentation Settings ──
+    Dim inchDisplay As String
+    Dim pipeDisplay As String
+    inchDisplay = GetSynopsisSetting("SynopsisInchDisplay", "Nominal")
+    pipeDisplay = GetSynopsisSetting("SynopsisPipeCountDisplay", "Dispatch")
     
     ' ── Read Quote Header Info ──
     Set wsQ = wb.Worksheets("QUOTE")
@@ -221,7 +226,12 @@ Public Sub BuildSynopsisSheet()
     ws.Range("F10").Value = "Grade": ws.Range("F11").Value = "Specs"
     ws.Range("G10").Value = "Type": ws.Range("G11").Value = "Pipes"
     ws.Range("H10").Value = "Qty ": ws.Range("H11").Value = "MTRS"
-    ws.Range("I10").Value = "Pipe ": ws.Range("I11").Value = "Nos."
+    ws.Range("I10").Value = "Pipe "
+    If UCase$(pipeDisplay) = "EQUIVALENT12M" Then
+        ws.Range("I11").Value = "12m Eqv."
+    Else
+        ws.Range("I11").Value = "Nos."
+    End If
     ws.Range("J10").Value = "Weight": ws.Range("J11").Value = "Kg/m"
     ws.Range("K10").Value = "Qty in": ws.Range("K11").Value = "MT"
     ws.Range("L10").Value = "volume": ws.Range("L11").Value = "Pipes"
@@ -292,8 +302,13 @@ Public Sub BuildSynopsisSheet()
                 End If
                 
                 ' Col C: OD INCH
-                ws.Cells(outRow, 3).Formula = "=ROUND(D" & outRow & "/25.4,0)"
-                ws.Cells(outRow, 3).NumberFormat = "0"
+                If UCase$(inchDisplay) = "EXACT" Then
+                    ws.Cells(outRow, 3).Formula = "=D" & outRow & "/25.4"
+                    ws.Cells(outRow, 3).NumberFormat = "#,##0.00"
+                Else
+                    ws.Cells(outRow, 3).Formula = "=ROUND(D" & outRow & "/25.4,0)"
+                    ws.Cells(outRow, 3).NumberFormat = "0"
+                End If
                 
                 ' Col E: Thickness
                 ws.Cells(outRow, 5).Value = thk
@@ -310,8 +325,13 @@ Public Sub BuildSynopsisSheet()
                 ws.Cells(outRow, 8).NumberFormat = "#,##0.00"
                 
                 ' Col I: Pipe Nos.
-                ws.Cells(outRow, 9).Formula = "=CEILING(H" & outRow & "/12,1)"
-                ws.Cells(outRow, 9).NumberFormat = "#,##0"
+                If UCase$(pipeDisplay) = "EQUIVALENT12M" Then
+                    ws.Cells(outRow, 9).Formula = "=H" & outRow & "/12"
+                    ws.Cells(outRow, 9).NumberFormat = "#,##0.00"
+                Else
+                    ws.Cells(outRow, 9).Formula = "=CEILING(H" & outRow & "/12,1)"
+                    ws.Cells(outRow, 9).NumberFormat = "#,##0"
+                End If
                 
                 ' Col J: Weight Kg/m
                 ws.Cells(outRow, 10).Formula = "=(D" & outRow & "-E" & outRow & ")*E" & outRow & "*0.0246615"
@@ -326,8 +346,8 @@ Public Sub BuildSynopsisSheet()
                 ws.Cells(outRow, 12).NumberFormat = "#,##0.00"
                 
                 ' Col M: CBM Ratio
-                ws.Cells(outRow, 13).Formula = "=ROUNDUP(L" & outRow & "/K" & outRow & ",0)"
-                ws.Cells(outRow, 13).NumberFormat = "0"
+                ws.Cells(outRow, 13).Formula = "=L" & outRow & "/K" & outRow
+                ws.Cells(outRow, 13).NumberFormat = "#,##0.00"
                 
                 ' Col N: Coating Ext m²
                 ws.Cells(outRow, 14).Formula = "=ROUNDUP(D" & outRow & "*H" & outRow & "*(22/7)/1000,0)"
@@ -338,7 +358,7 @@ Public Sub BuildSynopsisSheet()
                 ws.Cells(outRow, 15).NumberFormat = "#,##0"
                 
                 ' Col P: Weight of pipe MT
-                ws.Cells(outRow, 16).Formula = "=ROUNDUP(12*J" & outRow & "/1000,0)"
+                ws.Cells(outRow, 16).Formula = "=12*J" & outRow & "/1000"
                 ws.Cells(outRow, 16).NumberFormat = "#,##0.00"
                 
                 ' Zebra styling
@@ -385,7 +405,11 @@ Public Sub BuildSynopsisSheet()
         ws.Cells(totRow, 8).NumberFormat = "#,##0.00"
         
         ws.Cells(totRow, 9).Formula = "=SUM(I12:I" & endLineRow & ")"
-        ws.Cells(totRow, 9).NumberFormat = "#,##0"
+        If UCase$(pipeDisplay) = "EQUIVALENT12M" Then
+            ws.Cells(totRow, 9).NumberFormat = "#,##0.00"
+        Else
+            ws.Cells(totRow, 9).NumberFormat = "#,##0"
+        End If
         
         ws.Cells(totRow, 11).Formula = "=SUM(K12:K" & endLineRow & ")"
         ws.Cells(totRow, 11).NumberFormat = "#,##0.000"
@@ -503,6 +527,92 @@ Public Sub PopulateSynopsisReport()
     BuildSynopsisSheet
 End Sub
 
+Public Function GetSynopsisSetting(ByVal keyName As String, ByVal defaultValue As String) As String
+    On Error Resume Next
+    Dim wsSet As Worksheet
+    Dim tblSet As ListObject
+    Dim rObj As ListRow
+    Set wsSet = ThisWorkbook.Worksheets("SETTINGS")
+    If wsSet Is Nothing Then
+        GetSynopsisSetting = defaultValue
+        Exit Function
+    End If
+    Set tblSet = wsSet.ListObjects("tblSettings")
+    If tblSet Is Nothing Then
+        GetSynopsisSetting = defaultValue
+        Exit Function
+    End If
+    For Each rObj In tblSet.ListRows
+        If StrComp(Trim$(CStr(rObj.Range.Cells(1, tblSet.ListColumns("SettingKey").Index).Value)), keyName, vbTextCompare) = 0 Then
+            Dim sVal As String
+            sVal = Trim$(CStr(rObj.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value))
+            If Len(sVal) > 0 Then
+                GetSynopsisSetting = sVal
+            Else
+                GetSynopsisSetting = defaultValue
+            End If
+            Exit Function
+        End If
+    Next rObj
+    GetSynopsisSetting = defaultValue
+End Function
+
+Public Sub SetSynopsisPresentationSettings(Optional ByVal inchMode As String = "", Optional ByVal pipeMode As String = "")
+    On Error Resume Next
+    Dim wsSet As Worksheet
+    Dim tblSet As ListObject
+    Dim rObj As ListRow
+    Dim foundInch As Boolean
+    Dim foundPipe As Boolean
+    
+    Set wsSet = ThisWorkbook.Worksheets("SETTINGS")
+    If wsSet Is Nothing Then Exit Sub
+    Set tblSet = wsSet.ListObjects("tblSettings")
+    If tblSet Is Nothing Then Exit Sub
+    
+    If Len(inchMode) > 0 Then
+        For Each rObj In tblSet.ListRows
+            If StrComp(Trim$(CStr(rObj.Range.Cells(1, tblSet.ListColumns("SettingKey").Index).Value)), "SynopsisInchDisplay", vbTextCompare) = 0 Then
+                rObj.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value = inchMode
+                foundInch = True
+                Exit For
+            End If
+        Next rObj
+        If Not foundInch Then
+            Set rObj = tblSet.ListRows.Add
+            rObj.Range.Cells(1, tblSet.ListColumns("SettingKey").Index).Value = "SynopsisInchDisplay"
+            rObj.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value = inchMode
+            rObj.Range.Cells(1, tblSet.ListColumns("DataType").Index).Value = "Text"
+            rObj.Range.Cells(1, tblSet.ListColumns("Description").Index).Value = "Synopsis Column C format (Nominal trade size vs Exact converted inches)"
+            rObj.Range.Cells(1, tblSet.ListColumns("DefaultValue").Index).Value = "Nominal"
+            rObj.Range.Cells(1, tblSet.ListColumns("Editable").Index).Value = "Yes"
+            rObj.Range.Cells(1, tblSet.ListColumns("Category").Index).Value = "Presentation"
+        End If
+    End If
+    
+    If Len(pipeMode) > 0 Then
+        For Each rObj In tblSet.ListRows
+            If StrComp(Trim$(CStr(rObj.Range.Cells(1, tblSet.ListColumns("SettingKey").Index).Value)), "SynopsisPipeCountDisplay", vbTextCompare) = 0 Then
+                rObj.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value = pipeMode
+                foundPipe = True
+                Exit For
+            End If
+        Next rObj
+        If Not foundPipe Then
+            Set rObj = tblSet.ListRows.Add
+            rObj.Range.Cells(1, tblSet.ListColumns("SettingKey").Index).Value = "SynopsisPipeCountDisplay"
+            rObj.Range.Cells(1, tblSet.ListColumns("SettingValue").Index).Value = pipeMode
+            rObj.Range.Cells(1, tblSet.ListColumns("DataType").Index).Value = "Text"
+            rObj.Range.Cells(1, tblSet.ListColumns("Description").Index).Value = "Synopsis Column I format (Dispatch whole joints vs Equivalent12M 2 decimals)"
+            rObj.Range.Cells(1, tblSet.ListColumns("DefaultValue").Index).Value = "Dispatch"
+            rObj.Range.Cells(1, tblSet.ListColumns("Editable").Index).Value = "Yes"
+            rObj.Range.Cells(1, tblSet.ListColumns("Category").Index).Value = "Presentation"
+        End If
+    End If
+    
+    BuildSynopsisSheet
+End Sub
+
 Public Function RunSynopsisSelfTests() As String
     On Error GoTo TestFailure
     Dim wb As Workbook
@@ -516,13 +626,20 @@ Public Function RunSynopsisSelfTests() As String
     Set wsLines = wb.Worksheets("QUOTE_LINES")
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
     
-    ' 1. Rebuild Synopsis Sheet
-    BuildSynopsisSheet
+    ' 1. Rebuild Synopsis Sheet with default presentation settings
+    SetSynopsisPresentationSettings "Nominal", "Dispatch"
     Set ws = wb.Worksheets("SYNOPSIS")
     
     If ws Is Nothing Then
         RunSynopsisSelfTests = "FAIL: SYNOPSIS worksheet does not exist"
         Exit Function
+    End If
+    
+    ' If no quotation lines in active quote, populate golden quote for self-test
+    If ws.Range("A12").MergeCells Then
+        modSelfTest.PopulateGoldenReferenceQuote
+        SetSynopsisPresentationSettings "Nominal", "Dispatch"
+        Set ws = wb.Worksheets("SYNOPSIS")
     End If
     
     ' 2. Verify Title and Header
@@ -550,6 +667,50 @@ Public Function RunSynopsisSelfTests() As String
     If ws.PageSetup.FitToPagesWide <> 1 Then
         RunSynopsisSelfTests = "FAIL: PageSetup FitToPagesWide is not 1"
         Exit Function
+    End If
+    
+    ' 4. Verify Column M and P Precision Formulas when quotation lines exist
+    If tblLines.ListRows.Count > 0 Then
+        If InStr(1, ws.Cells(12, 13).Formula, "ROUNDUP", vbTextCompare) > 0 Or InStr(1, ws.Cells(12, 13).Formula, "L12/K12", vbTextCompare) = 0 Then
+            RunSynopsisSelfTests = "FAIL: Column M formula is not unrounded =L12/K12"
+            Exit Function
+        End If
+        If InStr(1, ws.Cells(12, 13).NumberFormat, "0.00", vbTextCompare) = 0 Then
+            RunSynopsisSelfTests = "FAIL: Column M NumberFormat does not show 2 decimal places"
+            Exit Function
+        End If
+        If InStr(1, ws.Cells(12, 16).Formula, "ROUNDUP", vbTextCompare) > 0 Or InStr(1, ws.Cells(12, 16).Formula, "12*J12/1000", vbTextCompare) = 0 Then
+            RunSynopsisSelfTests = "FAIL: Column P formula is not unrounded =12*J12/1000"
+            Exit Function
+        End If
+        If InStr(1, ws.Cells(12, 16).NumberFormat, "0.00", vbTextCompare) = 0 Then
+            RunSynopsisSelfTests = "FAIL: Column P NumberFormat does not show 2 decimal places"
+            Exit Function
+        End If
+        
+        ' 5. Verify Column C (Default Nominal) and Column I (Default Dispatch)
+        If InStr(1, ws.Cells(12, 3).Formula, "ROUND(", vbTextCompare) = 0 Then
+            RunSynopsisSelfTests = "FAIL: Default Column C is not =ROUND(D12/25.4,0)"
+            Exit Function
+        End If
+        If InStr(1, ws.Cells(12, 9).Formula, "CEILING(", vbTextCompare) = 0 Then
+            RunSynopsisSelfTests = "FAIL: Default Column I is not =CEILING(H12/12,1)"
+            Exit Function
+        End If
+        
+        ' 6. Verify Presentation Setting Toggle (Exact and Equivalent12M)
+        SetSynopsisPresentationSettings "Exact", "Equivalent12M"
+        If InStr(1, ws.Cells(12, 3).Formula, "D12/25.4", vbTextCompare) = 0 Or InStr(1, ws.Cells(12, 3).Formula, "ROUND(", vbTextCompare) > 0 Then
+            RunSynopsisSelfTests = "FAIL: Column C Exact setting failed"
+            Exit Function
+        End If
+        If InStr(1, ws.Cells(12, 9).Formula, "H12/12", vbTextCompare) = 0 Or InStr(1, ws.Cells(12, 9).Formula, "CEILING(", vbTextCompare) > 0 Then
+            RunSynopsisSelfTests = "FAIL: Column I Equivalent12M setting failed"
+            Exit Function
+        End If
+        
+        ' Restore default presentation settings
+        SetSynopsisPresentationSettings "Nominal", "Dispatch"
     End If
     
     RunSynopsisSelfTests = "PASS"

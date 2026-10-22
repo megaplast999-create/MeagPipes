@@ -1,0 +1,90 @@
+Option Explicit
+
+Public Sub RunP3GoldenTests()
+    Dim outputPath As String
+    Dim fileNumber As Integer
+    Dim legacyTotal As Variant
+    Dim normalTotal As Variant
+    Dim legacyExpected As Variant
+    Dim normalExpected As Variant
+    Dim legacyDifference As Variant
+    Dim normalDifference As Variant
+    Dim errorNumber As Long
+    Dim errorDescription As String
+
+    On Error GoTo TestError
+    outputPath = TestsPath() & Application.PathSeparator & "vba_p3_golden_20261008.txt"
+    legacyExpected = CDec(178657900)
+    normalExpected = CDec(178805450)
+    legacyTotal = P3GoldenTotal(True)
+    normalTotal = P3GoldenTotal(False)
+    legacyDifference = CDec(legacyTotal) - legacyExpected
+    normalDifference = CDec(normalTotal) - normalExpected
+
+    fileNumber = FreeFile
+    Open outputPath For Output As #fileNumber
+    Print #fileNumber, "P3 VBA golden test date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+    Print #fileNumber, "TOLERANCE=<1"
+    Print #fileNumber, "LEGACY:"
+    Print #fileNumber, "Expected total=" & CStr(legacyExpected)
+    Print #fileNumber, "Actual total=" & CStr(legacyTotal)
+    Print #fileNumber, "Difference=" & CStr(legacyDifference)
+    Print #fileNumber, "Result=" & IIf(Abs(CDbl(legacyDifference)) < 1, "PASS", "FAIL")
+    Print #fileNumber, "NORMAL:"
+    Print #fileNumber, "Expected total=" & CStr(normalExpected)
+    Print #fileNumber, "Actual total=" & CStr(normalTotal)
+    Print #fileNumber, "Difference=" & CStr(normalDifference)
+    Print #fileNumber, "Result=" & IIf(Abs(CDbl(normalDifference)) < 1, "PASS", "FAIL")
+    Print #fileNumber, "RESULT=" & IIf(Abs(CDbl(legacyDifference)) < 1 And _
+        Abs(CDbl(normalDifference)) < 1, "PASS", "FAIL")
+    Close #fileNumber
+    Exit Sub
+TestError:
+    errorNumber = Err.Number
+    errorDescription = Err.Description
+    WriteGoldenFailure outputPath, errorNumber, errorDescription
+    Err.Raise errorNumber, "RunP3GoldenTests", errorDescription
+End Sub
+
+Public Function ProjectRootPath() As String
+    Dim workbookPath As String
+    Dim separatorPosition As Long
+
+    workbookPath = ThisWorkbook.Path
+    separatorPosition = InStrRev(workbookPath, Application.PathSeparator)
+    If separatorPosition <= 1 Then
+        Err.Raise vbObjectError + 1810, "ProjectRootPath", _
+            "Unable to derive the project root from ThisWorkbook.Path: " & workbookPath
+    End If
+    ProjectRootPath = Left$(workbookPath, separatorPosition - 1)
+End Function
+
+Public Function TestsPath() As String
+    Dim testPath As String
+
+    testPath = ProjectRootPath() & Application.PathSeparator & "TESTS"
+    If Len(Dir$(testPath, vbDirectory)) = 0 Then
+        Err.Raise vbObjectError + 1811, "TestsPath", _
+            "TESTS directory not found: " & testPath
+    End If
+    TestsPath = testPath
+End Function
+
+Private Sub WriteGoldenFailure(ByVal outputPath As String, _
+                               ByVal errorNumber As Long, _
+                               ByVal errorDescription As String)
+    Dim fileNumber As Integer
+
+    If Len(outputPath) = 0 Then Exit Sub
+    On Error Resume Next
+    fileNumber = FreeFile
+    Open outputPath For Output As #fileNumber
+    If Err.Number = 0 Then
+        Print #fileNumber, "P3 VBA golden test date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+        Print #fileNumber, "RESULT=FAIL"
+        Print #fileNumber, "ERROR_NUMBER=" & CStr(errorNumber)
+        Print #fileNumber, "ERROR_DESCRIPTION=" & errorDescription
+        Close #fileNumber
+    End If
+    On Error GoTo 0
+End Sub

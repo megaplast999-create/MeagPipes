@@ -53,14 +53,14 @@ Public Sub SetupQuoteLineDropdowns()
 
     If Len(family) > 0 And (basis = "ID" Or basis = "OD") Then
         BuildSizeHelperList family, basis, 32
-        ApplyNamedListValidation quoteSheet.Range("B23"), "Sizes_" & family & "_" & basis
+        ApplyNamedListValidation quoteSheet.Range("B23"), "Sizes_" & family & "_" & basis, showError:=False
     End If
 
     If Len(family) > 0 Then
         BuildFilteredHelperList "WT_" & family, "tblThickness", "Family", "ThicknessMM", family, 33
         BuildFilteredHelperList "Grades_" & family, "tblGrades", "Family", "GradeName", family, 34
-        ApplyNamedListValidation quoteSheet.Range("B24"), "WT_" & family
-        ApplyNamedListValidation quoteSheet.Range("B25"), "Grades_" & family
+        ApplyNamedListValidation quoteSheet.Range("B24"), "WT_" & family, showError:=False
+        ApplyNamedListValidation quoteSheet.Range("B25"), "Grades_" & family, showError:=False
     End If
     ApplyPositiveValidation quoteSheet.Range("B28")
     ApplyInlineValidation quoteSheet.Range("B29"), "Metres,MT,Nos", "Select Metres, MT, or Nos."
@@ -228,13 +228,13 @@ Private Sub CreateHelperName(ByVal listName As String, ByVal helperColumn As Lon
     ThisWorkbook.Names.Add Name:=listName, RefersTo:="=" & helperRange.Address(External:=True)
 End Sub
 
-Private Sub ApplyNamedListValidation(ByVal target As Range, ByVal listName As String)
+Private Sub ApplyNamedListValidation(ByVal target As Range, ByVal listName As String, Optional ByVal showError As Boolean = True)
     With target.Validation
         .Delete
-        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="=" & listName
+        .Add Type:=xlValidateList, AlertStyle:=IIf(showError, xlValidAlertStop, xlValidAlertInformation), Operator:=xlBetween, Formula1:="=" & listName
         .IgnoreBlank = True
         .InCellDropdown = True
-        .ShowError = True
+        .ShowError = showError
     End With
 End Sub
 

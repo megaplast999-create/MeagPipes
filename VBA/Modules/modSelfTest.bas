@@ -117,6 +117,181 @@ FailureHandler:
     RunGoldenNormal = "FAIL: " & Err.Description
 End Function
 
+Public Function RunGoldenApproved() As String
+    Dim total As Variant
+    Dim expected As Variant
+    Dim index As Long
+    Dim res As LineResult
+    Dim expectedPrices As Variant
+    Dim expectedLineValues As Variant
+
+    On Error GoTo FailureHandler
+    expected = CDec(176117500)
+    expectedPrices = Array(22351, 23570, 24396, 25220)
+    expectedLineValues = Array(44702000, 8249500, 12198000, 110968000)
+
+    total = ApprovedGoldenTotal()
+    If Abs(CDbl(CDec(total) - expected)) >= 1 Then
+        RunGoldenApproved = "FAIL: Approved total was " & CStr(total) & ", expected " & CStr(expected)
+        Exit Function
+    End If
+
+    For index = 0 To 3
+        res = ApprovedGoldenLine(index)
+        If Abs(CDbl(CDec(res.TotalPerM) - CDec(expectedPrices(index)))) >= 1 Then
+            RunGoldenApproved = "FAIL: Line " & CStr(index + 1) & " price was " & CStr(res.TotalPerM) & ", expected " & CStr(expectedPrices(index))
+            Exit Function
+        End If
+        If Abs(CDbl(CDec(res.LineValue) - CDec(expectedLineValues(index)))) >= 1 Then
+            RunGoldenApproved = "FAIL: Line " & CStr(index + 1) & " value was " & CStr(res.LineValue) & ", expected " & CStr(expectedLineValues(index))
+            Exit Function
+        End If
+    Next index
+
+    RunGoldenApproved = "PASS"
+    Exit Function
+
+FailureHandler:
+    RunGoldenApproved = "FAIL: " & Err.Description
+End Function
+
+Public Function RunDynamicStagedCostingSelfTests() As String
+    On Error GoTo FailureHandler
+    Dim resBase As LineResult
+    Dim resOverride As LineResult
+    Dim resBelow As LineResult
+    Dim resReset As LineResult
+    Dim resDynamic As LineResult
+    Dim lineData As QuoteLineInput
+    Dim rates As RateInput
+    
+    ' 1. Verify Approved Base Line 1 (1226mm ID x 8.4mm WT, 2000m)
+    resBase = ApprovedGoldenLine(0)
+    If Abs(CDbl(CDec(resBase.CalculatedPrice) - 22351)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Base calculated price was " & CStr(resBase.CalculatedPrice) & ", expected 22351"
+        Exit Function
+    End If
+    If resBase.PriceSource <> "CALCULATED" Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Base PriceSource was " & resBase.PriceSource & ", expected CALCULATED"
+        Exit Function
+    End If
+    If Abs(CDbl(CDec(resBase.PriceVariance))) > 0.01 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Base PriceVariance was " & CStr(resBase.PriceVariance) & ", expected 0"
+        Exit Function
+    End If
+    ' Raw material: (62000 + 0) * 1.02 = 63240
+    If Abs(CDbl(CDec(resBase.RawMaterialCostPerMT) - 63240)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Raw material cost was " & CStr(resBase.RawMaterialCostPerMT) & ", expected 63240"
+        Exit Function
+    End If
+    ' Bare pipe: 63240 + 4000 = 67240
+    If Abs(CDbl(CDec(resBase.BarePipeCostPerMT) - 67240)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Bare pipe cost was " & CStr(resBase.BarePipeCostPerMT) & ", expected 67240"
+        Exit Function
+    End If
+    
+    ' 2. Test Manual Price Override Above Calculated
+    LoadDefaultRateInput rates, False
+    rates.Option1Mode = False
+    rates.ExtRate = CDec(500)
+    rates.IntRate = CDec(250)
+    rates.TripRate = CDec(SettingValue("TripRateManual"))
+    rates.PI = CDec(3.14)
+    rates.ManualFC = CDec(1024)
+    rates.ManualSellingPrice = CDec(23000)
+    rates.OverrideReason = "Client negotiation"
+    
+    With lineData
+        .Basis = "ID"
+        .SizeMM = CDec(1226)
+        .WT = CDec(8.4)
+        .Qty = CDec(2000)
+        .Unit = "Metres"
+        .PipeLen = CDec(12)
+        .PerTrailer = CDec(4)
+        .HasExt = True
+        .HasInt = True
+    End With
+    
+    resOverride = CalcLine(lineData, rates, False)
+    If Abs(CDbl(CDec(resOverride.CalculatedPrice) - 22351)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Calculated price not preserved during override: " & CStr(resOverride.CalculatedPrice)
+        Exit Function
+    End If
+    If Abs(CDbl(CDec(resOverride.AppliedPrice) - 23000)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Applied price was " & CStr(resOverride.AppliedPrice) & ", expected 23000"
+        Exit Function
+    End If
+    If resOverride.PriceSource <> "MANUAL_OVERRIDE" Then
+        RunDynamicStagedCostingSelfTests = "FAIL: PriceSource during override was " & resOverride.PriceSource
+        Exit Function
+    End If
+    If Abs(CDbl(CDec(resOverride.PriceVariance) - 649)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: PriceVariance was " & CStr(resOverride.PriceVariance) & ", expected 649"
+        Exit Function
+    End If
+    If Abs(CDbl(CDec(resOverride.LineValue) - 46000000)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: LineValue was " & CStr(resOverride.LineValue) & ", expected 46000000"
+        Exit Function
+    End If
+    
+    ' 3. Test Manual Price Override Below Calculated
+    rates.ManualSellingPrice = CDec(21500)
+    rates.OverrideReason = "Competitive discount"
+    resBelow = CalcLine(lineData, rates, False)
+    If Abs(CDbl(CDec(resBelow.AppliedPrice) - 21500)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Applied discount price was " & CStr(resBelow.AppliedPrice)
+        Exit Function
+    End If
+    If Abs(CDbl(CDec(resBelow.PriceVariance) - (-851))) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Negative PriceVariance was " & CStr(resBelow.PriceVariance) & ", expected -851"
+        Exit Function
+    End If
+    If Abs(CDbl(CDec(resBelow.LineValue) - 43000000)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Discount LineValue was " & CStr(resBelow.LineValue)
+        Exit Function
+    End If
+    
+    ' 4. Test Manual Override Reset (ManualSellingPrice = 0)
+    rates.ManualSellingPrice = CDec(0)
+    rates.OverrideReason = ""
+    resReset = CalcLine(lineData, rates, False)
+    If Abs(CDbl(CDec(resReset.AppliedPrice) - 22351)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Restored price was " & CStr(resReset.AppliedPrice) & ", expected 22351"
+        Exit Function
+    End If
+    If resReset.PriceSource <> "CALCULATED" Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Restored PriceSource was " & resReset.PriceSource
+        Exit Function
+    End If
+    If Abs(CDbl(CDec(resReset.PriceVariance))) > 0.01 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Restored PriceVariance was " & CStr(resReset.PriceVariance)
+        Exit Function
+    End If
+    
+    ' 5. Test Dynamic Recalculation with New Steel Rate & Yield %
+    rates.Steel = CDec(68000)
+    rates.YieldPct = CDec(4#)
+    rates.ManualFC = 0
+    resDynamic = CalcLine(lineData, rates, False)
+    ' Raw material = 68000 * 1.04 = 70720
+    If Abs(CDbl(CDec(resDynamic.RawMaterialCostPerMT) - 70720)) >= 1 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Dynamic raw material was " & CStr(resDynamic.RawMaterialCostPerMT) & ", expected 70720"
+        Exit Function
+    End If
+    ' Calculated price should increase significantly from 22351
+    If CDbl(resDynamic.CalculatedPrice) <= 22351 Then
+        RunDynamicStagedCostingSelfTests = "FAIL: Dynamic calculated price did not increase: " & CStr(resDynamic.CalculatedPrice)
+        Exit Function
+    End If
+    
+    RunDynamicStagedCostingSelfTests = "PASS"
+    Exit Function
+    
+FailureHandler:
+    RunDynamicStagedCostingSelfTests = "FAIL: " & Err.Description
+End Function
+
 Public Function RunP5GoldenTestSuite() As String
     Dim outputPath As String
     Dim fileNumber As Integer
@@ -353,6 +528,8 @@ Public Function RunAllSelfTests() As String
     End If
     
     ' Core Component Evaluations
+    EvalTest "P3/P5 Golden Approved Company CostSheet (176,117,500 INR, 7250 MTR)", RunGoldenApproved(), results, passCount, failCount, humanCount
+    EvalTest "P3 Dynamic Staged Costing & Price Override", RunDynamicStagedCostingSelfTests(), results, passCount, failCount, humanCount
     EvalTest "P3/P5 Golden Legacy Contract (178,657,900 INR, 7250 MTR)", RunGoldenLegacy(), results, passCount, failCount, humanCount
     EvalTest "P3/P5 Golden Normal Option 1 (178,801,050 INR, Line 4 = 25,581/m)", RunGoldenNormal(), results, passCount, failCount, humanCount
     EvalTest "P2 Invalid Geometry Guard", RunP3InvalidGeometryTest(), results, passCount, failCount, humanCount
@@ -470,12 +647,8 @@ Public Sub PopulateGoldenReferenceQuote()
     modProtection.UnprotectSheet wsQ
     modProtection.UnprotectSheet wsLines
     
-    ' Clear existing lines
-    If tblLines.ListRows.Count > 0 Then
-        On Error Resume Next
-        tblLines.DataBodyRange.Delete
-        On Error GoTo 0
-    End If
+    ' Clear existing lines cleanly
+    modQuoteLines.ClearAllQuoteLines
     
     ' Set Header
     wsQ.Range("B4").Value = "MKTG/ENQ/26-27/594"
@@ -483,22 +656,22 @@ Public Sub PopulateGoldenReferenceQuote()
     wsQ.Range("B8").Value = "UNIPRO"
     wsQ.Range("B9").Value = "Mr. Sharma"
     wsQ.Range("B11").Value = "Project Site, Gujarat"
-    wsQ.Range("B14").Value = "P02"
-    wsQ.Range("B15").Value = "30 Days from Dispatch"
-    wsQ.Range("B16").Value = 30
-    wsQ.Range("B17").Value = "Metre"
-    wsQ.Range("B18").Value = "NORMAL"
+    wsQ.Range("B13").Value = "P02"
+    wsQ.Range("B14").Value = "30 Days from Dispatch"
+    wsQ.Range("B15").Value = 30
+    wsQ.Range("B16").Value = "Metres"
+    wsQ.Range("B17").Value = "NORMAL"
     
     ' Add 4 Golden Lines
-    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1226, 8.4, "HSAW-002", 2000, "Metres", 12, "P02"
-    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1300, 8.4, "HSAW-002", 350, "Metres", 12, "P02"
-    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1350, 8.4, "HSAW-002", 500, "Metres", 12, "P02"
-    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1400, 8.4, "HSAW-002", 4400, "Metres", 12, "P02"
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1226, 8.4, "HSAW-002", 2000, "Metres", 12, "P02", manualFC:=1024
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1300, 8.4, "HSAW-002", 350, "Metres", 12, "P02", manualFC:=1014
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1350, 8.4, "HSAW-002", 500, "Metres", 12, "P02", manualFC:=1011
+    modQuoteLines.AddQuoteLine "MKTG/ENQ/26-27/594", "P02", "HSAW", "ID", 1400, 8.4, "HSAW-002", 4400, "Metres", 12, "P02", manualFC:=1008
     
     ' Recalculate and refresh display
     modQuote.RecalculateQuote
     modUI.RefreshQuoteLinesDisplay
     
     Application.EnableEvents = prevEvents
-    Application.ScreenUpdating = prevScreen
+    If Application.Visible Then Application.ScreenUpdating = prevScreen
 End Sub

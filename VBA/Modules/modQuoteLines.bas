@@ -20,7 +20,11 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
     Optional ByVal priceByMT As Boolean = False, _
     Optional ByVal manualFC As Variant, _
     Optional ByVal tripRate As Variant, _
-    Optional ByVal isCustomSize As Boolean = False)
+    Optional ByVal isCustomSize As Boolean = False, _
+    Optional ByVal extCoating As String = "", _
+    Optional ByVal intCoating As String = "", _
+    Optional ByVal manualSellingPrice As Variant, _
+    Optional ByVal overrideReason As String = "")
 
     Dim tableObject As ListObject
     Dim lineObject As ListRow
@@ -45,25 +49,7 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
     
     ValidateProductFamily productId, family
     
-    Dim isCustom As Boolean
-    isCustom = isCustomSize
-    If Not isCustom Then
-        On Error Resume Next
-        ValidateSize family, basis, sizeMm
-        If Err.Number <> 0 Then
-            isCustom = True
-            Err.Clear
-        Else
-            ValidateThickness family, thicknessMm
-            If Err.Number <> 0 Then
-                isCustom = True
-                Err.Clear
-            End If
-        End If
-        On Error GoTo 0
-    End If
-    
-    If isCustom Then
+    If isCustomSize Then
         ValidateCustomDimensions family, basis, sizeMm, thicknessMm
     Else
         ValidateSize family, basis, sizeMm
@@ -112,17 +98,44 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
         .Cells(1, tableObject.ListColumns("SizeMM").Index).Value = sizeMm
         .Cells(1, tableObject.ListColumns("ThicknessMM").Index).Value = thicknessMm
         .Cells(1, tableObject.ListColumns("GradeID").Index).Value = gradeId
+        .Cells(1, tableObject.ListColumns("CoatingExternalID").Index).Value = extCoating
+        .Cells(1, tableObject.ListColumns("CoatingInternalID").Index).Value = intCoating
         .Cells(1, tableObject.ListColumns("Quantity").Index).Value = quantity
         .Cells(1, tableObject.ListColumns("QuantityUnit").Index).Value = quantityUnit
         .Cells(1, tableObject.ListColumns("PipeLengthM").Index).Value = pipeLengthM
         .Cells(1, tableObject.ListColumns("PlantID").Index).Value = plantId
         .Cells(1, tableObject.ListColumns("Status").Index).Value = "DRAFT"
+        
+        Dim colFCInit As Long
+        colFCInit = 0
+        On Error Resume Next
+        colFCInit = tableObject.ListColumns("ManualFC").Index
+        If colFCInit = 0 Then colFCInit = tableObject.ListColumns("FCOverride").Index
+        On Error GoTo 0
+        If colFCInit > 0 And Not IsMissing(manualFC) Then
+            .Cells(1, colFCInit).Value = manualFC
+        End If
+        
+        Dim colCustInit As Long
+        colCustInit = 0
+        On Error Resume Next
+        colCustInit = tableObject.ListColumns("IsCustomSize").Index
+        On Error GoTo 0
+        If colCustInit > 0 Then
+            .Cells(1, colCustInit).Value = IIf(isCustomSize, "YES", "NO")
+        End If
     End With
 
     On Error GoTo CalculationError
 
-    hasCoating = (InStr(1, productId, "02", vbTextCompare) > 0 Or _
-                  InStr(1, productId, "04", vbTextCompare) > 0)
+    If Len(extCoating) > 0 And UCase$(extCoating) <> "BARE" And UCase$(extCoating) <> "NONE" Then
+        hasCoating = True
+    ElseIf Len(intCoating) > 0 And UCase$(intCoating) <> "NONE" Then
+        hasCoating = True
+    Else
+        hasCoating = (InStr(1, productId, "02", vbTextCompare) > 0 Or _
+                      InStr(1, productId, "04", vbTextCompare) > 0)
+    End If
     With lineData
         .Basis = basis
         .SizeMM = sizeMm
@@ -136,19 +149,34 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
     End With
 
     LoadDefaultRateInput rates, legacyMode
+    rates.Option1Mode = False
     rates.ExtRate = CDec(500)
-    rates.IntRate = CDec(275)
+    rates.IntRate = CDec(250)
+    rates.PI = CDec(3.14)
     If IsMissing(tripRate) Then
         rates.TripRate = CDec(SettingValue("TripRateManual"))
     Else
         rates.TripRate = CDec(tripRate)
     End If
-    If legacyMode Then
-        If IsMissing(manualFC) Then
-            rates.ManualFC = CDec(SettingValue("DefaultFinancialPct"))
+    If IsMissing(manualFC) Then
+        rates.ManualFC = CDec(0)
+    Else
+        rates.ManualFC = CDec(manualFC)
+    End If
+    
+    If Not IsMissing(manualSellingPrice) Then
+        If Val(manualSellingPrice) > 0 Then
+            rates.ManualSellingPrice = CDec(Val(manualSellingPrice))
         Else
-            rates.ManualFC = CDec(manualFC)
+            rates.ManualSellingPrice = CDec(0)
         End If
+    Else
+        rates.ManualSellingPrice = CDec(0)
+    End If
+    If Len(Trim$(overrideReason)) > 0 Then
+        rates.OverrideReason = Trim$(overrideReason)
+    Else
+        rates.OverrideReason = ""
     End If
 
     result = CalcLine(lineData, rates, priceByMT)
@@ -167,12 +195,14 @@ End Sub
 Public Sub AddCustomQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVal family As String, _
     ByVal basis As String, ByVal sizeMm As Double, ByVal thicknessMm As Double, _
     ByVal gradeId As String, ByVal quantity As Double, ByVal quantityUnit As String, _
-    ByVal pipeLengthM As Double, ByVal plantId As String)
+    ByVal pipeLengthM As Double, ByVal plantId As String, _
+    Optional ByVal extCoating As String = "Bare", Optional ByVal intCoating As String = "None")
 
     AddQuoteLine quoteId:=quoteId, productId:=productId, family:=family, _
                  basis:=basis, sizeMm:=sizeMm, thicknessMm:=thicknessMm, _
                  gradeId:=gradeId, quantity:=quantity, quantityUnit:=quantityUnit, _
-                 pipeLengthM:=pipeLengthM, plantId:=plantId, isCustomSize:=True
+                 pipeLengthM:=pipeLengthM, plantId:=plantId, isCustomSize:=True, _
+                 extCoating:=extCoating, intCoating:=intCoating
 End Sub
 
 Public Sub DeleteQuoteLine(ByVal targetLineId As String)
@@ -216,6 +246,25 @@ Public Sub ClearQuoteLine(ByVal targetLineId As String)
     DeleteQuoteLine targetLineId
 End Sub
 
+Public Sub ClearAllQuoteLines()
+    Dim wsLines As Worksheet
+    Dim tblLines As ListObject
+    
+    Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    Set tblLines = wsLines.ListObjects("tblQuoteLines")
+    modProtection.UnprotectSheet wsLines
+    
+    Do While tblLines.ListRows.Count > 1
+        tblLines.ListRows(tblLines.ListRows.Count).Delete
+    Loop
+    If tblLines.ListRows.Count = 1 Then
+        tblLines.ListRows(1).Range.ClearContents
+    End If
+    
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+End Sub
+
+
 Public Function DuplicateQuoteLine(ByVal sourceLineId As String) As String
     Dim wsLines As Worksheet
     Dim tblLines As ListObject
@@ -239,6 +288,13 @@ Public Function DuplicateQuoteLine(ByVal sourceLineId As String) As String
     Dim qId As String, pId As String, fam As String, bas As String
     Dim sz As Double, wt As Double, grd As String, qty As Double, unt As String
     Dim pLen As Double, plt As String, leg As Boolean
+    Dim extC As String, intC As String, isCust As Boolean
+    
+    Dim colCustom As Long
+    colCustom = 0
+    On Error Resume Next
+    colCustom = tblLines.ListColumns("IsCustomSize").Index
+    On Error GoTo 0
     
     With srcRow.Range
         qId = Trim$(CStr(.Cells(1, tblLines.ListColumns("QuoteID").Index).Value))
@@ -248,40 +304,33 @@ Public Function DuplicateQuoteLine(ByVal sourceLineId As String) As String
         sz = Val(.Cells(1, tblLines.ListColumns("SizeMM").Index).Value)
         wt = Val(.Cells(1, tblLines.ListColumns("ThicknessMM").Index).Value)
         grd = Trim$(CStr(.Cells(1, tblLines.ListColumns("GradeID").Index).Value))
+        extC = Trim$(CStr(.Cells(1, tblLines.ListColumns("CoatingExternalID").Index).Value))
+        intC = Trim$(CStr(.Cells(1, tblLines.ListColumns("CoatingInternalID").Index).Value))
         qty = Val(.Cells(1, tblLines.ListColumns("Quantity").Index).Value)
         unt = Trim$(CStr(.Cells(1, tblLines.ListColumns("QuantityUnit").Index).Value))
         pLen = Val(.Cells(1, tblLines.ListColumns("PipeLengthM").Index).Value)
         plt = Trim$(CStr(.Cells(1, tblLines.ListColumns("PlantID").Index).Value))
+        If colCustom > 0 Then
+            isCust = (StrComp(Trim$(CStr(.Cells(1, colCustom).Value)), "YES", vbTextCompare) = 0)
+        Else
+            isCust = False
+        End If
     End With
     
     leg = (InStr(1, CStr(ThisWorkbook.Worksheets("QUOTE").Range("B17").Value), "LEGACY", vbTextCompare) > 0 Or _
            InStr(1, CStr(ThisWorkbook.Worksheets("QUOTE").Range("E12").Value), "LEGACY", vbTextCompare) > 0)
            
+    ' Duplicate line starts as CALCULATED with manualSellingPrice = 0 and overrideReason = ""
     AddQuoteLine quoteId:=qId, productId:=pId, family:=fam, basis:=bas, _
                  sizeMm:=sz, thicknessMm:=wt, gradeId:=grd, quantity:=qty, _
-                 quantityUnit:=unt, pipeLengthM:=pLen, plantId:=plt, legacyMode:=leg
+                 quantityUnit:=unt, pipeLengthM:=pLen, plantId:=plt, legacyMode:=leg, _
+                 isCustomSize:=isCust, extCoating:=extC, intCoating:=intC, _
+                 manualSellingPrice:=0, overrideReason:=""
                  
     Dim newIdx As Long
     newIdx = tblLines.ListRows.Count
     DuplicateQuoteLine = Trim$(CStr(tblLines.ListRows(newIdx).Range.Cells(1, tblLines.ListColumns("LineID").Index).Value))
 End Function
-
-Public Sub ClearAllQuoteLines()
-    Dim wsLines As Worksheet
-    Dim tblLines As ListObject
-    
-    Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
-    Set tblLines = wsLines.ListObjects("tblQuoteLines")
-    modProtection.UnprotectSheet wsLines
-    
-    If tblLines.ListRows.Count > 0 Then
-        On Error Resume Next
-        tblLines.DataBodyRange.Delete
-        On Error GoTo 0
-    End If
-    
-    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
-End Sub
 
 Public Sub EditQuoteLine(ByVal targetLineId As String, _
                          Optional ByVal newQty As Variant, _
@@ -331,6 +380,158 @@ Public Sub EditQuoteLine(ByVal targetLineId As String, _
         End If
     End With
     
+    modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
+End Sub
+
+Public Sub UpdateQuoteLineFull(ByVal targetLineId As String, ByVal productId As String, _
+    ByVal family As String, ByVal basis As String, ByVal sizeMm As Double, _
+    ByVal thicknessMm As Double, ByVal gradeId As String, ByVal quantity As Double, _
+    ByVal quantityUnit As String, ByVal pipeLengthM As Double, ByVal plantId As String, _
+    Optional ByVal extCoating As String = "", Optional ByVal intCoating As String = "", _
+    Optional ByVal legacyMode As Boolean = False, Optional ByVal priceByMT As Boolean = False, _
+    Optional ByVal isCustomSize As Variant, _
+    Optional ByVal manualSellingPrice As Variant, _
+    Optional ByVal overrideReason As String = "")
+
+    Dim wsLines As Worksheet
+    Dim tblLines As ListObject
+    Dim rObj As ListRow
+    Dim targetRow As ListRow
+    Dim lineData As QuoteLineInput
+    Dim rates As RateInput
+    Dim result As LineResult
+    Dim hasCoating As Boolean
+    
+    If Not IsValidQuantity(quantity) Then
+        Err.Raise vbObjectError + 1302, "UpdateQuoteLineFull", "Quantity must be greater than zero."
+    End If
+    If Not IsValidPipeLength(pipeLengthM) Then
+        Err.Raise vbObjectError + 1303, "UpdateQuoteLineFull", "Pipe length must be between 6 and 13 metres."
+    End If
+    If UCase$(Trim$(basis)) <> "OD" And UCase$(Trim$(basis)) <> "ID" Then
+        Err.Raise vbObjectError + 1304, "UpdateQuoteLineFull", "Basis must be OD or ID."
+    End If
+    
+    ValidateProductFamily productId, family
+
+    Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    Set tblLines = wsLines.ListObjects("tblQuoteLines")
+    
+    For Each rObj In tblLines.ListRows
+        If StrComp(Trim$(CStr(rObj.Range.Cells(1, tblLines.ListColumns("LineID").Index).Value)), targetLineId, vbTextCompare) = 0 Then
+            Set targetRow = rObj
+            Exit For
+        End If
+    Next rObj
+    
+    If targetRow Is Nothing Then
+        Err.Raise vbObjectError + 1321, "UpdateQuoteLineFull", "Line ID " & targetLineId & " not found."
+    End If
+
+    ' Determine custom dimension status
+    Dim isCustom As Boolean
+    Dim colCustom As Long
+    colCustom = 0
+    On Error Resume Next
+    colCustom = tblLines.ListColumns("IsCustomSize").Index
+    On Error GoTo 0
+    
+    If Not IsMissing(isCustomSize) Then
+        isCustom = CBool(isCustomSize)
+    ElseIf colCustom > 0 Then
+        isCustom = (StrComp(Trim$(CStr(targetRow.Range.Cells(1, colCustom).Value)), "YES", vbTextCompare) = 0)
+    Else
+        isCustom = False
+    End If
+    
+    If isCustom Then
+        ValidateCustomDimensions family, basis, sizeMm, thicknessMm
+    Else
+        ValidateSize family, basis, sizeMm
+        ValidateThickness family, thicknessMm
+    End If
+    
+    ValidateGrade family, gradeId
+    ValidateQuantityUnit quantityUnit
+    ValidatePlant plantId
+
+    modProtection.UnprotectSheet wsLines
+    
+    With targetRow.Range
+        .Cells(1, tblLines.ListColumns("ProductID").Index).Value = productId
+        .Cells(1, tblLines.ListColumns("Family").Index).Value = family
+        .Cells(1, tblLines.ListColumns("Basis").Index).Value = basis
+        .Cells(1, tblLines.ListColumns("SizeMM").Index).Value = sizeMm
+        .Cells(1, tblLines.ListColumns("ThicknessMM").Index).Value = thicknessMm
+        .Cells(1, tblLines.ListColumns("GradeID").Index).Value = gradeId
+        .Cells(1, tblLines.ListColumns("CoatingExternalID").Index).Value = extCoating
+        .Cells(1, tblLines.ListColumns("CoatingInternalID").Index).Value = intCoating
+        .Cells(1, tblLines.ListColumns("Quantity").Index).Value = quantity
+        .Cells(1, tblLines.ListColumns("QuantityUnit").Index).Value = quantityUnit
+        .Cells(1, tblLines.ListColumns("PipeLengthM").Index).Value = pipeLengthM
+        .Cells(1, tblLines.ListColumns("PlantID").Index).Value = plantId
+        If colCustom > 0 Then
+            .Cells(1, colCustom).Value = IIf(isCustom, "YES", "NO")
+        End If
+    End With
+    
+    If Len(extCoating) > 0 And UCase$(extCoating) <> "BARE" And UCase$(extCoating) <> "NONE" Then
+        hasCoating = True
+    ElseIf Len(intCoating) > 0 And UCase$(intCoating) <> "NONE" Then
+        hasCoating = True
+    Else
+        hasCoating = (InStr(1, productId, "02", vbTextCompare) > 0 Or InStr(1, productId, "04", vbTextCompare) > 0)
+    End If
+    
+    With lineData
+        .Basis = basis
+        .SizeMM = sizeMm
+        .WT = thicknessMm
+        .Qty = quantity
+        .Unit = quantityUnit
+        .PipeLen = pipeLengthM
+        .PerTrailer = CDec(4)
+        .HasExt = hasCoating
+        .HasInt = hasCoating
+    End With
+    
+    LoadDefaultRateInput rates, legacyMode
+    rates.Option1Mode = False
+    rates.ExtRate = CDec(500)
+    rates.IntRate = CDec(250)
+    rates.PI = CDec(3.14)
+    rates.TripRate = CDec(SettingValue("TripRateManual"))
+    rates.ManualFC = CDec(0)
+    
+    ' Read or set manual selling price & override reason
+    Dim colManP As Long, colReas As Long
+    On Error Resume Next
+    colManP = tblLines.ListColumns("ManualSellingPrice").Index
+    colReas = tblLines.ListColumns("OverrideReason").Index
+    On Error GoTo 0
+    
+    If Not IsMissing(manualSellingPrice) Then
+        If Val(manualSellingPrice) > 0 Then
+            rates.ManualSellingPrice = CDec(Val(manualSellingPrice))
+        Else
+            rates.ManualSellingPrice = CDec(0)
+        End If
+    ElseIf colManP > 0 And Val(targetRow.Range.Cells(1, colManP).Value) > 0 Then
+        rates.ManualSellingPrice = CDec(Val(targetRow.Range.Cells(1, colManP).Value))
+    Else
+        rates.ManualSellingPrice = CDec(0)
+    End If
+    
+    If Len(Trim$(overrideReason)) > 0 Then
+        rates.OverrideReason = Trim$(overrideReason)
+    ElseIf colReas > 0 Then
+        rates.OverrideReason = Trim$(CStr(targetRow.Range.Cells(1, colReas).Value))
+    Else
+        rates.OverrideReason = ""
+    End If
+    
+    result = CalcLine(lineData, rates, priceByMT)
+    WriteCalculatedQuoteLine targetRow, tblLines, result, priceByMT
     modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
 End Sub
 
@@ -385,12 +586,46 @@ Private Sub WriteCalculatedQuoteLine(ByVal lineObject As ListRow, _
         .Cells(1, tableObject.ListColumns("Metres").Index).Value = result.Metres
         .Cells(1, tableObject.ListColumns("PipeCount").Index).Value = result.Pipes
         .Cells(1, tableObject.ListColumns("WeightMT").Index).Value = result.MT
-        .Cells(1, tableObject.ListColumns("UnitPrice").Index).Value = _
-            IIf(priceByMT, result.TotalPerMT, result.TotalPerM)
+        .Cells(1, tableObject.ListColumns("UnitPrice").Index).Value = result.AppliedPrice
         .Cells(1, tableObject.ListColumns("PriceUnit").Index).Value = _
             IIf(priceByMT, "MT", "Metres")
         .Cells(1, tableObject.ListColumns("LineTotal").Index).Value = result.LineValue
-        .Cells(1, tableObject.ListColumns("Status").Index).Value = "CALCULATED"
+        
+        Dim colCalcP As Long, colSrc As Long, colVar As Long
+        Dim colManP As Long, colReas As Long
+        On Error Resume Next
+        colCalcP = tableObject.ListColumns("CalculatedUnitPrice").Index
+        colSrc = tableObject.ListColumns("PriceSource").Index
+        colVar = tableObject.ListColumns("PriceVariance").Index
+        colManP = tableObject.ListColumns("ManualSellingPrice").Index
+        colReas = tableObject.ListColumns("OverrideReason").Index
+        On Error GoTo 0
+        
+        If colCalcP > 0 Then .Cells(1, colCalcP).Value = result.CalculatedPrice
+        If colSrc > 0 Then .Cells(1, colSrc).Value = result.PriceSource
+        If colVar > 0 Then .Cells(1, colVar).Value = result.PriceVariance
+        
+        If colManP > 0 Then
+            If result.PriceSource = "MANUAL_OVERRIDE" Then
+                .Cells(1, colManP).Value = result.AppliedPrice
+            Else
+                .Cells(1, colManP).ClearContents
+            End If
+        End If
+        
+        If colReas > 0 Then
+            If result.PriceSource = "MANUAL_OVERRIDE" Then
+                .Cells(1, colReas).Value = result.OverrideReason
+            Else
+                .Cells(1, colReas).ClearContents
+            End If
+        End If
+        
+        If result.PriceSource = "MANUAL_OVERRIDE" Then
+            .Cells(1, tableObject.ListColumns("Status").Index).Value = "OVERRIDDEN"
+        Else
+            .Cells(1, tableObject.ListColumns("Status").Index).Value = "CALCULATED"
+        End If
     End With
 End Sub
 
@@ -638,7 +873,7 @@ Public Function RunCustomSizeSelfTests() As String
     On Error GoTo FailureHandler
     Dim errCaught As Boolean
     
-    ' 1. Test valid custom size
+    ' 1. Test valid custom size geometry
     ValidateCustomDimensions "HSAW", "ID", 1500, 10#
     ValidateCustomDimensions "HSAW", "OD", 1520, 10#
     
@@ -672,6 +907,17 @@ Public Function RunCustomSizeSelfTests() As String
     On Error GoTo FailureHandler
     If Not errCaught Then
         RunCustomSizeSelfTests = "FAIL: Did not reject OD <= 2*WT"
+        Exit Function
+    End If
+    
+    ' 5. Test strict catalog enforcement (non-standard size rejected when isCustomSize=False)
+    errCaught = False
+    On Error Resume Next
+    ValidateSize "HSAW", "ID", 1250#
+    If Err.Number <> 0 Then errCaught = True
+    On Error GoTo FailureHandler
+    If Not errCaught Then
+        RunCustomSizeSelfTests = "FAIL: Non-standard size 1250 mm was incorrectly accepted by catalog validation"
         Exit Function
     End If
     

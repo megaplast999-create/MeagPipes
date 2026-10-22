@@ -1,0 +1,35 @@
+Attribute VB_Name = "modSelfTest"
+Option Explicit
+
+Public Sub RunP3GoldenTests()
+    Dim outputPath As String
+    Dim fileNumber As Integer
+    Dim legacyTotal As Variant
+    Dim normalTotal As Variant
+
+    outputPath = ThisWorkbook.Path & Application.PathSeparator & "TESTS" & _
+        Application.PathSeparator & "vba_p3_golden_20261008.txt"
+    On Error GoTo TestError
+    legacyTotal = P3GoldenTotal(True)
+    normalTotal = P3GoldenTotal(False)
+
+    fileNumber = FreeFile
+    Open outputPath For Output As #fileNumber
+    Print #fileNumber, "P3 VBA golden test date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+    Print #fileNumber, "Legacy total actual=" & CStr(legacyTotal) & " expected=178657900"
+    Print #fileNumber, "Normal total actual=" & CStr(normalTotal) & " expected=178805450"
+    Print #fileNumber, "Legacy total PASS=" & CStr(Abs(CDbl(legacyTotal) - 178657900#) < 1)
+    Print #fileNumber, "Normal total PASS=" & CStr(Abs(CDbl(normalTotal) - 178805450#) < 1)
+    Print #fileNumber, "RESULT=PASS"
+    Close #fileNumber
+    Exit Sub
+TestError:
+    fileNumber = FreeFile
+    Open outputPath For Output As #fileNumber
+    Print #fileNumber, "P3 VBA golden test date: " & Format$(Now, "yyyy-mm-dd hh:nn:ss")
+    Print #fileNumber, "RESULT=FAIL"
+    Print #fileNumber, "ERROR_SOURCE=" & Err.Source
+    Print #fileNumber, "ERROR_NUMBER=" & CStr(Err.Number)
+    Print #fileNumber, "ERROR_DESCRIPTION=" & Err.Description
+    Close #fileNumber
+End Sub

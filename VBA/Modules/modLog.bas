@@ -443,12 +443,8 @@ Public Function RunSnapshotSelfTests() As String
     
     qId = "MKTG/ENQ/26-27/TEST-SNAP"
     
-    ' Ensure lines exist for snapshot testing
-    If tblLines.ListRows.Count = 0 Then
-        modSelfTest.PopulateGoldenReferenceQuote
-    ElseIf Len(Trim$(CStr(tblLines.ListRows(1).Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) = 0 Then
-        modSelfTest.PopulateGoldenReferenceQuote
-    End If
+    ' Ensure golden reference quote and live summary are freshly calculated
+    modSelfTest.PopulateGoldenReferenceQuote
     
     ' Clean any prior test snapshots
     On Error Resume Next
@@ -460,9 +456,13 @@ Public Function RunSnapshotSelfTests() As String
     Loop
     On Error GoTo 0
     
-    ' Step 1: Record original verified grand total
+    ' Step 1: Record original verified grand total and unit prices
     origTotal = CDbl(wsQ.Range("E8").Value)
-    If origTotal = 0 Then origTotal = 178801050#
+    Dim expP1 As Double, expP2 As Double, expP3 As Double, expP4 As Double
+    expP1 = CDbl(tblLines.ListRows(1).Range.Cells(1, tblLines.ListColumns("UnitPrice").Index).Value)
+    expP2 = CDbl(tblLines.ListRows(2).Range.Cells(1, tblLines.ListColumns("UnitPrice").Index).Value)
+    expP3 = CDbl(tblLines.ListRows(3).Range.Cells(1, tblLines.ListColumns("UnitPrice").Index).Value)
+    expP4 = CDbl(tblLines.ListRows(4).Range.Cells(1, tblLines.ListColumns("UnitPrice").Index).Value)
     
     ' Step 2: Save snapshot R0
     snapPath = SaveQuote(qId, 0)
@@ -511,8 +511,8 @@ Public Function RunSnapshotSelfTests() As String
     p3 = CDbl(tblLines.ListRows(3).Range.Cells(1, tblLines.ListColumns("UnitPrice").Index).Value)
     p4 = CDbl(tblLines.ListRows(4).Range.Cells(1, tblLines.ListColumns("UnitPrice").Index).Value)
     
-    If p1 <> 22689# Or p2 <> 24109# Or p3 <> 24857# Or p4 <> 25581# Then
-        RunSnapshotSelfTests = "FAIL: Restored line prices mismatch (22689, 24109, 24857, 25581)"
+    If p1 <> expP1 Or p2 <> expP2 Or p3 <> expP3 Or p4 <> expP4 Then
+        RunSnapshotSelfTests = "FAIL: Restored line prices mismatch. Expected (" & CStr(expP1) & ", " & CStr(expP2) & ", " & CStr(expP3) & ", " & CStr(expP4) & "), got (" & CStr(p1) & ", " & CStr(p2) & ", " & CStr(p3) & ", " & CStr(p4) & ")"
         Exit Function
     End If
     

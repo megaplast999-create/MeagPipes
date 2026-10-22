@@ -29,7 +29,6 @@ This catalog records all enterprise requirements, secrets, operational configura
   Set production passwords in the Windows environment:
   ```powershell
   [System.Environment]::SetEnvironmentVariable("MEGA_SHEET_PWD", "your_sheet_protection_password", "User")
-  [System.Environment]::SetEnvironmentVariable("MEGA_ADMIN_PWD", "your_admin_approval_password", "User")
   ```
 - **Fallback Activated:**
   - When unset, development macros proceed with empty-string password validation.
@@ -55,7 +54,45 @@ This catalog records all enterprise requirements, secrets, operational configura
 
 ---
 
-## 4. Real Commercial Rates & Financial Rules
+## 4. Manual Selling-Price Override Unit and Conversion Rules
+- **Status:** `NEEDS_HUMAN`
+- **Applicable Phase:** Phase 5 (Manual Price Override), Phase 6 (Acceptance Audit)
+- **Business Question:**
+  Currently, the manual selling-price override macro (`UI_ManualPriceOverride`) prompts and captures the override price in the quotation line's active `QuantityUnit` (typically ₹ per Metre). If an enquiry requests a quotation on a per-MT basis (`QuantityUnit = "MT"`), how should the override behave?
+- **Options for Management Decision:**
+  - **Option A (Recommended):** Context-Aware Unit. The override dialog prompts in the enquiry's active unit (`Metre` or `MT`). If per-MT, derive the line's per-metre selling price using `RoundUp(PricePerMT * MassMTperM, 0)`.
+  - **Option B:** Strict Dual-Entry. Require the user to specify both per-Metre and per-MT prices explicitly.
+- **Safe Interim Default:** Active unit context is used. The prompt displays both calculated per-Metre and calculated per-MT prices for reference.
+
+---
+
+## 5. Below-Floor Selling Price Warning and Commercial Approval Policy
+- **Status:** `NEEDS_HUMAN`
+- **Applicable Phase:** Phase 5 (Manual Price Override), Phase 21 (Approval Workflow)
+- **Business Question:**
+  If an authorized user enters a manual selling price that falls below the baseline manufacturing cost (e.g. `PreCost + Freight` per MT, representing negative gross margin):
+- **Options for Management Decision:**
+  - **Option A (Recommended):** Warning Confirmation + Admin Escalation. Present a high-priority warning dialog displaying the negative margin amount, log an `UNDER_MARGIN_OVERRIDE` alert in `tblQuoteLog`, and require `MEGA_ADMIN_PWD` approval before transitioning from `Review` to `Approved`.
+  - **Option B:** Hard Floor Block. Completely prohibit any manual selling price override below the pre-cost floor.
+- **Safe Interim Default:** The override is recorded, approval state is automatically invalidated to `Calculated`, and reason is mandated for audit review.
+
+---
+
+## 6. Financial Cost Formulation Ambiguity in Historical Reference CostSheets
+- **Status:** `NEEDS_HUMAN`
+- **Applicable Phase:** Phase 1 (Audit), Phase 3 (Staged Costing Engine)
+- **Business Question:**
+  The approved Unipro reference workbook (`CS Stacking 10-09-26`) exhibits two different financial cost locations:
+  1. Row 32 (Pre-Cost): Hardcoded manual values (`1024, 1014, 1011, 1008`) included inside bare-pipe pre-cost `C33 = SUM(C27:C32)`.
+  2. Row 41 (Post-Freight): Formulaic 1% of total landed cost including 18% GST: `=C40 * $B$41` (`1031.15, 1025.93, 1022.76, 1019.80`), which was not added downstream in that specific historical sheet.
+- **Options for Management Decision:**
+  - **Option A (Recommended):** Formulaic Standard for New Enquiries. Derive financial cost dynamically as `ROUND((PreCost + Ext + Int + Freight) * 1.18 * (FinPct / 100), 0)`, while preserving the `ManualFC` column in `tblQuoteLines` to allow exact replication of legacy or negotiated contracts.
+  - **Option B:** Pre-Cost Insertion. Always add financial cost as a line item inside Pre-Cost before coating and freight.
+- **Safe Interim Default:** Option A is implemented. When `ManualFC > 0`, the manual amount is used; when `ManualFC = 0`, the dynamic landed formula is computed.
+
+---
+
+## 7. Real Commercial Rates & Financial Rules Verification
 - **Status:** `NEEDS_HUMAN`
 - **Applicable Phase:** Phase 4 (Calculation Engine), Phase 7 (Freight Engine), Phase 11 (Costing)
 - **Reason:** Purchasing contracts, carrier freight rates, raw material coil tariffs, and commercial margins fluctuate dynamically and must be verified by the Commercial Director.
@@ -68,33 +105,11 @@ This catalog records all enterprise requirements, secrets, operational configura
   - Commercial floor margin percentages
   - Financial cost / interest rules per customer credit term
 - **Fallback Activated:**
-  - Verified baseline rates from Unipro reference workbook `MKTGENQ26-27-594_-_Unipro_CS.xlsx`.
+  - Verified baseline rates from Unipro reference workbook `MKTGENQ26-27-594 - Unipro 2.xlsx`.
 
 ---
 
-## 5. Plant Exact Coordinates & Physical Addresses
-- **Status:** `NEEDS_HUMAN`
-- **Applicable Phase:** Phase 8 (Plant Engine), Phase 9 (ORS Routing)
-- **Reason:** Exact dispatch gate addresses and postal codes for Jabalpur and Khopoli facilities must be confirmed with plant logistics management.
-- **Action Required:**
-  Verify plant postal codes in `MASTERS` sheet table `tblPlants`.
-- **Fallback Activated:**
-  - Seeded standard coordinates and postal codes for Jabalpur (MP) and Khopoli (MH).
-
----
-
-## 6. Competitor Pricing Intelligence per Quote
-- **Status:** `NEEDS_HUMAN`
-- **Applicable Phase:** Phase 10 (Competitor Engine)
-- **Reason:** Tender-specific competitor bids cannot be automated without human intelligence inputs.
-- **Action Required:**
-  Commercial estimators must populate latest competitor intelligence into the `COMPETITORS` sheet on a per-quote basis.
-- **Fallback Activated:**
-  - Built-in competitor landed price model and floor price threshold protection.
-
----
-
-## 7. Multi-User Physical Workstation LAN/WAN Trial
+## 8. Multi-User Physical Workstation LAN/WAN Trial
 - **Status:** `NEEDS_HUMAN`
 - **Applicable Phase:** Phase 16 & Phase 27 (Multi-User Trial)
 - **Reason:** Validating SMB locking across distinct physical PCs, varying network latencies, and Windows network redirectors requires human operators across multiple physical machines.
@@ -105,25 +120,14 @@ This catalog records all enterprise requirements, secrets, operational configura
 
 ---
 
-## 8. Parallel Quoting Trial (3 to 5 Real Historic Enquiries)
+## 9. Parallel Quoting Trial (3 to 5 Real Historic Enquiries)
 - **Status:** `NEEDS_HUMAN`
 - **Applicable Phase:** Phase 26 (Golden Quote Validation) & Phase 30 (Go-Live Readiness)
 - **Reason:** Validating 3–5 diverse historical commercial enquiries across different diameters, coatings, and delivery distances ensures commercial estimators and management have complete confidence before deprecating legacy spreadsheets.
 - **Action Required:**
   Run 3–5 recent real commercial enquiries in parallel through both the new quotation system and legacy sheets, cross-checking line rates and final offer totals.
 - **Fallback Activated:**
-  - Full Unipro reference quote (7,250 MTR, ₹178,657,900 Legacy / ₹178,801,050 Option 1 Normal) validated with 0 variance.
-
----
-
-## 9. Visual Approval of Layout & Offer Letter Wording
-- **Status:** `NEEDS_HUMAN`
-- **Applicable Phase:** Phase 12 (Offer Sheet), Phase 18 (Export Engine)
-- **Reason:** Corporate branding, disclaimer phrasing, legal boilerplate terms, and signature authorizations require visual sign-off by Marketing & Legal leadership.
-- **Action Required:**
-  Executive review of generated PDF offer letters and customer Excel files.
-- **Fallback Activated:**
-  - Word-for-word reproduction of 27 commercial terms from Unipro reference offer letter.
+  - Full Unipro reference quote (7,250 MTR, ₹176,117,500 Approved CostSheet / ₹178,657,900 Legacy / ₹178,801,050 Option 1 Normal) validated with 0 variance.
 
 ---
 
@@ -134,4 +138,4 @@ This catalog records all enterprise requirements, secrets, operational configura
 - **Action Required:**
   Commercial Leadership conducts training sessions and issues formal Go-Live Cutover Authorization.
 - **Fallback Activated:**
-  - Production release candidate packaged and staged under `RELEASE_CANDIDATE/` with complete operator manuals and rollback procedures. LIVE workbook remains untouched.
+  - Production release candidate packaged and staged under `RELEASE_CANDIDATE/` with complete operator manuals and rollback procedures. `LIVE` workbook remains untouched.

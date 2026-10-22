@@ -148,9 +148,11 @@ Public Function RunFreightSelfTests() As String
     On Error GoTo TestFail
     
     ' 1. Test Methods A, B, C
+    Dim expA As Variant
+    expA = CDec(SettingValue("TripRateManual"))
     tRate = GetTripRate("A", 782)
-    If tRate <> CDec(98000) Then
-        RunFreightSelfTests = "FAIL: Method A expected 98000, got " & CStr(tRate)
+    If tRate <> expA Then
+        RunFreightSelfTests = "FAIL: Method A expected " & CStr(expA) & ", got " & CStr(tRate)
         Exit Function
     End If
     

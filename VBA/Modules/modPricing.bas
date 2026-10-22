@@ -51,8 +51,11 @@ Public Type RateInput
     Handling As Variant
     TripRate As Variant
     ManualFC As Variant
+    ManualSellingPrice As Variant
+    OverrideReason As String
     ReferenceDistanceKm As Variant
     legacyMode As Boolean
+    Option1Mode As Boolean
 End Type
 
 
@@ -77,6 +80,13 @@ Public Type LineResult
     FreightPerM As Variant
     TotalPerM As Variant
     TotalPerMT As Variant
+    CalculatedPrice As Variant
+    AppliedPrice As Variant
+    PriceSource As String
+    PriceVariance As Variant
+    OverrideReason As String
+    RawMaterialCostPerMT As Variant
+    BarePipeCostPerMT As Variant
     LineValue As Variant
 End Type
 
@@ -362,18 +372,18 @@ Public Function CalcLine( _
 
     If lineData.HasInt Then
 
-        If rates.legacyMode Then
+        If rates.Option1Mode Then
             intc = _
                 CDec(rates.IntRate) * _
                 CDec(rates.PI) * _
-                od / _
+                idd / _
                 CDec(1000) / _
                 massMtPerM
         Else
             intc = _
                 CDec(rates.IntRate) * _
                 CDec(rates.PI) * _
-                idd / _
+                od / _
                 CDec(1000) / _
                 massMtPerM
         End If
@@ -397,12 +407,11 @@ Public Function CalcLine( _
 
     End If
 
-    If rates.legacyMode Then
+    If rates.Option1Mode Then
         freight = _
             RoundUpD( _
                 CDec(rates.TripRate) * _
-                (CDec(result.Metres) / CDec(lineData.PipeLen)) / _
-                CDec(lineData.PerTrailer) / _
+                CDec(result.Trailers) / _
                 result.MT, _
                 0 _
             ) + _
@@ -411,7 +420,8 @@ Public Function CalcLine( _
         freight = _
             RoundUpD( _
                 CDec(rates.TripRate) * _
-                CDec(result.Trailers) / _
+                (CDec(result.Metres) / CDec(lineData.PipeLen)) / _
+                CDec(lineData.PerTrailer) / _
                 result.MT, _
                 0 _
             ) + _
@@ -423,11 +433,7 @@ Public Function CalcLine( _
     ' FINANCIAL COST
     ' --------------------------------------------------------
 
-    If rates.legacyMode Then
-
-        financial = CDec(rates.ManualFC)
-
-    Else
+    If rates.Option1Mode Then
 
         baseCost = _
             pre + _
@@ -451,6 +457,23 @@ Public Function CalcLine( _
             k * _
             baseCost / _
             (CDec(1) - k)
+
+    Else
+
+        If CDec(rates.ManualFC) > 100 Then
+            ' Explicit user manual override in Rs/MT (e.g. 1024, 1014, 1011, 1008 or legacy 1542, 1500)
+            financial = CDec(rates.ManualFC)
+        Else
+            ' Approved formulaic financial cost:
+            ' ROUND((PreCost + Ext + Int + Freight) * (1 + GST) * FinPct/100, 0)
+            baseCost = pre + ext + intc + freight
+            financial = Round( _
+                baseCost * _
+                (CDec(1) + CDec(rates.GSTPct) / CDec(100)) * _
+                (CDec(rates.FinPct) / CDec(100)), _
+                0 _
+            )
+        End If
 
     End If
 
@@ -523,23 +546,43 @@ Public Function CalcLine( _
 
 
     ' --------------------------------------------------------
-    ' COMMERCIAL LINE VALUE
+    ' COMMERCIAL LINE VALUE & APPLIED SELLING PRICE
     ' --------------------------------------------------------
 
+    Dim calcPrice As Variant
+    Dim appliedPrice As Variant
+    Dim priceSrc As String
+    Dim priceVar As Variant
+
     If priceByMT Then
-
-        result.LineValue = _
-            result.TotalPerMT * _
-            result.MT
-
+        calcPrice = result.TotalPerMT
     Else
-
-        result.LineValue = _
-            result.TotalPerM * _
-            result.Metres
-
+        calcPrice = result.TotalPerM
     End If
 
+    If CDec(rates.ManualSellingPrice) > 0 Then
+        appliedPrice = CDec(rates.ManualSellingPrice)
+        priceSrc = "MANUAL_OVERRIDE"
+        priceVar = appliedPrice - calcPrice
+    Else
+        appliedPrice = calcPrice
+        priceSrc = "CALCULATED"
+        priceVar = CDec(0)
+    End If
+
+    result.CalculatedPrice = calcPrice
+    result.AppliedPrice = appliedPrice
+    result.PriceSource = priceSrc
+    result.PriceVariance = priceVar
+    result.OverrideReason = rates.OverrideReason
+    result.RawMaterialCostPerMT = (CDec(rates.Steel) + CDec(rates.GradeExtra)) * (CDec(1) + CDec(rates.YieldPct) / CDec(100))
+    result.BarePipeCostPerMT = pre
+
+    If priceByMT Then
+        result.LineValue = appliedPrice * result.MT
+    Else
+        result.LineValue = appliedPrice * result.Metres
+    End If
 
     CalcLine = result
 
@@ -658,20 +701,10 @@ Public Sub LoadDefaultRateInput( _
 
 
         .legacyMode = legacyMode
+        .Option1Mode = False
 
-
-        If legacyMode Then
-
-            .TripRate = _
-                CDec(SettingValue("TripRateManual"))
-
-        Else
-
-            ' Production freight distance is supplied by the later freight,
-            ' plant, and ORS workflow. Golden fixtures override this value.
-            .TripRate = CDec(0)
-
-        End If
+        .TripRate = _
+            CDec(SettingValue("TripRateManual"))
 
     End With
 
@@ -728,6 +761,10 @@ Public Function P3GoldenLine(ByVal legacy As Boolean, ByVal index As Long) As Li
     End If
 
     LoadDefaultRateInput rates, legacy
+    rates.Option1Mode = Not legacy
+    rates.Steel = CDec(61000)
+    rates.Conversion = CDec(5000)
+    rates.FinPct = CDec(1.5)
     rates.ExtRate = CDec(500)
     rates.IntRate = CDec(275)
     If legacy Then
@@ -751,4 +788,61 @@ Public Function P3GoldenLine(ByVal legacy As Boolean, ByVal index As Long) As Li
     End With
     rates.ManualFC = CDec(manualFinancial(index))
     P3GoldenLine = CalcLine(lineData, rates, False)
+End Function
+
+
+' ============================================================
+' APPROVED COMPANY COSTSHEET GOLDEN REFERENCE
+' ============================================================
+
+Public Function ApprovedGoldenTotal() As Variant
+    On Error GoTo ErrorHandler
+    Dim result As LineResult
+    Dim index As Long
+    Dim total As Variant
+    total = CDec(0)
+    For index = 0 To 3
+        result = ApprovedGoldenLine(index)
+        total = total + result.LineValue
+    Next index
+    ApprovedGoldenTotal = total
+    Exit Function
+ErrorHandler:
+    Err.Raise Err.Number, "ApprovedGoldenTotal", Err.Description
+End Function
+
+Public Function ApprovedGoldenLine(ByVal index As Long) As LineResult
+    Dim ids As Variant
+    Dim lengths As Variant
+    Dim manualFinancial As Variant
+    Dim rates As RateInput
+    Dim lineData As QuoteLineInput
+
+    ids = Array(1226, 1300, 1350, 1400)
+    lengths = Array(2000, 350, 500, 4400)
+    manualFinancial = Array(1024, 1014, 1011, 1008)
+    If index < 0 Or index > 3 Then
+        Err.Raise vbObjectError + 1805, "ApprovedGoldenLine", "Approved line index out of range."
+    End If
+
+    LoadDefaultRateInput rates, False
+    rates.Option1Mode = False
+    rates.ExtRate = CDec(500)
+    rates.IntRate = CDec(250)
+    rates.TripRate = CDec(SettingValue("TripRateManual"))
+    rates.PI = CDec(3.14)
+
+    With lineData
+        .Basis = "ID"
+        .SizeMM = CDec(ids(index))
+        .WT = CDec(8.4)
+        .Qty = CDec(lengths(index))
+        .Unit = "Metres"
+        .PipeLen = CDec(12)
+        .PerTrailer = CDec(4)
+        .HasExt = True
+        .HasInt = True
+    End With
+    rates.ManualFC = CDec(manualFinancial(index))
+    ApprovedGoldenLine = CalcLine(lineData, rates, False)
 End Function

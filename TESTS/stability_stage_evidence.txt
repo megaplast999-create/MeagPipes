@@ -1,0 +1,135 @@
+================================================================================
+MEGA PIPES — QUOTATION PRICE STABILITY EMPIRICAL EVIDENCE LOG
+Execution Date: 2026-10-21
+Target Scenario: 
+  Line 1: 2,000 metres at ₹22,689/m (Total: ₹45,378,000)
+  Line 2: 350 metres at ₹24,109/m (Total: ₹8,438,150)
+  Displayed Total: ₹5,38,16,150
+================================================================================
+
+--------------------------------------------------------------------------------
+STAGE 1: IMMEDIATELY AFTER ADDING LINES (SETUP STATE)
+--------------------------------------------------------------------------------
+Source: tblQuoteLines (QUOTE_LINES sheet)
+  Line L0001: 1226.0mm ID x 8.4mm WT | Qty: 2,000 m | Unit Price: ₹22,689.00 | Line Total: ₹45,378,000.00 | Status: CALCULATED
+  Line L0002: 1300.0mm ID x 8.4mm WT | Qty: 350 m   | Unit Price: ₹24,109.00 | Line Total: ₹8,438,150.00  | Status: CALCULATED
+
+QUOTE Sheet UI Display Table (Rows 21-23):
+  Row 21: L0001: HSAW 1226mm (ID) x 8.4mm HSAW-002 | Bare / None | 2,000 Metres | 167 pcs (511.51 MT) | Price: ₹22,689 | Total: ₹45,378,000
+  Row 22: L0002: HSAW 1300mm (ID) x 8.4mm HSAW-002 | Bare / None | 350 Metres   | 30 pcs (94.88 MT)   | Price: ₹24,109 | Total: ₹8,438,150
+  Row 23: TABLE TOTAL (2 of 10 sizes):             |             | 2,350 Metres | 197 pcs (606.39 MT) | Price: —       | Total: ₹53,816,150
+
+Live Summary Card (Pre-recalculation):
+  Subtotal (E8):        None (Wiped by OnWorkbookOpen ws.Cells.Clear)
+  GST @ 18% (E9):       None
+  Grand Total (E10):    None
+  Workflow Status (E11): None
+
+--------------------------------------------------------------------------------
+STAGE 2: AFTER EXPLICIT RECALCULATION (modQuote.RecalculateQuote)
+--------------------------------------------------------------------------------
+Executed: modQuote.RecalculateQuote & modUI.RefreshQuoteLinesDisplay
+  Line L0001: 1226.0mm ID x 8.4mm WT | Qty: 2,000 m | Unit Price: ₹22,689.00 | Line Total: ₹45,378,000.00 | Status: CALCULATED
+  Line L0002: 1300.0mm ID x 8.4mm WT | Qty: 350 m   | Unit Price: ₹24,109.00 | Line Total: ₹8,438,150.00  | Status: CALCULATED
+
+QUOTE Sheet UI Display Table (Rows 21-23):
+  Row 21: L0001: HSAW 1226mm (ID) x 8.4mm HSAW-002 | Bare / None | 2,000 Metres | 167 pcs (511.51 MT) | Price: ₹22,689 | Total: ₹45,378,000
+  Row 22: L0002: HSAW 1300mm (ID) x 8.4mm HSAW-002 | Bare / None | 350 Metres   | 30 pcs (94.88 MT)   | Price: ₹24,109 | Total: ₹8,438,150
+  Row 23: TABLE TOTAL (2 of 10 sizes):             |             | 2,350 Metres | 197 pcs (606.39 MT) | Price: —       | Total: ₹53,816,150
+
+Live Summary Card (Post-recalculation):
+  Subtotal (E8):        ₹53,816,150.00
+  GST @ 18% (E9):       ₹9,686,907.00
+  Grand Total (E10):    ₹63,503,057.00
+  Workflow Status (E11): Calculated
+
+--------------------------------------------------------------------------------
+STAGE 3: WORKBOOK SAVE AND CLOSE & SNAPSHOT CREATION
+--------------------------------------------------------------------------------
+Executed: modLog.SaveQuote("MKTG_ENQ_26_27_594", 0)
+Snapshot File Created: TESTS/Quotes/26-27/MKTG_ENQ_26_27_594_R0_Administrator.xlsx
+Workbook Saved and Closed.
+
+Saved Metadata in Snapshot:
+  QuoteID: MKTG_ENQ_26_27_594
+  Revision: 0
+  Customer: None (Lost due to OnWorkbookOpen clear)
+  DeliveryPlace: None (Lost due to OnWorkbookOpen clear)
+  PlantID: None (Lost due to OnWorkbookOpen clear)
+  PriceBasis: Metres
+  LegacyMode: NO
+  TotalMetres: 2350
+  TotalWeightMT: 606.390871086
+  TotalExclGST: 53816150
+  GSTAmount: 9686907
+  GrandTotalInclGST: 63503057
+
+Saved Lines in SNAPSHOT_LINES:
+  L0001: UnitPrice = 22689, LineTotal = 45378000, Status = CALCULATED
+  L0002: UnitPrice = 24109, LineTotal = 8438150,  Status = CALCULATED
+Note: Only 24 columns saved in PILOT_COPY snapshot.
+
+--------------------------------------------------------------------------------
+STAGE 4: REOPEN WORKBOOK AND LOAD QUOTATION SNAPSHOT
+--------------------------------------------------------------------------------
+Executed: modLog.LoadQuote(snap_path) & modUI.RefreshQuoteLinesDisplay
+LoadQuote Return: True
+Restored Lines:
+  Line L0001: 1226.0mm ID x 8.4mm WT | Qty: 2,000 m | Unit Price: ₹22,689.00 | Line Total: ₹45,378,000.00 | Status: CALCULATED
+  Line L0002: 1300.0mm ID x 8.4mm WT | Qty: 350 m   | Unit Price: ₹24,109.00 | Line Total: ₹8,438,150.00  | Status: CALCULATED
+
+QUOTE Sheet UI Display Table:
+  Row 21: L0001: HSAW 1226mm (ID) x 8.4mm HSAW-002 | Bare / None | 2,000 Metres | 167 pcs (511.51 MT) | Price: ₹22,689 | Total: ₹45,378,000
+  Row 22: L0002: HSAW 1300mm (ID) x 8.4mm HSAW-002 | Bare / None | 350 Metres   | 30 pcs (94.88 MT)   | Price: ₹24,109 | Total: ₹8,438,150
+  Row 23: TABLE TOTAL (2 of 10 sizes):             |             | 2,350 Metres | 197 pcs (606.39 MT) | Price: —       | Total: ₹53,816,150
+
+Live Summary Card:
+  Subtotal (E8):        ₹53,816,150.00
+  GST @ 18% (E9):       ₹9,686,907.00
+  Grand Total (E10):    ₹63,503,057.00
+  Workflow Status (E11): LOADED_SNAPSHOT
+
+--------------------------------------------------------------------------------
+STAGE 5: RECALCULATING AGAIN AFTER SNAPSHOT LOAD
+--------------------------------------------------------------------------------
+Executed: modQuote.RecalculateQuote & modUI.RefreshQuoteLinesDisplay
+  Line L0001: 1226.0mm ID x 8.4mm WT | Qty: 2,000 m | Unit Price: ₹22,689.00 | Line Total: ₹45,378,000.00 | Status: CALCULATED
+  Line L0002: 1300.0mm ID x 8.4mm WT | Qty: 350 m   | Unit Price: ₹24,109.00 | Line Total: ₹8,438,150.00  | Status: CALCULATED
+
+Live Summary Card:
+  Subtotal (E8):        ₹53,816,150.00
+  GST @ 18% (E9):       ₹9,686,907.00
+  Grand Total (E10):    ₹63,503,057.00
+  Workflow Status (E11): LOADED_SNAPSHOT
+
+================================================================================
+STABILITY VARIANCE ANALYSIS & DIVERGENCE PATHWAYS
+================================================================================
+When using the Option 1 formulation in PILOT_COPY, prices remain strictly stable
+at ₹22,689 and ₹24,109 across all 5 stages.
+
+However, price instability occurs across 5 distinct vulnerability vectors:
+1. Cross-Module Discrepancy (Option 1 vs Dynamic Staged Costing):
+   - In PILOT_COPY.xlsm (Option 1): Line 1 = ₹22,689/m, Line 2 = ₹24,109/m.
+   - In DEV.xlsm (Staged Costing): Line 1 = ₹22,591/m (-₹98), Line 2 = ₹24,005/m (-₹104).
+   - In Approved Unipro CostSheet: Line 1 = ₹22,351/m (-₹338), Line 2 = ₹23,570/m (-₹539).
+   - In Dynamic Landed FC: Line 1 = ₹22,350/m (-₹339), Line 2 = ₹23,568/m (-₹541).
+
+2. Pilot Table Schema Truncation (24 vs 38 columns):
+   - PILOT_COPY.xlsm lacks columns 25-38 (ManualFC, SteelRate, ManualSellingPrice, etc.).
+   - Manual selling price overrides cannot be stored in PILOT_COPY tblQuoteLines.
+   - Recalculating in PILOT_COPY immediately reverts any overridden price to formula price.
+
+3. OnWorkbookOpen Form Wiping:
+   - SetupQuoteSheetUI executes ws.Cells.Clear on QUOTE sheet.
+   - Wipes B4:B17 and D4:E14. Recalculation without reloading defaults to empty inputs.
+
+4. modLog.LoadQuote Cell Offset Shift:
+   - Writes DeliveryPlace to B11 instead of B10.
+   - Writes PlantID to B14 instead of B13.
+   - Writes PaymentTerms to B15 instead of B14.
+   - Writes ValidityDays to B16 instead of B15.
+   - Writes PriceBasis to B17 instead of B16 (corrupting PricingMode in B17).
+
+5. LegacyMode Unrestored:
+   - Saved in SNAPSHOT_META as YES/NO, but LoadQuote never restores it to the UI or session.

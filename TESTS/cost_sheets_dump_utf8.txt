@@ -1,0 +1,336 @@
+﻿
+================================================================================
+FILE: MKTGENQ26-27594 - Unipro.xlsx
+================================================================================
+
+--- SHEET: Sheet1 ---
+Dimensions: 17 rows x 16 columns
+Row  1: A1: SYNOPSIS
+Row  3: A3: NIT No. | J3: Enquiry Received Date: 09.09.2026
+Row  4: A4: OUR REF. | D4: MKTG/ENQ/26-27/594 | J4: TYPE: | L4: HSAW Coated
+Row  5: A5: Tender Name | D5: Konar, Jharkhand Project | J5: End User   
+Row  6: A6: Enq Recd from | D6: Unipro Techno Infrastructure Pvt. Ltd | J6: Country | L6: India
+Row  7: A7: Contact Person  | D7: Rakesh Gupta | J7: Validity of offer
+Row  8: A8: Address | J8: Place of Delivery | L8: Krishna 
+Nagar, Bagodar, Jharkhand - 825322
+Row  9: A9: Due Date  | J9: Delivery Reqd  
+Row 10: B10: ID | C10: OD  | D10: OD  | E10: Thk | F10: Grade | G10: Type | H10: Qty  | I10: Pipe  | J10: Weight | K10: Qty in | L10: volume | M10: CBM | N10: Coating | O10: Coating | P10: Weight of pipe
+Row 11: A11: Sr. No. | B11: MM | C11: INCH | D11: MM | E11: MM | F11: Specs | G11: Pipes | H11: MTRS | I11: Nos. | J11: Kg/m | K11: MT | L11: Pipes | M11: Ratio per size | N11: Ext m┬▓ | O11: INT m┬▓ | P11: MT
+Row 12: A12: 1 | B12: 1226 | C12: [=ROUND(D12/25.4,0)] = 49 | D12: [=ROUNDUP(B12+2*E12,0)] = 1243 | E12: 8.4 | F12:  IS-3589-2001 Fe 410 | G12: HSAW Coated | H12: 2000 | I12: [=CEILING(H12/12,1)] = 167 | J12: [=(D12-E12)*E12*0.0246615] = 255.75553835999997 | K12: [=H12*J12/1000] = 511.51107671999995 | L12: [=(D12/1000)*(D12/1000)*H12] = 3090.098000000001 | M12: [=ROUNDUP(L12/K12,0)] = 7 | N12: [=ROUNDUP(D12*H12*(22/7)/1000,0)] = 7814 | O12: [=ROUNDUP((22/7)*H12*(D12-(2*E12))/1000,0)] = 7708 | P12: [=ROUNDUP(12*J12/1000,0)] = 4
+Row 13: A13: 2 | B13: 1300 | C13: [=ROUND(D13/25.4,0)] = 52 | D13: [=ROUNDUP(B13+2*E13,0)] = 1317 | E13: 8.4 | F13:  IS-3589-2001 Fe 410 | G13: HSAW Coated | H13: 350 | I13: [=CEILING(H13/12,1)] = 30 | J13: [=(D13-E13)*E13*0.0246615] = 271.08512676 | K13: [=H13*J13/1000] = 94.87979436599998 | L13: [=(D13/1000)*(D13/1000)*H13] = 607.07115 | M13: [=ROUNDUP(L13/K13,0)] = 7 | N13: [=ROUNDUP(D13*H13*(22/7)/1000,0)] = 1449 | O13: [=ROUNDUP((22/7)*H13*(D13-(2*E13))/1000,0)] = 1431 | P13: [=ROUNDUP(12*J13/1000,0)] = 4
+Row 14: A14: 3 | B14: 1350 | C14: [=ROUND(D14/25.4,0)] = 54 | D14: [=ROUNDUP(B14+2*E14,0)] = 1367 | E14: 8.4 | F14:  IS-3589-2001 Fe 410 | G14: HSAW Coated | H14: 500 | I14: [=CEILING(H14/12,1)] = 42 | J14: [=(D14-E14)*E14*0.0246615] = 281.44295676 | K14: [=H14*J14/1000] = 140.72147838 | L14: [=(D14/1000)*(D14/1000)*H14] = 934.3445 | M14: [=ROUNDUP(L14/K14,0)] = 7 | N14: [=ROUNDUP(D14*H14*(22/7)/1000,0)] = 2149 | O14: [=ROUNDUP((22/7)*H14*(D14-(2*E14))/1000,0)] = 2122 | P14: [=ROUNDUP(12*J14/1000,0)] = 4
+Row 15: A15: 4 | B15: 1400 | C15: [=ROUND(D15/25.4,0)] = 56 | D15: [=ROUNDUP(B15+2*E15,0)] = 1417 | E15: 8.4 | F15:  IS-3589-2001 Fe 410 | G15: HSAW Coated | H15: 4400 | I15: [=CEILING(H15/12,1)] = 367 | J15: [=(D15-E15)*E15*0.0246615] = 291.80078676 | K15: [=H15*J15/1000] = 1283.923461744 | L15: [=(D15/1000)*(D15/1000)*H15] = 8834.7116 | M15: [=ROUNDUP(L15/K15,0)] = 7 | N15: [=ROUNDUP(D15*H15*(22/7)/1000,0)] = 19596 | O15: [=ROUNDUP((22/7)*H15*(D15-(2*E15))/1000,0)] = 19363 | P15: [=ROUNDUP(12*J15/1000,0)] = 4
+Row 16: A16: TOTAL | H16: [=SUM(H11:H15)] = 7250 | I16: [=SUM(I11:I14)] = 239 | K16: [=SUM(K11:K14)] = 747.112349466 | N16: [=SUM(N11:N14)] = 11412 | O16: [=SUM(O11:O14)] = 11261
+Row 17: A17: Note- There will be food grade epoxy internal lining and external coating shall be of coal 
+Tar Tape/Polyrethene (PU) as per relevant IS Code such as 10221-2008 or 16719-
+2022 or as prescribed by the department. 
+Outer Coating = PU 1000 micron
+Internal Coating = Food grade epoxy 406 micron
+
+================================================================================
+FILE: MKTGENQ26-27-594 - Unipro 2.xlsx
+================================================================================
+
+--- SHEET: Synopsis ---
+Dimensions: 17 rows x 16 columns
+Row  1: A1: SYNOPSIS
+Row  3: A3: NIT No. | J3: Enquiry Received Date: 09.09.2026
+Row  4: A4: OUR REF. | D4: MKTG/ENQ/26-27/594 | J4: TYPE: | L4: HSAW Coated
+Row  5: A5: Tender Name | D5: Konar, Jharkhand Project | J5: End User   
+Row  6: A6: Enq Recd from | D6: Unipro Techno Infrastructure Pvt. Ltd | J6: Country | L6: India
+Row  7: A7: Contact Person  | D7: Rakesh Gupta | J7: Validity of offer
+Row  8: A8: Address | J8: Place of Delivery | L8: Krishna 
+Nagar, Bagodar, Jharkhand - 825322
+Row  9: A9: Due Date  | J9: Delivery Reqd  
+Row 10: B10: ID | C10: OD  | D10: OD  | E10: Thk | F10: Grade | G10: Type | H10: Qty  | I10: Pipe  | J10: Weight | K10: Qty in | L10: volume | M10: CBM | N10: Coating | O10: Coating | P10: Weight of pipe
+Row 11: A11: Sr. No. | B11: MM | C11: INCH | D11: MM | E11: MM | F11: Specs | G11: Pipes | H11: MTRS | I11: Nos. | J11: Kg/m | K11: MT | L11: Pipes | M11: Ratio per size | N11: Ext m┬▓ | O11: INT m┬▓ | P11: MT
+Row 12: A12: 1 | B12: 1226 | C12: [=ROUND(D12/25.4,0)] = 49 | D12: [=ROUNDUP(B12+2*E12,0)] = 1243 | E12: 8.4 | F12:  IS-3589-2001 Fe 410 | G12: HSAW Coated | H12: 2000 | I12: [=CEILING(H12/12,1)] = 167 | J12: [=(D12-E12)*E12*0.0246615] = 255.75553835999997 | K12: [=H12*J12/1000] = 511.51107671999995 | L12: [=(D12/1000)*(D12/1000)*H12] = 3090.098000000001 | M12: [=ROUNDUP(L12/K12,0)] = 7 | N12: [=ROUNDUP(D12*H12*(22/7)/1000,0)] = 7814 | O12: [=ROUNDUP((22/7)*H12*(D12-(2*E12))/1000,0)] = 7708 | P12: [=ROUNDUP(12*J12/1000,0)] = 4
+Row 13: A13: 2 | B13: 1300 | C13: [=ROUND(D13/25.4,0)] = 52 | D13: [=ROUNDUP(B13+2*E13,0)] = 1317 | E13: 8.4 | F13:  IS-3589-2001 Fe 410 | G13: HSAW Coated | H13: 350 | I13: [=CEILING(H13/12,1)] = 30 | J13: [=(D13-E13)*E13*0.0246615] = 271.08512676 | K13: [=H13*J13/1000] = 94.87979436599998 | L13: [=(D13/1000)*(D13/1000)*H13] = 607.07115 | M13: [=ROUNDUP(L13/K13,0)] = 7 | N13: [=ROUNDUP(D13*H13*(22/7)/1000,0)] = 1449 | O13: [=ROUNDUP((22/7)*H13*(D13-(2*E13))/1000,0)] = 1431 | P13: [=ROUNDUP(12*J13/1000,0)] = 4
+Row 14: A14: 3 | B14: 1350 | C14: [=ROUND(D14/25.4,0)] = 54 | D14: [=ROUNDUP(B14+2*E14,0)] = 1367 | E14: 8.4 | F14:  IS-3589-2001 Fe 410 | G14: HSAW Coated | H14: 500 | I14: [=CEILING(H14/12,1)] = 42 | J14: [=(D14-E14)*E14*0.0246615] = 281.44295676 | K14: [=H14*J14/1000] = 140.72147838 | L14: [=(D14/1000)*(D14/1000)*H14] = 934.3445 | M14: [=ROUNDUP(L14/K14,0)] = 7 | N14: [=ROUNDUP(D14*H14*(22/7)/1000,0)] = 2149 | O14: [=ROUNDUP((22/7)*H14*(D14-(2*E14))/1000,0)] = 2122 | P14: [=ROUNDUP(12*J14/1000,0)] = 4
+Row 15: A15: 4 | B15: 1400 | C15: [=ROUND(D15/25.4,0)] = 56 | D15: [=ROUNDUP(B15+2*E15,0)] = 1417 | E15: 8.4 | F15:  IS-3589-2001 Fe 410 | G15: HSAW Coated | H15: 4400 | I15: [=CEILING(H15/12,1)] = 367 | J15: [=(D15-E15)*E15*0.0246615] = 291.80078676 | K15: [=H15*J15/1000] = 1283.923461744 | L15: [=(D15/1000)*(D15/1000)*H15] = 8834.7116 | M15: [=ROUNDUP(L15/K15,0)] = 7 | N15: [=ROUNDUP(D15*H15*(22/7)/1000,0)] = 19596 | O15: [=ROUNDUP((22/7)*H15*(D15-(2*E15))/1000,0)] = 19363 | P15: [=ROUNDUP(12*J15/1000,0)] = 4
+Row 16: A16: TOTAL | H16: [=SUM(H11:H15)] = 7250 | I16: [=SUM(I11:I14)] = 239 | K16: [=SUM(K11:K14)] = 747.112349466 | N16: [=SUM(N11:N14)] = 11412 | O16: [=SUM(O11:O14)] = 11261
+Row 17: A17: Note- There will be food grade epoxy internal lining and external coating shall be of coal 
+Tar Tape/Polyrethene (PU) as per relevant IS Code such as 10221-2008 or 16719-
+2022 or as prescribed by the department. 
+Outer Coating = PU 1000 micron
+Internal Coating = Food grade epoxy 406 micron
+
+--- SHEET: CS NESTING10-09-2026 ---
+Dimensions: 103 rows x 22 columns
+Row  1: A1: Date: 09/09/2026 | B1: TO BE SUPPLIED FROM MPPL KHOPOLI
+Row  2: A2: Owner | B2: Unipro Techno Infrastructure Pvt. Ltd.
+Row  3: A3: Project
+Row  4: A4: EPC
+Row  5: A5: Pipe Type | B5: HSAW Coated
+Row  6: A6: Enquiry No | B6: MKTGENQ26-27-594
+Row  7: A7: Delivery Location | B7: Krishna Nagar, Bagodar, Jharkhand - 825322
+Row  8: A8: Finalization
+Row  9: A9: Order Finalization with Pipe Mfg
+Row 10: A10: Tentative Delivery Period
+Row 11: B11: HSAW | C11: [=#REF!] = #REF!
+Row 12: A12: Sr.No. | C12: 1 | D12: 2 | E12: 3 | F12: 4 | G12: total | I12: Sr. No. | J12: Industry | M12: In KM
+Row 13: A13: Pipe OD (Inch) | C13: 49 | D13: 52 | E13: 54 | F13: 56 | I13: 1 | J13: Mega Pipes Pvt Ltd (Khopoli) | M13: 1759
+Row 14: A14: Pipe ID (mm) | C14: 1226 | D14: 1300 | E14: 1350 | F14: 1400 | I14: 2 | J14: Mega Pipes Pvt Ltd (Jabalpur) | M14: 818
+Row 15: A15: Pipe OD (mm) | C15: 1243 | D15: 1317 | E15: 1367 | F15: 1417 | I15: 3 | J15: MAN/JSW/WS/Ratnamani  (ANJAR ) | M15: 2006
+Row 16: A16: WT (mm) | C16: 8.4 | D16: 8.4 | E16: 8.4 | F16: 8.4 | I16: 4 | J16: MAN/MTL/JSW (INDORE) | M16: 1321
+Row 17: A17: Mass (MT/Mtr) | C17: [=((((C15-C16)*C16)*0.0246615)/1000)] = 0.25575553836 | D17: [=((((D15-D16)*D16)*0.0246615)/1000)] = 0.27108512675999996 | E17: [=((((E15-E16)*E16)*0.0246615)/1000)] = 0.28144295676000003 | F17: [=((((F15-F16)*F16)*0.0246615)/1000)] = 0.29180078676 | I17: 5 | J17: Welspun Corp Limited, Bhopal | M17: 1097
+Row 18: A18: Qty (Mtr) | C18: 2000 | D18: 350 | E18: 500 | F18: 4400 | G18: [=SUM(C18:F18)] = 7250 | I18: 6 | J18: Welspun Corp Limited, Karnataka  | M18: 2113
+Row 19: A19: Qty (MT) | C19: [=C18*C17] = 511.51107671999995 | D19: [=D18*D17] = 94.87979436599998 | E19: [=E18*E17] = 140.72147838 | F19: [=F18*F17] = 1283.923461744 | G19: [=SUM(C19:F19)] = 2031.0358112099998 | I19: 7 | J19: AMNS, Hazira | M19: 1801
+Row 20: A20: Coating factor | C20: [=3.14*(C15/1000)] = 3.9030200000000006 | D20: [=3.14*(D15/1000)] = 4.13538 | E20: [=3.14*(E15/1000)] = 4.2923800000000005 | F20: [=3.14*(F15/1000)] = 4.449380000000001 | I20: 8 | J20: Jindal Saw Ltd, Bellary 583152 | M20: 1786
+Row 21: A21: Pipe Weight (MT) | C21: [=C17*12] = 3.0690664603199997 | D21: [=D17*12] = 3.2530215211199995 | E21: [=E17*12] = 3.37731548112 | F21: [=F17*12] = 3.50160944112 | I21: 9 | J21: JCO Gas & Pipe Ltd (MP)Sausar  480108 | M21: 1028
+Row 22: A22: Pipe Nos | C22: [=ROUNDUP(C18/12,0)] = 167 | D22: [=ROUNDUP(D18/12,0)] = 30 | E22: [=ROUNDUP(E18/12,0)] = 42 | F22: [=ROUNDUP(F18/12,0)] = 367 | G22: [=SUM(C22:F22)] = 606 | I22: 11 | J22: HI-Tech Sanand GJ 382170 | M22: 1724
+Row 23: A23: Delivery Location  | I23: 12 | J23: Surya Roshni, Anjar | M23: 2006
+Row 24: A24: Yield Loss Itemwise | C24: 0.02 | D24: 0.02 | E24: 0.02 | F24: 0.02 | I24: 13 | J24: Surya Roshni, Gwalior 474005 | M24: 949
+Row 25: A25: Steel BEN + GE | C25: 61000 | D25: 61000 | E25: 61000 | F25: 61000 | G25: 61000 | I25: 14 | J25: HI-Tech, Umred | M25: 968
+Row 26: A26: Grade Extra | I26: 15 | J26: Ratnamani Sundargarh, Masanikani, Odisha 770019 | M26: 416
+Row 27: A27: Steel Cost (Delivered) | C27: [=C25+C26] = 61000 | D27: [=D25+D26] = 61000 | E27: [=E25+E26] = 61000 | F27: [=F25+F26] = 61000 | G27: 61000 | I27: 16 | J27: Jindal Saw Limited, Jindal saw ltd, Narsi, Kosi Kalan, Barhana, Uttar Pradesh 281403 | M27: 1042
+Row 28: A28: Yield Loss @ 2% | C28: [=C27*C24] = 1220 | D28: [=D27*D24] = 1220 | E28: [=E27*E24] = 1220 | F28: [=F27*F24] = 1220 | G28: 1220
+Row 29: A29: Conversion | C29: 5000 | D29: 10000 | E29: 10000 | F29: 5000 | G29: 5580.002753879657
+Row 30: A30: Testing + Hospitality
+Row 31: A31: Margin
+Row 32: A32: [=A41] = FC-1.5% + 25% adv. Bal against LC | B32: [=B41] = 0.015 | C32: 1480 | D32: 1569 | E32: 1569 | F32: 1480 | G32: 1490.324049019058
+Row 33: A33: Bare Pipe Price | C33: [=SUM(C27:C32)] = 68700 | D33: [=SUM(D27:D32)] = 73789 | E33: [=SUM(E27:E32)] = 73789 | F33: [=SUM(F27:F32)] = 68700 | G33: 69290.32680289872
+Row 34: A34: Ext: PU | B34: 500 | C34: [=($B$34*C20)/C17] = 7630.372395897313 | D34: [=($B$34*D20)/D17] = 7627.456455147351 | E34: [=($B$34*E20)/E17] = 7625.666048662783 | F34: [=($B$34*F20)/F17] = 7624.002747565451 | G34: 7625.883509544169
+Row 35: A35: Int:  FGE | B35: 250 | C35: [=($B$35*C20)/C17] = 3815.1861979486566 | D35: [=($B$35*D20)/D17] = 3813.7282275736757 | E35: [=($B$35*E20)/E17] = 3812.8330243313917 | F35: [=($B$35*F20)/F17] = 3812.0013737827253 | G35: 3812.9417547720846
+Row 36: A36: Ex Mill Price | C36: [=C33+C35+C34] = 80145.55859384597 | D36: [=D33+D35+D34] = 85230.18468272102 | E36: [=E33+E35+E34] = 85227.49907299418 | F36: [=F33+F35+F34] = 80136.00412134817 | G36: 80729.15206721496
+Row 37: A37: Freight : Bagodar (Nesting) | C37: 5070 | D37: 5070 | E37: 5070 | F37: 5070 | G37: 5070
+Row 38: A38: Sub Total | C38: [=C36+C37] = 85215.55859384597 | D38: [=D36+D37] = 90300.18468272102 | E38: [=E36+E37] = 90297.49907299418 | F38: [=F36+F37] = 85206.00412134817 | G38: 85799.15206721498
+Row 39: A39: GST @ 18% | C39: [=C38*18%] = 15338.800546892275 | D39: [=D38*18%] = 16254.033242889784 | E39: [=E38*18%] = 16253.549833138952 | F39: [=F38*18%] = 15337.08074184267 | G39: 15443.847372098695
+Row 40: A40: Grand Total GST INC. | C40: [=C38+C39] = 100554.35914073825 | D40: [=D38+D39] = 106554.2179256108 | E40: [=E38+E39] = 106551.04890613313 | F40: [=F38+F39] = 100543.08486319084 | G40: 101242.99943931366
+Row 41: A41: FC-1.5% + 25% adv. Bal against LC | B41: 0.015 | C41: [=C40*$B$41] = 1508.3153871110737 | D41: [=D40*$B$41] = 1598.313268884162 | E41: [=E40*$B$41] = 1598.2657335919969 | F41: [=F40*$B$41] = 1508.1462729478626
+Row 42: A42: Total Value (Excl. GST) | C42: [=C38*C19] = 43588702.129634395 | D42: [=D38*D19] = 8567662.953908393 | E42: [=E38*E19] = 12706797.56356842 | F42: [=F38*F19] = 109397987.77285488 | G42: [=SUM(C42:F42)] = 174261150.4199661 | H42: [=G42/G19] = 85799.15206721498
+Row 44: A44: Bare Pipe Price/meter | C44: [=ROUNDUP(C33*C17,0)] = 17571 | D44: [=ROUNDUP(D33*D17,0)] = 20004 | E44: [=ROUNDUP(E33*E17,0)] = 20768 | F44: [=ROUNDUP(F33*F17,0)] = 20047
+Row 45: A45: EXT Coating Price/meter | B45: [=B34] = 500 | C45: [=ROUNDUP(C34*C17,0)] = 1952 | D45: [=ROUNDUP(D34*D17,0)] = 2068 | E45: [=ROUNDUP(E34*E17,0)] = 2147 | F45: [=ROUNDUP(F34*F17,0)] = 2225
+Row 46: A46: INT Coating Price/meter | B46: [=B35] = 250 | C46: [=ROUNDUP(C35*C17,0)] = 976 | D46: [=ROUNDUP(D35*D17,0)] = 1034 | E46: [=ROUNDUP(E35*E17,0)] = 1074 | F46: [=ROUNDUP(F35*F17,0)] = 1113
+Row 47: A47: Freight Price/meter | C47: [=ROUNDUP(C37*C17,0)] = 1297 | D47: [=ROUNDUP(D37*D17,0)] = 1375 | E47: [=ROUNDUP(E37*E17,0)] = 1427 | F47: [=ROUNDUP(F37*F17,0)] = 1480
+Row 48: A48: Total Price/meter | C48: [=SUM(C44:C47)] = 21796 | D48: [=SUM(D44:D47)] = 24481 | E48: [=SUM(E44:E47)] = 25416 | F48: [=SUM(F44:F47)] = 24865
+Row 49: A49: Total Value (Excl. GST) | C49: [=C48*C18] = 43592000 | D49: [=D48*D18] = 8568350 | E49: [=E48*E18] = 12708000 | F49: [=F48*F18] = 109406000 | G49: [=SUM(C49:F49)] = 174274350 | H49: [=G49/G19] = 85805.65100729326 | I49: [=H42-H49] = -6.498940078279702
+Row 52: A52: MKTG/ENQ/26-27/594  DATED 09.09.2026 | O52: 2026-09-10 00:00:00
+Row 53: B53: STACKING PLAN WITHOUT NESTING FROM MANERI PLANT TO KRISHNA NAGAR, BAGODAR, JHARKHAND-825 322
+Row 54: A54: Sr. No. | B54: Pipe Dia (Inch) | C54: Pipe Dia 
+(MM) | D54: WALL 
+THICK
+(MM) | E54: Total / 
+MT | F54: Total / MTRS | G54: Total Pipes/ | H54: Type of 
+Pipes | I54: Per Pipe WT/ MT | J54: Pipe Stacking on Trailer | K54: Pipe Stacking on Trailer | L54: Per Trailer WT/MT | M54: ODC(L X W X H) | O54: Freight 
+Rate per trip
+Rs.
+Row 55: G55: Nos
+Row 56: P56: Stacking
+Row 57: A57: 1 | B57: [=C57/25.4] = 48.93700787401575 | C57: 1243 | D57: 8.4 | E57: [=(0.0246615*(C57-D57)*D57*F57)/1000] = 511.51107671999995 | F57: 2000 | G57: [=F57/12] = 166.66666666666666 | H57: HSAW Coated | I57: [=(0.0246615*(C57-D57)*D57*12)/1000] = 3.0690664603199997 | J57: 2+2 | K57: 4 | L57: [=I57*K57] = 12.276265841279999 | M57: 40X8'.2"X8'.5" | N57: [=G57/K57] = 41.666666666666664 | O57: 98000 | P57: Total | Q57: [=O57*N61] = 14802083.333333332
+Row 58: A58: 2 | B58: [=C58/25.4] = 51.85039370078741 | C58: 1317 | D58: 8.4 | E58: [=(0.0246615*(C58-D58)*D58*F58)/1000] = 94.87979436599998 | F58: 350 | G58: [=F58/12] = 29.166666666666668 | H58: HSAW Coated | I58: [=(0.0246615*(C58-D58)*D58*12)/1000] = 3.25302152112 | J58: 2+2 | K58: 4 | L58: [=I58*K58] = 13.01208608448 | M58: 40X8'.7"X9' | N58: [=G58/K58] = 7.291666666666667 | O58: 98000 | P58: INR/MT | Q58: [=Q57/G19+100] = 7387.947977891595
+Row 59: A59: 3 | B59: [=C59/25.4] = 53.81889763779528 | C59: 1367 | D59: 8.4 | E59: [=(0.0246615*(C59-D59)*D59*F59)/1000] = 140.72147838 | F59: 500 | G59: [=F59/12] = 41.666666666666664 | H59: HSAW Coated | I59: [=(0.0246615*(C59-D59)*D59*12)/1000] = 3.37731548112 | J59: 2+2 | K59: 4 | L59: [=I59*K59] = 13.50926192448 | M59: 40X9'X9'.3" | N59: [=G59/K59] = 10.416666666666666 | O59: 98000
+Row 60: A60: 4 | B60: [=C60/25.4] = 55.787401574803155 | C60: 1417 | D60: 8.4 | E60: [=(0.0246615*(C60-D60)*D60*F60)/1000] = 1283.923461744 | F60: 4400 | G60: [=F60/12] = 366.6666666666667 | H60: HSAW Coated | I60: [=(0.0246615*(C60-D60)*D60*12)/1000] = 3.5016094411200003 | J60: 2+2 | K60: 4 | L60: [=I60*K60] = 14.006437764480001 | M60: 40X9'.3X9'.7" | N60: [=G60/K60] = 91.66666666666667 | O60: 98000
+Row 61: B61: Total | E61: [=SUM(E57:E60)] = 2031.0358112099998 | F61: [=SUM(F57:F60)] = 7250 | G61: [=SUM(G57:G60)] = 604.1666666666666 | N61: [=SUM(N57:N60)] = 151.04166666666666
+Row 63: B63: STACKING PLAN WITHT NESTING FROM MANERI PLANT TO KRISHNA NAGAR, BAGODAR, JHARKHAND-825 322
+Row 64: A64: Sr.No. | B64: Pipe Dia (Inch) | C64: Pipe Dia (MM) | D64: WALL THICK | E64: Total / MT | F64: Total / MTRS | G64: Total Pipes/ | H64: Type of PIPES | I64: Per Pipe WT/ MT | J64: Pipe Stacking on Trailer | K64: Pipe Stacking on Trailer | L64: Per Trailer WT/MT | M64: ODC(L X W X H) | N64: Total Trips | O64: Freight 
+Rate per trip
+Rs.
+Row 65: G65: Nos | P65: Nesting
+Row 66: A66: 1 | B66: [=C66/25.4] = 55.787401574803155 | C66: 1417 | D66: 8.4 | E66: [=(0.0246615*(C66-D66)*D66*F66)/1000] = 182.08369093824 | F66: [=G66*12] = 624 | G66: 52 | H66: HSAW Coated | I66: [=(0.0246615*(C66-D66)*D66*12)/1000] = 3.5016094411200003 | J66: 2+2 | K66: 4 | L66: [=I66*K66] = 14.006437764480001 | M66: 40X9'.3X9'.7" | N66: [=G66/K66] = 13 | O66: 98000 | P66: Total | Q66: [=O66*N103] = 10094000
+Row 67: B67: [=C67/25.4] = 51.85039370078741 | C67: 1317 | D67: 8.4 | E67: [=(0.0246615*(C67-D67)*D67*F67)/1000] = 84.57855954911999 | F67: [=G67*12] = 312 | G67: 26 | H67: HSAW Coated | I67: [=(0.0246615*(C67-D67)*D67*12)/1000] = 3.25302152112 | J67: 2 | K67: 2 | L67: [=I67*K67] = 6.50604304224 | P67: INR/MT | Q67: [=Q66/G19+100] = 5069.877903820145
+Row 68: F68: [=SUM(F66:F67)] = 936 | G68: [=SUM(G66:G67)] = 78 | K68: [=SUM(K66:K67)] = 6 | L68: [=SUM(L66:L67)] = 20.51248080672
+Row 70: A70: Sr.No. | B70: Pipe Dia (Inch) | C70: Pipe Dia (MM) | D70: WALL THICK | E70: Total / MT | F70: Total / MTRS | G70: Total Pipes/ | H70: Type of PIPES | I70: Per Pipe WT/ MT | J70: Pipe Stacking on Trailer | K70: Pipe Stacking on Trailer | L70: Per Trailer WT/MT | M70: ODC(L X W X H) | N70: Total Trips
+Row 71: G71: Nos
+Row 72: A72: 2 | B72: [=C72/25.4] = 55.787401574803155 | C72: 1417 | D72: 8.4 | E72: [=(0.0246615*(C72-D72)*D72*F72)/1000] = 1050.482832336 | F72: [=G72*12] = 3600 | G72: 300 | H72: HSAW Coated | I72: [=(0.0246615*(C72-D72)*D72*12)/1000] = 3.5016094411200003 | J72: 2+2 | K72: 4 | L72: [=I72*K72] = 14.006437764480001 | M72: 40X9'.3X9'.7" | N72: [=G72/K72] = 75 | O72: 98000
+Row 73: B73: [=C73/25.4] = 48.93700787401575 | C73: 1243 | D73: 8.4 | E73: [=(0.0246615*(C73-D73)*D73*F73)/1000] = 511.51107671999995 | F73: 2000 | G73: 150 | H73: HSAW Coated | I73: [=(0.0246615*(C73-D73)*D73*12)/1000] = 3.0690664603199997 | J73: 2 | K73: 2 | L73: [=I73*K73] = 6.1381329206399995
+Row 74: F74: [=SUM(F72:F73)] = 5600 | G74: [=SUM(G72:G73)] = 450 | K74: [=SUM(K72:K73)] = 6 | L74: [=SUM(L72:L73)] = 20.14457068512
+Row 76: A76: Sr.No. | B76: Pipe Dia (Inch) | C76: Pipe Dia (MM) | D76: WALL THICK | E76: Total / MT | F76: Total / MTRS | G76: Total Pipes/ | H76: Type of PIPES | I76: Per Pipe WT/ MT | J76: Pipe Stacking on Trailer | K76: Pipe Stacking on Trailer | L76: Per Trailer WT/MT | M76: ODC(L X W X H) | N76: Total Trips
+Row 77: G77: Nos
+Row 78: A78: 3 | B78: [=C78/25.4] = 53.81889763779528 | C78: 1367 | D78: 8.4 | E78: [=(0.0246615*(C78-D78)*D78*F78)/1000] = 108.07409539584 | F78: [=G78*12] = 384 | G78: 32 | H78: HSAW Coated | I78: [=(0.0246615*(C78-D78)*D78*12)/1000] = 3.37731548112 | J78: 2+2 | K78: 4 | L78: [=I78*K78] = 13.50926192448 | M78: 40X9'X9'.3" | N78: [=G78/K78] = 8 | O78: 98000
+Row 79: B79: [=C79/25.4] = 48.93700787401575 | C79: 1243 | D79: 8.4 | E79: [=(0.0246615*(C79-D79)*D79*F79)/1000] = 49.105063365119996 | F79: [=G79*12] = 192 | G79: 16 | H79: HSAW Coated | I79: [=(0.0246615*(C79-D79)*D79*12)/1000] = 3.0690664603199997 | J79: 2 | K79: 2 | L79: [=I79*K79] = 6.1381329206399995
+Row 80: F80: [=SUM(F78:F79)] = 576 | G80: [=SUM(G78:G79)] = 48 | K80: [=SUM(K78:K79)] = 6 | L80: [=SUM(L78:L79)] = 19.64739484512
+Row 82: A82: Sr.No. | B82: Pipe Dia (Inch) | C82: Pipe Dia (MM) | D82: WALL THICK | E82: Total / MT | F82: Total / MTRS | G82: Total Pipes/ | H82: Type of PIPES | I82: Per Pipe WT/ MT | J82: Pipe Stacking on Trailer | K82: Pipe Stacking on Trailer | L82: Per Trailer WT/MT | M82: ODC(L X W X H) | N82: Total Trips
+Row 83: G83: Nos
+Row 84: A84: 4 | B84: [=C84/25.4] = 53.81889763779528 | C84: 1367 | D84: 8.4 | E84: [=(0.0246615*(C84-D84)*D84*F84)/1000] = 27.01852384896 | F84: [=G84*12] = 96 | G84: 8 | H84: HSAW Coated | I84: [=(0.0246615*(C84-D84)*D84*12)/1000] = 3.37731548112 | J84: 2+2 | K84: 4 | L84: [=I84*K84] = 13.50926192448 | M84: 40X9'X9'.3" | N84: [=G84/K84] = 2 | O84: 98000
+Row 85: G85: [=SUM(G84:G84)] = 8 | K85: [=SUM(K84:K84)] = 4 | L85: [=SUM(L84:L84)] = 13.50926192448
+Row 87: A87: Sr.No. | B87: Pipe Dia (Inch) | C87: Pipe Dia (MM) | D87: WALL THICK | E87: Total / MT | F87: Total / MTRS | G87: Total Pipes/ | H87: Type of PIPES | I87: Per Pipe WT/ MT | J87: Pipe Stacking on Trailer | K87: Pipe Stacking on Trailer | L87: Per Trailer WT/MT | M87: ODC(L X W X H) | N87: Total Trips
+Row 88: G88: Nos
+Row 89: A89: 5 | B89: [=C89/25.4] = 55.787401574803155 | C89: 1417 | D89: 8.4 | E89: [=(0.0246615*(C89-D89)*D89*F89)/1000] = 42.01931329344 | F89: [=G89*12] = 144 | G89: 12 | H89: HSAW Coated | I89: [=(0.0246615*(C89-D89)*D89*12)/1000] = 3.5016094411200003 | J89: 2+2 | K89: 4 | L89: [=I89*K89] = 14.006437764480001 | M89: 40X9'.3X9'.7" | N89: [=G89/K89] = 3 | O89: 98000
+Row 90: G90: [=SUM(G89:G89)] = 12 | K90: [=SUM(K89:K89)] = 4 | L90: [=SUM(L89:L89)] = 14.006437764480001
+Row 92: A92: Sr.No. | B92: Pipe Dia (Inch) | C92: Pipe Dia (MM) | D92: WALL THICK | E92: Total / MT | F92: Total / MTRS | G92: Total Pipes/ | H92: Type of PIPES | I92: Per Pipe WT/ MT | J92: Pipe Stacking on Trailer | K92: Pipe Stacking on Trailer | L92: Per Trailer WT/MT | M92: ODC(L X W X H) | N92: Total Trips
+Row 93: G93: Nos
+Row 94: A94: 6 | B94: [=C94/25.4] = 55.787401574803155 | C94: 1417 | D94: 8.4 | E94: [=(0.0246615*(C94-D94)*D94*F94)/1000] = 10.50482832336 | F94: [=G94*12] = 36 | G94: 3 | H94: HSAW Coated | I94: [=(0.0246615*(C94-D94)*D94*12)/1000] = 3.5016094411200003 | J94: 2+1 | K94: 3 | L94: [=I94*K94] = 10.504828323360002 | M94: 40X9'.3X9'.5" | N94: [=G94/K94] = 1 | O94: 98000
+Row 95: B95: [=C95/25.4] = 51.85039370078741 | C95: 1317 | D95: 8.4 | E95: [=(0.0246615*(C95-D95)*D95*F95)/1000] = 9.759064563359999 | F95: [=G95*12] = 36 | G95: 3 | H95: HSAW Coated | I95: [=(0.0246615*(C95-D95)*D95*12)/1000] = 3.25302152112 | J95: 2+1 | K95: 3 | L95: [=I95*K95] = 9.759064563359999
+Row 96: G96: [=SUM(G94:G95)] = 6 | K96: [=SUM(K94:K95)] = 6 | L96: [=SUM(L94:L95)] = 20.26389288672
+Row 98: A98: Sr.No. | B98: Pipe Dia (Inch) | C98: Pipe Dia (MM) | D98: WALL THICK | E98: Total / MT | F98: Total / MTRS | G98: Total Pipes/ | H98: Type of PIPES | I98: Per Pipe WT/ MT | J98: Pipe Stacking on Trailer | K98: Pipe Stacking on Trailer | L98: Per Trailer WT/MT | M98: ODC(L X W X H) | N98: Total Trips
+Row 99: G99: Nos
+Row 100: A100: 7 | B100: [=C100/25.4] = 53.81889763779528 | C100: 1367 | D100: 8.4 | E100: [=(0.0246615*(C100-D100)*D100*F100)/1000] = 6.75463096224 | F100: [=G100*12] = 24 | G100: 2 | H100: HSAW Coated | I100: [=(0.0246615*(C100-D100)*D100*12)/1000] = 3.37731548112 | J100: 2 | K100: 2 | L100: [=I100*K100] = 6.75463096224 | M100: 40X9'X8'.8" | N100: [=G100/K100] = 1 | O100: 98000
+Row 101: B101: [=C101/25.4] = 48.93700787401575 | C101: 1243 | D101: 8.4 | E101: [=(0.0246615*(C101-D101)*D101*F101)/1000] = 3.0690664603199997 | F101: [=G101*12] = 12 | G101: 1 | H101: HSAW Coated | I101: [=(0.0246615*(C101-D101)*D101*12)/1000] = 3.0690664603199997 | J101: 1 | K101: 1 | L101: [=I101*K101] = 3.0690664603199997 | P101: To be stacked in second layer
+Row 102: G102: [=SUM(G100:G101)] = 3 | K102: [=SUM(K100:K101)] = 3 | L102: [=SUM(L100:L101)] = 9.82369742256
+Row 103: G103: [=G102+G96+G90+G85+G80+G74+G68] = 605 | N103: [=N100+N94+N89+N84+N78+N72+N66] = 103
+
+--- SHEET: CS Stacking 10-09-26 ---
+Dimensions: 87 rows x 22 columns
+Row  1: A1: Date: 23/09/2026 | B1: TO BE SUPPLIED FROM MPPL Jabalpur
+Row  2: A2: Owner | B2: Unipro Techno Infrastructure Pvt. Ltd.
+Row  3: A3: Project
+Row  4: A4: EPC
+Row  5: A5: Pipe Type | B5: HSAW Coated
+Row  6: A6: Enquiry No | B6: MKTGENQ26-27-594
+Row  7: A7: Delivery Location | B7: Krishna Nagar, Bagodar, Jharkhand - 825322
+Row  8: A8: Finalization
+Row  9: A9: Order Finalization with Pipe Mfg
+Row 10: A10: Tentative Delivery Period
+Row 11: B11: HSAW | C11: [=#REF!] = #REF!
+Row 12: A12: Sr.No. | C12: 1 | D12: 2 | E12: 3 | F12: 4 | G12: total | I12: Sr. No. | J12: Industry | M12: In KM
+Row 13: A13: Pipe OD (Inch) | C13: 49 | D13: 52 | E13: 54 | F13: 56 | I13: 1 | J13: Mega Pipes Pvt Ltd (Khopoli) | M13: 1821
+Row 14: A14: Pipe ID (mm) | C14: 1226 | D14: 1300 | E14: 1350 | F14: 1400 | I14: 2 | J14: Mega Pipes Pvt Ltd (Jabalpur) | M14: 782
+Row 15: A15: Pipe OD (mm) | C15: 1243 | D15: 1317 | E15: 1367 | F15: 1417 | I15: 3 | J15: MAN/JSW/WS/Ratnamani  (ANJAR ) | M15: 1973
+Row 16: A16: WT (mm) | C16: 8.4 | D16: 8.4 | E16: 8.4 | F16: 8.4 | I16: 4 | J16: MAN/MTL/JSW (INDORE) | M16: 1279
+Row 17: A17: Mass (MT/Mtr) | C17: [=((((C15-C16)*C16)*0.0246615)/1000)] = 0.25575553836 | D17: [=((((D15-D16)*D16)*0.0246615)/1000)] = 0.27108512675999996 | E17: [=((((E15-E16)*E16)*0.0246615)/1000)] = 0.28144295676000003 | F17: [=((((F15-F16)*F16)*0.0246615)/1000)] = 0.29180078676 | I17: 5 | J17: Welspun Corp Limited, Bhopal | M17: 1019
+Row 18: A18: Qty (Mtr) | C18: 2000 | D18: 350 | E18: 500 | F18: 4400 | G18: [=SUM(C18:F18)] = 7250 | I18: 6 | J18: Welspun Corp Limited, Karnataka  | M18: 2059
+Row 19: A19: Qty (MT) | C19: [=C18*C17] = 511.51107671999995 | D19: [=D18*D17] = 94.87979436599998 | E19: [=E18*E17] = 140.72147838 | F19: [=F18*F17] = 1283.923461744 | G19: [=SUM(C19:F19)] = 2031.0358112099998 | I19: 7 | J19: AMNS, Hazira | M19: 1778
+Row 20: A20: Coating factor | C20: [=3.14*(C15/1000)] = 3.9030200000000006 | D20: [=3.14*(D15/1000)] = 4.13538 | E20: [=3.14*(E15/1000)] = 4.2923800000000005 | F20: [=3.14*(F15/1000)] = 4.449380000000001 | I20: 8 | J20: Jindal Saw Ltd, Bellary 583152 | M20: 1833
+Row 21: A21: Pipe Weight (MT) | C21: [=C17*12] = 3.0690664603199997 | D21: [=D17*12] = 3.2530215211199995 | E21: [=E17*12] = 3.37731548112 | F21: [=F17*12] = 3.50160944112 | I21: 9 | J21: JCO Gas & Pipe Ltd (MP)Sausar  480108 | M21: 1042
+Row 22: A22: Pipe Nos | C22: [=ROUNDUP(C18/12,0)] = 167 | D22: [=ROUNDUP(D18/12,0)] = 30 | E22: [=ROUNDUP(E18/12,0)] = 42 | F22: [=ROUNDUP(F18/12,0)] = 367 | G22: [=SUM(C22:F22)] = 606 | I22: 11 | J22: HI-Tech Sanand GJ 382170 | M22: 1737
+Row 23: A23: Delivery Location  | I23: 12 | J23: Surya Roshni, Anjar | M23: 1974
+Row 24: A24: Yield Loss Itemwise | C24: 0.02 | D24: 0.02 | E24: 0.02 | F24: 0.02 | I24: 13 | J24: Surya Roshni, Gwalior 474005 | M24: 915
+Row 25: A25: Steel BEN + GE | C25: 62000 | D25: 62000 | E25: 62000 | F25: 62000 | G25: 62000.00000000001 | I25: 14 | J25: HI-Tech, Umred | M25: 998
+Row 26: A26: Grade Extra | I26: 15 | J26: Ratnamani Sundargarh, Masanikani, Odisha 770019 | M26: 403
+Row 27: A27: Steel Cost (Delivered) | C27: [=C25+C26] = 62000 | D27: [=D25+D26] = 62000 | E27: [=E25+E26] = 62000 | F27: [=F25+F26] = 62000 | G27: 62000.00000000001 | I27: 16 | J27: Jindal Saw Limited, Jindal saw ltd, Narsi, Kosi Kalan, Barhana, Uttar Pradesh 281403 | M27: 1066
+Row 28: A28: Yield Loss @ 2% | C28: [=C27*C24] = 1240 | D28: [=D27*D24] = 1240 | E28: [=E27*E24] = 1240 | F28: [=F27*F24] = 1240 | G28: 1240
+Row 29: A29: Conversion | C29: 4000 | D29: 4000 | E29: 4000 | F29: 4000 | G29: 4000
+Row 30: A30: Testing + Hospitality | J30: SAIL Bakaro to MPPL Jabalpur | M30: 786 KM
+Row 31: A31: Margin
+Row 32: A32: [=A41] = FC-1% + 25% adv. Bal against LC | B32: [=B41] = 0.01 | C32: 1024 | D32: 1014 | E32: 1011 | F32: 1008 | G32: 1012.5177048962961
+Row 33: A33: Bare Pipe Price | C33: [=SUM(C27:C32)] = 68264 | D33: [=SUM(D27:D32)] = 68254 | E33: [=SUM(E27:E32)] = 68251 | F33: [=SUM(F27:F32)] = 68248 | G33: 68252.51770489631
+Row 34: A34: Ext: PU (1000 Micron) | B34: 500 | C34: [=($B$34*C20)/C17] = 7630.372395897313 | D34: [=($B$34*D20)/D17] = 7627.456455147351 | E34: [=($B$34*E20)/E17] = 7625.666048662783 | F34: [=($B$34*F20)/F17] = 7624.002747565451 | G34: 7625.883509544169
+Row 35: A35: Int:  FGE (406 Micron) | B35: 250 | C35: [=($B$35*C20)/C17] = 3815.1861979486566 | D35: [=($B$35*D20)/D17] = 3813.7282275736757 | E35: [=($B$35*E20)/E17] = 3812.8330243313917 | F35: [=($B$35*F20)/F17] = 3812.0013737827253 | G35: 3812.9417547720846
+Row 36: A36: Ex Mill Price | C36: [=C33+C35+C34] = 79709.55859384597 | D36: [=D33+D35+D34] = 79695.18468272102 | E36: [=E33+E35+E34] = 79689.49907299418 | F36: [=F33+F35+F34] = 79684.00412134817 | G36: 79691.34296921255
+Row 37: A37: Freight : Bagodar (Stacking) | C37: [=P57] = 7676 | D37: [=P58] = 7248 | E37: [=P59] = 6985 | F37: [=P60] = 6740 | G37: 7016.435335335847 | H37: 151 trips
+Row 38: A38: Sub Total | C38: [=C36+C37] = 87385.55859384597 | D38: [=D36+D37] = 86943.18468272102 | E38: [=E36+E37] = 86674.49907299418 | F38: [=F36+F37] = 86424.00412134817 | G38: 86707.77830454841
+Row 39: A39: GST @ 18% | C39: [=C38*18%] = 15729.400546892273 | D39: [=D38*18%] = 15649.773242889783 | E39: [=E38*18%] = 15601.409833138952 | F39: [=F38*18%] = 15556.32074184267 | G39: 15607.40009481871
+Row 40: A40: Grand Total GST INC. | C40: [=C38+C39] = 103114.95914073824 | D40: [=D38+D39] = 102592.95792561081 | E40: [=E38+E39] = 102275.90890613313 | F40: [=F38+F39] = 101980.32486319085 | G40: 102315.17839936711
+Row 41: A41: FC-1% + 25% adv. Bal against LC | B41: 0.01 | C41: [=C40*$B$41] = 1031.1495914073823 | D41: [=D40*$B$41] = 1025.9295792561081 | E41: [=E40*$B$41] = 1022.7590890613313 | F41: [=F40*$B$41] = 1019.8032486319086
+Row 42: A42: Total Value (Excl. GST) | C42: [=C38*C19] = 44698681.1661168 | D42: [=D38*D19] = 8249151.48422173 | E42: [=E38*E19] = 12196963.64739768 | F42: [=F38*F19] = 110961806.54925907 | G42: [=SUM(C42:F42)] = 176106602.8469953 | H42: [=G42/G19] = 86707.77830454841
+Row 44: A44: Bare Pipe Price/meter | C44: [=ROUNDUP(C33*C17,0)] = 17459 | D44: [=ROUNDUP(D33*D17,0)] = 18503 | E44: [=ROUNDUP(E33*E17,0)] = 19209 | F44: [=ROUNDUP(F33*F17,0)] = 19915
+Row 45: A45: EXT Coating Price/meter | B45: [=B34] = 500 | C45: [=ROUNDUP(C34*C17,0)] = 1952 | D45: [=ROUNDUP(D34*D17,0)] = 2068 | E45: [=ROUNDUP(E34*E17,0)] = 2147 | F45: [=ROUNDUP(F34*F17,0)] = 2225
+Row 46: A46: INT Coating Price/meter | B46: [=B35] = 250 | C46: [=ROUNDUP(C35*C17,0)] = 976 | D46: [=ROUNDUP(D35*D17,0)] = 1034 | E46: [=ROUNDUP(E35*E17,0)] = 1074 | F46: [=ROUNDUP(F35*F17,0)] = 1113
+Row 47: A47: Freight Price/meter | C47: [=ROUNDUP(C37*C17,0)] = 1964 | D47: [=ROUNDUP(D37*D17,0)] = 1965 | E47: [=ROUNDUP(E37*E17,0)] = 1966 | F47: [=ROUNDUP(F37*F17,0)] = 1967
+Row 48: A48: Total Price/meter | C48: [=SUM(C44:C47)] = 22351 | D48: [=SUM(D44:D47)] = 23570 | E48: [=SUM(E44:E47)] = 24396 | F48: [=SUM(F44:F47)] = 25220
+Row 49: A49: Total Value (Excl. GST) | C49: [=C48*C18] = 44702000 | D49: [=D48*D18] = 8249500 | E49: [=E48*E18] = 12198000 | F49: [=F48*F18] = 110968000 | G49: [=SUM(C49:F49)] = 176117500 | H49: [=G49/G19] = 86713.14362255244 | I49: [=H42-H49] = -5.365318004027358 | J49: [=G49-178657900] = -2540400
+Row 52: A52: MKTG/ENQ/26-27/594  DATED 09.09.2026 | O52: 2026-09-10 00:00:00
+Row 53: B53: STACKING PLAN WITHOUT NESTING FROM MANERI PLANT TO KRISHNA NAGAR, BAGODAR, JHARKHAND-825 322
+Row 54: A54: Sr. No. | B54: Pipe Dia (Inch) | C54: Pipe Dia 
+(MM) | D54: WALL 
+THICK
+(MM) | E54: Total / 
+MT | F54: Total / MTRS | G54: Total Pipes/ | H54: Type of 
+Pipes | I54: Per Pipe WT/ MT | J54: Pipe Stacking on Trailer | K54: Pipe Stacking on Trailer | L54: Per Trailer WT/MT | M54: ODC(L X W X H) | O54: Freight 
+Rate per trip
+Rs.
+Row 55: G55: Nos
+Row 57: A57: 1 | B57: [=C57/25.4] = 48.93700787401575 | C57: 1243 | D57: 8.4 | E57: [=(0.0246615*(C57-D57)*D57*F57)/1000] = 511.51107671999995 | F57: 2000 | G57: [=F57/12] = 166.66666666666666 | H57: HSAW Coated | I57: [=(0.0246615*(C57-D57)*D57*12)/1000] = 3.0690664603199997 | J57: 2+2 | K57: 4 | L57: [=I57*K57] = 12.276265841279999 | M57: 40X8'.2"X8'.5" | N57: [=G57/K57] = 41.666666666666664 | O57: 93000 | P57: [=ROUNDUP(O57*N57/E57,0)+100] = 7676 | Q57: 7676
+Row 58: A58: 2 | B58: [=C58/25.4] = 51.85039370078741 | C58: 1317 | D58: 8.4 | E58: [=(0.0246615*(C58-D58)*D58*F58)/1000] = 94.87979436599998 | F58: 350 | G58: [=F58/12] = 29.166666666666668 | H58: HSAW Coated | I58: [=(0.0246615*(C58-D58)*D58*12)/1000] = 3.25302152112 | J58: 2+2 | K58: 4 | L58: [=I58*K58] = 13.01208608448 | M58: 40X8'.7"X9' | N58: [=G58/K58] = 7.291666666666667 | O58: 93000 | P58: [=ROUNDUP(O58*N58/E58,0)+100] = 7248 | Q58: 7248
+Row 59: A59: 3 | B59: [=C59/25.4] = 53.81889763779528 | C59: 1367 | D59: 8.4 | E59: [=(0.0246615*(C59-D59)*D59*F59)/1000] = 140.72147838 | F59: 500 | G59: [=F59/12] = 41.666666666666664 | H59: HSAW Coated | I59: [=(0.0246615*(C59-D59)*D59*12)/1000] = 3.37731548112 | J59: 2+2 | K59: 4 | L59: [=I59*K59] = 13.50926192448 | M59: 40X9'X9'.3" | N59: [=G59/K59] = 10.416666666666666 | O59: 93000 | P59: [=ROUNDUP(O59*N59/E59,0)+100] = 6985 | Q59: 6985
+Row 60: A60: 4 | B60: [=C60/25.4] = 55.787401574803155 | C60: 1417 | D60: 8.4 | E60: [=(0.0246615*(C60-D60)*D60*F60)/1000] = 1283.923461744 | F60: 4400 | G60: [=F60/12] = 366.6666666666667 | H60: HSAW Coated | I60: [=(0.0246615*(C60-D60)*D60*12)/1000] = 3.5016094411200003 | J60: 2+2 | K60: 4 | L60: [=I60*K60] = 14.006437764480001 | M60: 40X9'.3X9'.7" | N60: [=G60/K60] = 91.66666666666667 | O60: 93000 | P60: [=ROUNDUP(O60*N60/E60,0)+100] = 6740 | Q60: 6740
+Row 61: B61: Total | E61: [=SUM(E57:E60)] = 2031.0358112099998 | F61: [=SUM(F57:F60)] = 7250 | G61: [=SUM(G57:G60)] = 604.1666666666666 | N61: [=SUM(N57:N60)] = 151.04166666666666
+Row 62: M62: Stacking
+Row 63: M63: Total | N63: [=O57*N61] = 14046875
+Row 64: M64: INR/MT | N64: [=N63/G19+100] = 7016.113897386922
+Row 66: A66: RMR Cost Internal Coating FGE
+Row 67: A67: SR. NO. | B67: Material Description | C67: Required | D67: Rate | E67: Value | G67: total SQM
+Row 68: A68: 1 | B68: Paint | C68: 22605 | D68: 200 | E68: [=C68*D68] = 4521000 | G68: 30622.271
+Row 69: A69: 2 | B69: Primer | E69: [=C69*D69] = 0
+Row 70: A70: 3 | B70: Thinner | C70: 1583 | D70: 140 | E70: [=C70*D70] = 221620
+Row 71: A71: 4 | B71: Shot  | C71: 0.61 | D71: 85000 | E71: [=C71*D71] = 51850
+Row 72: A72: 5 | B72: Grit | C72: 2.45 | D72: 85000 | E72: [=C72*D72] = 208250.00000000003
+Row 73: A73: 6 | B73: Abrotape | C73: 188 | D73: 100 | E73: [=C73*D73] = 18800
+Row 74: A74: TOTAL RMR COST | E74: [=SUM(E68:E73)] = 5021520 | F74: Price  | G74: [=E74/G68] = 163.98261252406786 | H74: [=G74*25%] = 40.995653131016965 | I74: [=H74+G74] = 204.97826565508484
+Row 77: A77: RMR Cost External Coating FGE
+Row 78: A78: SR. NO. | B78: Material Description | C78: Required | D78: Rate | E78: Value | G78: total SQM
+Row 79: A79: 1 | B79: Paint | C79: 47700 | D79: 200 | E79: [=C79*D79] = 9540000 | G79: 31005
+Row 80: A80: 2 | B80: Primer | E80: [=C80*D80] = 0
+Row 81: A81: 3 | B81: Thinner | C81: 2384 | D81: 140 | E81: [=C81*D81] = 333760
+Row 82: A82: 4 | B82: Shot  | C82: 1.24 | D82: 85000 | E82: [=C82*D82] = 105400
+Row 83: A83: 5 | B83: Grit | C83: 4.96 | D83: 85000 | E83: [=C83*D83] = 421600
+Row 84: A84: 6 | B84: Abrotape | C84: 215 | D84: 87 | E84: [=C84*D84] = 18705
+Row 85: A85: 7 | B85: Nylone rope | C85: 10818 | D85: 35 | E85: [=C85*D85] = 378630
+Row 86: A86: 8 | B86: Cable Tie | C86: 72.5 | D86: 73 | E86: [=C86*D86] = 5292.5
+Row 87: A87: TOTAL RMR COST | E87: [=SUM(E79:E84)] = 10419465 | F87: Price  | G87: [=E87/G79] = 336.05757135945817 | H87: [=G87*25%] = 84.01439283986454 | I87: [=H87+G87] = 420.0719641993227
+
+--- SHEET: Sheet1 ---
+Dimensions: 54 rows x 8 columns
+Row  5: A5: Offer Number | C5: MEGA/OFFER/26-27/594 Rev. | G5: 23rd September 2026
+Row  7: A7: Purchaser :  | C7: Unipro Techno Infrastructure Pvt. Ltd.
+Row  8: A8: Project : 
+Row  9: A9: Manufacturer :  | C9: M/s. Mega Pipes Pvt Limited (Jabalpur)
+Row 10: A10: Sr. No. | B10: Types of pipes | C10: Specifications | D10: Description | F10: Quantity | G10: Unit Price of Pipe on
+ Delivered  basis
+(GST Excl.) | H10: Total Price of pipes on 
+ Delivered  basis
+(GST Excl.)
+Row 11: D11: OD 
+(MM) | E11: WT 
+(MM) | F11: MTR | G11: INR/Mtr | H11: INR
+Row 12: A12: 1 | B12: HSAW Coated | C12: IS3589 Fe 410 | D12: [='CS Stacking 10-09-26'!C15] = 1243 | E12: [='CS Stacking 10-09-26'!C16] = 8.4 | F12: [='CS Stacking 10-09-26'!C18] = 2000 | G12: [='CS Stacking 10-09-26'!C48] = 22351 | H12: [=G12*F12] = 44702000
+Row 13: A13: 2 | B13: HSAW Coated | C13: IS3589 Fe 410 | D13: [='CS Stacking 10-09-26'!D15] = 1317 | E13: [='CS Stacking 10-09-26'!D16] = 8.4 | F13: [='CS Stacking 10-09-26'!D18] = 350 | G13: [='CS Stacking 10-09-26'!D48] = 23570 | H13: [=G13*F13] = 8249500
+Row 14: A14: 3 | B14: HSAW Coated | C14: IS3589 Fe 410 | D14: [='CS Stacking 10-09-26'!E15] = 1367 | E14: [='CS Stacking 10-09-26'!D16] = 8.4 | F14: [='CS Stacking 10-09-26'!E18] = 500 | G14: [='CS Stacking 10-09-26'!E48] = 24396 | H14: [=G14*F14] = 12198000
+Row 15: A15: 4 | B15: HSAW Coated | C15: IS3589 Fe 410 | D15: [='CS Stacking 10-09-26'!F15] = 1417 | E15: [='CS Stacking 10-09-26'!F16] = 8.4 | F15: [='CS Stacking 10-09-26'!F18] = 4400 | G15: [='CS Stacking 10-09-26'!F48] = 25220 | H15: [=G15*F15] = 110968000
+Row 16: A16: TOTAL | F16: [=SUM(F12:F15)] = 7250 | H16: [=SUM(H12:H15)] = 176117500
+Row 17: A17: All taxes and duties like GST shall be extra at actuals. The prevailing rate at the time of dispatch shall be levied. Current Rate of GST is 18%.
+Row 18: A18: TERMS & CONDITIONS
+Row 19: A19: Price | C19: Our Price CIF for Krishna Nagar, Bagodar, Jharkhand - 825322
+The prices are offered are in meter basis.
+Row 20: A20: Scope of Supply | C20: Manufacture & Supply of Coated MS (HSAW) Pipes conforming to IS 3589. Pipes will be manufactured & supplied from our Jabalpur Plant in MP .Extrernal Coating- PU 1000 Micron, Internal coating- FGE 406 micron. Dispatch will be on stacking basis we have not consisdered Nesting.
+Row 21: A21: Price Validity | C21:  Offer is valid for placement of order for 3 days (i.e. 26th September 2026), thereafter subject to our written reconfirmation.
+Row 22: A22: Payment Terms | C22: The Payment terms offered are 25% Advance and Balance against Letter of Credit. The LC to be established within 7 days of PO placement
+Row 23: A23: TDS Under 194Q | C23: The buyer is responsible for deducting TDS under section - 194Q. The TDS Amount needs to be deposited With the tax authorities & It is the responsibility of the buyer to insure TDS certificates are submitted in a timely manner to the seller each quarter.
+Row 24: A24: Raw Material Procurement | C24: Procurement of raw materials will commence upon receipt of PO, Advance or QAP whichever is recevied later. Any delay in LC opening & increase in raw material prices during the procurement process and will affect the order finalized rates.
+Delays in opening LC or getting QAP approval will be responsibility of buyer and in case there is any loss on this account, then same will be recovered from buyer. 
+Row 25: A25: Interest | C25: Any delay in payments transfer interest shall be charges at 12% pa for the delay. Delayed beyond agreed date for payments shall attract penal interest @15%pa
+Row 26: A26: Weight of Pipes | C26: The weight of pipes at the weighment bridge of Mega-Pipes shall be considered final.
+Row 27: A27: Quantity Variation | C27: Any change/variation in the ordered quantity/wall thickness to max. of +/- 5 % shall be discussed & confirmed by us within max 10 days after receipt of PO, but before receipt of Coil & opening of the L/C on us. Once coils are received at our plant any change in Quantity/Wall thickness/Grade etc. will not be accepted.
+Row 28: A28: Quantity Tolerance | C28: Quantity tolerance to the tune of +/-3 pipes, item-wise. LC should also allow quantity/value Tolerance accordingly.
+Row 29: A29: Delivery | C29: The commencement of production shall be within 45 to 60 days from PO date, LC opening & QAP approval whichever is later, provided the order is placed by 5th September 2026. The production shall be completed within 60 days from production commencement. 
+Row 30: A30: Packing & Forwarding | C30: Pipes shall be supplied LOOSE without packing as per Standards & Traffic Rules. We have not considerd Spider / Bevel protectors during supply of Pipes.
+Unloading at site will be in your scope.  Transporter provides 24 hours for unloading.  Delay beyond this period will result in detention/demurrage charges by the transporter.
+Row 31: A31: Part Order | C31: Prices considered are for full quantity, Part order not acceptable.
+Row 32: A32: Freight | C32: To minimise freight for customer same has been considered with maximum loading of pipes on trailer.  If for any reason lesser number of pipes are sent then freight rate will be increased proportionately.
+Row 33: A33: Logistic Conditions | C33: In the event that the unloading site is situated in a remote area with narrow access roads unsuitable for wider cargo, or if there are height restrictions for trailers on the route, our trailers will deliver the pipes to the nearest accessible highway. After that point, if any expenses have to be made for letting the trailers reach the final destination site, the same will be on the account of the customers. Alternatively customer can arrange for the transportation of the pipes from the highway to the final destination.
+Row 34: A34: Guarantee | C34: We shall guarantee our material against any manufacturing defects or faulty workmanship for a period of 12 months from the date receipt of Inspection Release Note by your nominated TPI agency at our Plant. 
+Row 35: A35: Cancellation Schedule | C35: Applicable incase the PO is cancelled after buyerΓÇÖs placement of order on us (Listed below is our standard cancellation schedule) - 1) If raw material has not yet been procured, then advance amount will be adjusted towards damages and will not be refundable or 2) In case raw material has been procured, then all damages arising out of the procurement of HR Coils on behalf of customer.                                                                                                                                                                                                                                                                                                                                                                                  
+Row 36: A36: Force Majeure | C36: The supply will be subject to Force Majeure conditions. Neither party shall be liable in damages or have the right to terminate this agreement for any delay or default in performing here under if such delay or default is caused by conditions beyond its control and occurring without its fault or negligence including but not limited to Acts of God, Earthquake, Revolts, Riots, Fires, Floods, Rebellions, Explosions, Hurricane, Sabotage, Civil commotions, Wars, Insurrections, Regulations of Respective Governments of the two parties namely the Employer & the Contractor And/or any other cause beyond the reasonable control of the party whose performance is affected. 
+Row 37: A37: Pipe Length | C37: Min 90% of the pipes supplied will be between 11 & 12 meters in length & the remaining max 10% of the pipes will range between 9 meters and 11 meters in length.
+Row 38: A38: Thickness Tolerance | C38: As per IS 8329 latest edition, there will be no negative tolerance on pipe thickness.  However, if customer requires thickness tolerances as per IS 3589 latest edition, then same must be indicated at time of order finalisation.
+Row 39: A39: Ovality of Pipes | C39: If the D/T ratio is less than or equal to 100 then it is 1% of OD.
+If the D/T ratio is greater than 100 then it is equal to 2% of OD.
+Row 40: A40: Testing | C40: Third Party Inspection charges is in buyer's scope.
+Row 41: A41: Inspections | C41: All the inspection and test shall be carried out in our in-house testing laboratories at our Plant. The inspection done at our works before dispatch shall be final. We shall provide our Mill Test Certificate along with the supply. We agree to inprocess inspection by TPI, duly authorized by the Buyer / Owner at our works. We will provide the necessary inspection and testing facilities free of cost. However, the TPI charges, if any payable or any expenses on TPI shall be borne & paid directly by Buyer.
+In case after providing inspection call there is delay in conducting inspection by TPI/ End Client no seperate offline Hydro Test inspection will be offered. Only visual inspection will be offered.
+Row 42: A42: Technical | C42: Our proposal is based on IS 3589 Fe 410 or API 5L Equivalent Standard Specification.  The HR Coils will be procured to IS2062 or IS10748 and same must be confirmed by customer in PO alongwith applicable grade.
+Row 43: A43: Skelp joint | C43: We have considered Skelp Joint as allowed by BIS std.
+Row 44: A44: Steel Origin | C44: No restriction on steel coil origin. We will procure Steel from reputed Steel Mill as per our approved vendor list which are JSW Steel, AMNS (Essar), Tata Steel, Jindal Steel & Power, SAIL, NMDC Steel, etc.
+Row 45: A45: Steel Coil Rate | C45: The cost of the HR coil is based on today's market rate but is subject to change. The final price will be determined by the market rate at the time of order finalization subject to all financial arrangements being put in place.  In absence of same, the rates may be modified even thereafter as per prevailing market conditions.
+Row 46: A46: We hope our offer is in line with your requirement , if you need any further confirmation / clarification please feel free to call us. 
+We assure our best services at all times we remain. 
+Row 47: A47: For Mega Pipes Pvt Ltd.,
+Row 53: A53: Yatin Thakur  (Sr. General Manager - Marketing).
+Row 54: A54: Email: yatin.thakur@mega-group.in | Mobile no. 8850951680
+
+================================================================================
+FILE: MKTGENQ26-27610 - Lodha 1.xlsx
+================================================================================
+
+--- SHEET: Sheet1 ---
+Dimensions: 21 rows x 18 columns
+Row  1: A1: SYNOPSIS
+Row  3: J3: Enquiry Received Date: 13-10-2026
+Row  4: A4: OUR REF. | D4: MKTG/ENQ/26-27/610 | J4: TYPE: | L4: HSAW 
+Row  5: A5: Tender Name | J5: End User   
+Row  6: A6: Enq Recd from | D6: LODHA | J6: Country | L6: India
+Row  7: A7: Contact Person  | D7: Pawan Junghare | J7: Validity of offer
+Row  8: A8: Address | J8: Place of Delivery | L8: MMR Region
+Row  9: A9: Due Date  | J9: Delivery Reqd  
+Row 10: A10: Sr. No. | B10: ID | C10: OD  | D10: OD  | E10: Thk | F10: Grade | G10: Type | H10: Qty  | I10: Pipe  | J10: Weight | K10: Qty in | L10: volume | M10: CBM | N10: Coating | O10: Coating | P10: Weight of pipe
+Row 11: B11: MM | C11: INCH | D11: MM | E11: MM | F11: Specs | H11: MTRS | I11: Nos. | J11: Kg/m | K11: MT | L11: Pipes | M11: Ratio/size | N11: Ext m┬▓ | O11: INT m┬▓ | P11: MT
+Row 12: A12: 1 | B12: [=D12-2*E12] = 1026 | C12: [=D12/25.4] = 41.338582677165356 | D12: 1050 | E12: 12 | F12:  IS 3589-2001  | G12: HSAW Bare | H12: [=100+265] = 365 | I12: [=H12/12] = 30.416666666666668 | J12: [=(D12-E12)*E12*0.0246615] = 307.183644 | K12: [=H12*J12/1000] = 112.12203006 | L12: [=(D12/1000)*(D12/1000)*H12] = 402.4125 | M12: [=(L12/K12)] = 3.5890582768137227 | N12: [=ROUNDUP(D12*H12*(22/7)/1000,0)] = 1205 | O12: [=ROUNDUP((22/7)*H12*(D12-(2*E12))/1000,0)] = 1177 | P12: [=(12*J12/1000)] = 3.6862037280000006
+Row 13: A13: 2 | B13: 1050 | C13: [=D13/25.4] = 42.28346456692913 | D13: [=B13+2*E13] = 1074 | E13: 12 | F13:  IS 3589-2001  | G13: HSAW Coated | H13: [=10700+6600+255+7480] = 25035 | I13: [=H13/12] = 2086.25 | J13: [=(D13-E13)*E13*0.0246615] = 314.286156 | K13: [=H13*J13/1000] = 7868.15391546 | L13: [=(D13/1000)*(D13/1000)*H13] = 28877.271660000006 | M13: [=(L13/K13)] = 3.670145750867882 | N13: [=ROUNDUP(D13*H13*(22/7)/1000,0)] = 84504 | O13: [=ROUNDUP((22/7)*H13*(D13-(2*E13))/1000,0)] = 82616 | P13: [=(12*J13/1000)] = 3.7714338720000002
+Row 14: A14: 3 | B14: [=D14-2*E14] = 876 | C14: [=D14/25.4] = 35.43307086614173 | D14: 900 | E14: 12 | F14:  IS 3589-2001  | G14: HSAW Bare | H14: [=10+50+10+50] = 120 | I14: [=H14/12] = 10 | J14: [=(D14-E14)*E14*0.0246615] = 262.792944 | K14: [=H14*J14/1000] = 31.53515328 | L14: [=(D14/1000)*(D14/1000)*H14] = 97.2 | M14: [=(L14/K14)] = 3.0822745377821104 | N14: [=ROUNDUP(D14*H14*(22/7)/1000,0)] = 340 | O14: [=ROUNDUP((22/7)*H14*(D14-(2*E14))/1000,0)] = 331 | P14: [=(12*J14/1000)] = 3.1535153279999997 | R14: [=36096+22265+25234] = 83595
+Row 15: A15: 4 | B15: [=D15-2*E15] = 676 | C15: [=D15/25.4] = 27.559055118110237 | D15: 700 | E15: 12 | F15:  IS 3589-2001  | G15: HSAW Coated | H15: [=40+40] = 80 | I15: [=H15/12] = 6.666666666666667 | J15: [=(D15-E15)*E15*0.0246615] = 203.605344 | K15: [=H15*J15/1000] = 16.288427520000003 | L15: [=(D15/1000)*(D15/1000)*H15] = 39.199999999999996 | M15: [=(L15/K15)] = 2.4066165964681154 | N15: [=ROUNDUP(D15*H15*(22/7)/1000,0)] = 176 | O15: [=ROUNDUP((22/7)*H15*(D15-(2*E15))/1000,0)] = 170 | P15: [=(12*J15/1000)] = 2.4432641279999996
+Row 16: A16: 5 | B16: [=D16-2*E16] = 976 | C16: [=D16/25.4] = 39.37007874015748 | D16: 1000 | E16: 12 | F16:  IS 3589-2001  | G16: HSAW BARE | H16: 100 | I16: [=H16/12] = 8.333333333333334 | J16: [=(D16-E16)*E16*0.0246615] = 292.38674399999996 | K16: [=H16*J16/1000] = 29.238674399999997 | L16: [=(D16/1000)*(D16/1000)*H16] = 100 | M16: [=(L16/K16)] = 3.4201276922458566 | N16: [=ROUNDUP(D16*H16*(22/7)/1000,0)] = 315 | O16: [=ROUNDUP((22/7)*H16*(D16-(2*E16))/1000,0)] = 307 | P16: [=(12*J16/1000)] = 3.5086409279999997
+Row 17: H17: [=SUM(H12:H16)] = 25700 | I17: [=SUM(I12:I16)] = 2141.6666666666665 | J17: [=SUM(J12:J16)] = 1380.254832 | K17: [=SUM(K12:K16)] = 8057.338200719999 | L17: [=SUM(L12:L16)] = 29516.084160000006 | M17: [=SUM(M12:M16)] = 16.16822285417769 | N17: [=SUM(N12:N16)] = 86540 | O17: [=SUM(O12:O16)] = 84601 | P17: [=SUM(P12:P16)] = 16.563057984
+Row 18: A18: No Negative tolerance on Thickness.                                                                                                 
+
+Finished inspection.

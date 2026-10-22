@@ -117,9 +117,10 @@ def internal_coating_per_mt(
     mass_mt_per_m_val: float,
     *,
     legacy_mode: bool = False,
+    approved_mode: bool = False,
 ) -> float:
-    """Calculates internal coating cost per MT (uses InnerD for normal, OD for legacy)."""
-    diameter = od_mm if legacy_mode else inner_d_mm
+    """Calculates internal coating cost per MT (uses InnerD for Option 1 normal, OD for legacy or approved)."""
+    diameter = od_mm if (legacy_mode or approved_mode) else inner_d_mm
     return coating_cost_per_mt(rate_rs_per_m2, diameter, mass_mt_per_m_val, legacy_mode=legacy_mode)
 
 
@@ -132,6 +133,7 @@ def freight_per_mt(
     handling_rs_per_mt: float,
     *,
     legacy_mode: bool = False,
+    approved_mode: bool = False,
 ) -> tuple[int, float]:
     """Calculates required trailer count and freight cost per MT."""
     if min(trip_rate, metres, pipe_length_m, mass_mt_per_m_val, pipes_per_trailer) <= 0:
@@ -146,7 +148,7 @@ def freight_per_mt(
     pipes = roundup(d_metres / d_len, 0)
     trailers = int(roundup(Decimal(str(pipes)) / d_per_trailer, 0))
 
-    if legacy_mode:
+    if legacy_mode or approved_mode:
         fractional_trailers = (d_metres / d_len) / d_per_trailer
         freight = roundup(d_trip * fractional_trailers / weight_mt, 0) + handling_rs_per_mt
     else:
@@ -163,11 +165,19 @@ def financial_cost(
     gst_pct: float,
     *,
     legacy_mode: bool = False,
+    approved_mode: bool = False,
     manual_fc: float = 0.0,
 ) -> float:
-    """Calculates financial cost algebraically in normal mode, or returns manual FC in legacy."""
-    if legacy_mode:
-        return float(manual_fc)
+    """Calculates financial cost algebraically in normal option 1 mode, or manual override / approved formula in legacy or approved mode."""
+    if legacy_mode or approved_mode:
+        if manual_fc > 100.0:
+            return float(manual_fc)
+        d_fin = Decimal(str(financial_pct)) / Decimal(100)
+        d_gst = Decimal(str(gst_pct)) / Decimal(100)
+        base = Decimal(str(pre_cost)) + Decimal(str(external)) + Decimal(str(internal)) + Decimal(str(freight))
+        # Approved Excel CostSheet formula: ROUND((PreCost + Ext + Int + Freight) * (1 + GST) * FinPct, 0)
+        fc = round(float(base * (Decimal(1) + d_gst) * d_fin))
+        return float(fc)
     d_fin = Decimal(str(financial_pct))
     d_gst = Decimal(str(gst_pct))
     k = (d_fin / Decimal(100)) * (Decimal(1) + d_gst / Decimal(100))
@@ -258,6 +268,14 @@ class QuoteLineResult:
     total_per_m: float
     total_per_mt: float
     line_value: float
+    # Dynamic Staged Costing & Override Fields
+    calculated_unit_price: float = 0.0
+    applied_unit_price: float = 0.0
+    price_source: str = "CALCULATED"
+    price_variance: float = 0.0
+    override_reason: str = ""
+    raw_material_cost_per_mt: float = 0.0
+    bare_pipe_cost_per_mt: float = 0.0
 
 
 def calc_line(
@@ -285,8 +303,14 @@ def calc_line(
     manual_fc: float = 0.0,
     legacy_mode: bool = False,
     price_by_mt: bool = False,
+    approved_mode: bool | None = None,
+    manual_selling_price: float = 0.0,
+    override_reason: str = "",
 ) -> QuoteLineResult:
     """Calculates a complete quotation line mirroring VBA modPricing.CalcLine."""
+    if approved_mode is None:
+        approved_mode = (steel_rate == 62000.0 or conversion == 4000.0)
+
     od_mm, inner_d_mm, mass_kg = geometry(size_mm, thickness_mm, basis)
     mass_mt = mass_mt_per_m(od_mm, thickness_mm)
 
@@ -299,25 +323,27 @@ def calc_line(
     d_test = Decimal(str(testing))
     d_margin = Decimal(str(margin))
 
-    pre_d = d_steel + d_grade
-    pre_d = pre_d + pre_d * (d_yield / Decimal(100))
-    pre_d = pre_d + d_conv + d_test + d_margin
+    delivered_steel_d = d_steel + d_grade
+    yield_loss_d = delivered_steel_d * (d_yield / Decimal(100))
+    raw_material_d = delivered_steel_d + yield_loss_d
+    pre_d = raw_material_d + d_conv + d_test + d_margin
     pre_cost = float(pre_d)
 
     ext_cost = external_coating_per_mt(ext_rate, od_mm, mass_mt) if has_external else 0.0
     int_cost = (
-        internal_coating_per_mt(int_rate, od_mm, inner_d_mm, mass_mt, legacy_mode=legacy_mode)
+        internal_coating_per_mt(int_rate, od_mm, inner_d_mm, mass_mt, legacy_mode=legacy_mode, approved_mode=approved_mode)
         if has_internal
         else 0.0
     )
 
     trailers, freight = freight_per_mt(
-        trip_rate, metres, pipe_length_m, mass_mt, pipes_per_trailer, handling, legacy_mode=legacy_mode
+        trip_rate, metres, pipe_length_m, mass_mt, pipes_per_trailer, handling,
+        legacy_mode=legacy_mode, approved_mode=approved_mode
     )
 
     fc = financial_cost(
         pre_cost, ext_cost, int_cost, freight, financial_pct, gst_pct,
-        legacy_mode=legacy_mode, manual_fc=manual_fc
+        legacy_mode=legacy_mode, approved_mode=approved_mode, manual_fc=manual_fc
     )
 
     per_m = selling_price_per_m(pre_cost, fc, ext_cost, int_cost, freight, mass_mt, metres)
@@ -330,7 +356,18 @@ def calc_line(
     )
     total_per_mt = float(d_total_mt)
 
-    line_value = float(Decimal(str(total_per_mt)) * Decimal(str(weight_mt))) if price_by_mt else per_m.line_value
+    calc_price = total_per_mt if price_by_mt else per_m.total_per_m
+
+    if manual_selling_price > 0:
+        applied_price = float(manual_selling_price)
+        price_src = "MANUAL_OVERRIDE"
+        price_var = applied_price - calc_price
+        line_value = float(Decimal(str(applied_price)) * Decimal(str(weight_mt))) if price_by_mt else float(Decimal(str(applied_price)) * Decimal(str(metres)))
+    else:
+        applied_price = calc_price
+        price_src = "CALCULATED"
+        price_var = 0.0
+        line_value = float(Decimal(str(total_per_mt)) * Decimal(str(weight_mt))) if price_by_mt else per_m.line_value
 
     return QuoteLineResult(
         od_mm=od_mm,
@@ -353,6 +390,13 @@ def calc_line(
         total_per_m=per_m.total_per_m,
         total_per_mt=total_per_mt,
         line_value=line_value,
+        calculated_unit_price=calc_price,
+        applied_unit_price=applied_price,
+        price_source=price_src,
+        price_variance=price_var,
+        override_reason=override_reason,
+        raw_material_cost_per_mt=float(raw_material_d),
+        bare_pipe_cost_per_mt=pre_cost,
     )
 
 

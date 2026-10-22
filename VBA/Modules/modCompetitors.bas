@@ -49,7 +49,17 @@ Public Function GetCompetitorPrice(ByVal competitorId As String, ByVal productId
         End If
     Next rowObj
     
-    If Not found Or IsEmpty(priceVal) Or IsNull(priceVal) Or Val(priceVal) <= 0 Then
+    If Not found Then
+        outStatus = "price needed"
+        GetCompetitorPrice = False
+        Exit Function
+    End If
+    If IsEmpty(priceVal) Or IsNull(priceVal) Then
+        outStatus = "price needed"
+        GetCompetitorPrice = False
+        Exit Function
+    End If
+    If Val(priceVal) <= 0 Then
         outStatus = "price needed"
         GetCompetitorPrice = False
         Exit Function
@@ -122,117 +132,8 @@ End Function
 Public Sub BuildCompetitorTable(ByVal productId As String, ByVal deliveryPIN As String, _
                                 ByVal ourExMillMT As Double, ByVal ourFreightMT As Double, _
                                 ByVal ourNearestKm As Double)
-    Dim wsComp As Worksheet
-    Dim wsPlants As Worksheet
-    Dim tblP As ListObject
-    Dim rowObj As ListRow
-    Dim pType As String
-    Dim cId As String
-    Dim cName As String
-    Dim dist As Double
-    Dim exMill As Variant
-    Dim pDate As Variant
-    Dim pStatus As String
-    Dim compFreight As Double
-    Dim landed As Double
-    Dim diffVsOurs As Double
-    Dim ourLanded As Double
-    Dim startRow As Long
-    Dim rIdx As Long
-    Dim isYellow As Boolean
-    Dim lowestLanded As Double
-    Dim recOffer As Double
-    Dim warn As String
-    Dim undercut As Double
-    
-    Set wsComp = ThisWorkbook.Worksheets("COMPARE")
-    Set wsPlants = ThisWorkbook.Worksheets("PLANTS")
-    Set tblP = wsPlants.ListObjects("tblPlants")
-    
-    ourLanded = ourExMillMT + ourFreightMT
-    lowestLanded = 999999#
-    
-    On Error Resume Next
-    undercut = CDbl(Val(SettingValue("UndercutRsPerMT")))
-    If undercut <= 0 Then undercut = 500#
-    On Error GoTo 0
-    
-    ' Clear competitor table area
-    wsComp.Range("A13:H25").Clear
-    
-    wsComp.Range("A12").Value = "COMPETITOR COMPARISON"
-    wsComp.Range("A12").Font.Bold = True
-    wsComp.Range("A12").Font.Size = 12
-    
-    ' Headers
-    wsComp.Range("A13").Value = "Competitor Name"
-    wsComp.Range("B13").Value = "Road KM"
-    wsComp.Range("C13").Value = "Ex-Mill / MT"
-    wsComp.Range("D13").Value = "Freight / MT"
-    wsComp.Range("E13").Value = "Landed / MT"
-    wsComp.Range("F13").Value = "Diff vs Ours"
-    wsComp.Range("G13").Value = "Price Status"
-    wsComp.Range("H13").Value = "Proximity Note"
-    
-    With wsComp.Range("A13:H13")
-        .Font.Bold = True
-        .Interior.Color = RGB(189, 215, 238) ' Light blue
-    End With
-    
-    startRow = 14
-    rIdx = 0
-    
-    For Each rowObj In tblP.ListRows
-        pType = UCase$(Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("PlantType").Index).Value)))
-        If pType = "COMPETITOR" Then
-            cId = Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("PlantID").Index).Value))
-            cName = Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("PlantName").Index).Value))
-            
-            ' Distance
-            dist = CDbl(Val(CacheLookup("driving-hgv", cId, deliveryPIN)))
-            If dist <= 0 Then dist = 1500#
-            
-            ' Price
-            GetCompetitorPrice cId, productId, exMill, pDate, pStatus
-            
-            If Not IsNull(exMill) Then
-                compFreight = CalcCompetitorFreight(dist, ourFreightMT, ourNearestKm)
-                landed = CalcLandedPrice(CDbl(exMill), compFreight)
-                diffVsOurs = landed - ourLanded
-                If landed < lowestLanded Then lowestLanded = landed
-            Else
-                compFreight = 0
-                landed = 0
-                diffVsOurs = 0
-            End If
-            
-            isYellow = IsYellowHighlighted(dist, ourNearestKm)
-            
-            wsComp.Cells(startRow + rIdx, 1).Value = cName
-            wsComp.Cells(startRow + rIdx, 2).Value = dist
-            wsComp.Cells(startRow + rIdx, 3).Value = IIf(IsNull(exMill), "N/A", exMill)
-            wsComp.Cells(startRow + rIdx, 4).Value = compFreight
-            wsComp.Cells(startRow + rIdx, 5).Value = landed
-            wsComp.Cells(startRow + rIdx, 6).Value = IIf(landed > 0, diffVsOurs, "N/A")
-            wsComp.Cells(startRow + rIdx, 7).Value = pStatus
-            wsComp.Cells(startRow + rIdx, 8).Value = IIf(isYellow, "CLOSER THAN OUR PLANT", "")
-            
-            If isYellow Then
-                wsComp.Range(wsComp.Cells(startRow + rIdx, 1), wsComp.Cells(startRow + rIdx, 8)).Interior.Color = RGB(255, 255, 0)
-            End If
-            
-            rIdx = rIdx + 1
-        End If
-    Next rowObj
-    
-    ' Summary
-    If lowestLanded < 999999# Then
-        recOffer = GetRecommendedOffer(lowestLanded, ourLanded, undercut, warn)
-        wsComp.Cells(startRow + rIdx + 1, 1).Value = "Recommended Offer (Undercut Rs " & CStr(undercut) & "):"
-        wsComp.Cells(startRow + rIdx + 1, 2).Value = recOffer
-        wsComp.Cells(startRow + rIdx + 1, 4).Value = warn
-        wsComp.Range(wsComp.Cells(startRow + rIdx + 1, 1), wsComp.Cells(startRow + rIdx + 1, 4)).Font.Bold = True
-    End If
+    ' Delegate to full competitor intelligence dashboard in modCompare
+    modCompare.BuildCompareSheet "KM"
 End Sub
 
 Public Function RunCompetitorSelfTests() As String
@@ -244,6 +145,7 @@ Public Function RunCompetitorSelfTests() As String
     Dim landed As Double
     Dim rec As Double
     Dim warn As String
+    Dim compRes As String
     
     On Error GoTo TestFail
     
@@ -310,6 +212,13 @@ Public Function RunCompetitorSelfTests() As String
     
     ' 9. Test BuildCompetitorTable
     BuildCompetitorTable "P02", "825322", 80570#, 8147#, 782#
+    
+    ' 10. Test COMPARE Sheet Dashboard (modCompare)
+    compRes = modCompare.RunCompareSelfTests()
+    If compRes <> "PASS" Then
+        RunCompetitorSelfTests = "FAIL: modCompare self-test failed: " & compRes
+        Exit Function
+    End If
     
     RunCompetitorSelfTests = "PASS"
     Exit Function

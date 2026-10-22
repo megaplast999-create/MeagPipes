@@ -1,0 +1,28 @@
+Attribute VB_Name = "modMath"
+Option Explicit
+
+' Scale with Decimal arithmetic, then apply a deterministic ceiling for
+' positive values before scaling back to the requested precision.
+Public Function RoundUpD(ByVal value As Variant, Optional ByVal digits As Long = 0) As Variant
+    Dim factor As Variant
+    Dim scaled As Variant
+    Dim index As Long
+
+    If digits < 0 Then Err.Raise vbObjectError + 1701, "RoundUpD", "Digits cannot be negative."
+    factor = CDec(1)
+    For index = 1 To digits
+        factor = factor * CDec(10)
+    Next index
+    scaled = CDec(value) * factor
+    If scaled = Int(scaled) Then
+        RoundUpD = scaled / factor
+    ElseIf scaled > 0 Then
+        RoundUpD = (Int(scaled) + CDec(1)) / factor
+    Else
+        RoundUpD = Int(scaled) / factor
+    End If
+End Function
+
+Public Function massMtPerM(ByVal odMm As Variant, ByVal wtMm As Variant) As Variant
+    massMtPerM = CDec(CalculateMassKgPerM(CDbl(odMm), CDbl(wtMm))) / CDec(1000)
+End Function

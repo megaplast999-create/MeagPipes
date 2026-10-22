@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 DEV_WB = ROOT / "DEV" / "Mega_Pipes_Quotation_DEV.xlsm"
 
 REGRESSION_MACROS = [
+    "RunGoldenApproved",
+    "RunDynamicStagedCostingSelfTests",
     "RunGoldenNormal",
     "RunGoldenLegacy",
     "RunFreightSelfTests",

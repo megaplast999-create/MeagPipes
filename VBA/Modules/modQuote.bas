@@ -180,20 +180,67 @@ Public Function CalcAllLines(ByRef header As QuoteHeaderData) As QuoteSummaryDat
                     End With
                     
                     LoadDefaultRateInput rates, legacyMode
+                    rates.Option1Mode = False
                     rates.ExtRate = CDec(500)
-                    rates.IntRate = CDec(275)
-                    If legacyMode Then
-                        rates.TripRate = CDec(SettingValue("TripRateManual"))
-                        rates.PI = CDec(3.14)
-                        Dim manualFCs As Variant
-                        manualFCs = Array(1542, 1534, 1529, 1525)
-                        If rowObject.Index >= 1 And rowObject.Index <= 4 Then
-                            rates.ManualFC = CDec(manualFCs(rowObject.Index - 1))
-                        Else
-                            rates.ManualFC = CDec(SettingValue("DefaultFinancialPct"))
-                        End If
+                    rates.IntRate = CDec(250)
+                    rates.PI = CDec(3.14)
+                    rates.TripRate = CDec(SettingValue("TripRateManual"))
+                    
+                    ' Read optional line-level commercial input overrides
+                    Dim colFC As Long, colSteel As Long, colYield As Long, colConv As Long
+                    Dim colExtR As Long, colIntR As Long, colTrip As Long, colFin As Long
+                    Dim colManP As Long, colReas As Long
+                    
+                    On Error Resume Next
+                    colFC = tableObject.ListColumns("ManualFC").Index
+                    If colFC = 0 Then colFC = tableObject.ListColumns("FCOverride").Index
+                    colSteel = tableObject.ListColumns("SteelRate").Index
+                    colYield = tableObject.ListColumns("YieldPct").Index
+                    colConv = tableObject.ListColumns("ConversionRate").Index
+                    colExtR = tableObject.ListColumns("ExtCoatingRate").Index
+                    colIntR = tableObject.ListColumns("IntCoatingRate").Index
+                    colTrip = tableObject.ListColumns("TripRate").Index
+                    colFin = tableObject.ListColumns("FinPct").Index
+                    colManP = tableObject.ListColumns("ManualSellingPrice").Index
+                    colReas = tableObject.ListColumns("OverrideReason").Index
+                    On Error GoTo LineCalcError
+                    
+                    If colFC > 0 And Val(.Cells(1, colFC).Value) > 0 Then
+                        rates.ManualFC = CDec(Val(.Cells(1, colFC).Value))
                     Else
-                        rates.TripRate = CDec(125.32) * CDec(782)
+                        rates.ManualFC = CDec(0)
+                    End If
+                    
+                    If colSteel > 0 And Val(.Cells(1, colSteel).Value) > 0 Then
+                        rates.Steel = CDec(Val(.Cells(1, colSteel).Value))
+                    End If
+                    If colYield > 0 And Val(.Cells(1, colYield).Value) > 0 Then
+                        rates.YieldPct = CDec(Val(.Cells(1, colYield).Value))
+                    End If
+                    If colConv > 0 And Val(.Cells(1, colConv).Value) > 0 Then
+                        rates.Conversion = CDec(Val(.Cells(1, colConv).Value))
+                    End If
+                    If colExtR > 0 And Val(.Cells(1, colExtR).Value) > 0 Then
+                        rates.ExtRate = CDec(Val(.Cells(1, colExtR).Value))
+                    End If
+                    If colIntR > 0 And Val(.Cells(1, colIntR).Value) > 0 Then
+                        rates.IntRate = CDec(Val(.Cells(1, colIntR).Value))
+                    End If
+                    If colTrip > 0 And Val(.Cells(1, colTrip).Value) > 0 Then
+                        rates.TripRate = CDec(Val(.Cells(1, colTrip).Value))
+                    End If
+                    If colFin > 0 And Val(.Cells(1, colFin).Value) > 0 Then
+                        rates.FinPct = CDec(Val(.Cells(1, colFin).Value))
+                    End If
+                    If colManP > 0 And Val(.Cells(1, colManP).Value) > 0 Then
+                        rates.ManualSellingPrice = CDec(Val(.Cells(1, colManP).Value))
+                    Else
+                        rates.ManualSellingPrice = CDec(0)
+                    End If
+                    If colReas > 0 Then
+                        rates.OverrideReason = Trim$(CStr(.Cells(1, colReas).Value))
+                    Else
+                        rates.OverrideReason = ""
                     End If
                     
                     result = CalcLine(lineData, rates, priceByMT)
@@ -204,12 +251,28 @@ Public Function CalcAllLines(ByRef header As QuoteHeaderData) As QuoteSummaryDat
                     .Cells(1, tableObject.ListColumns("Metres").Index).Value = result.Metres
                     .Cells(1, tableObject.ListColumns("PipeCount").Index).Value = result.Pipes
                     .Cells(1, tableObject.ListColumns("WeightMT").Index).Value = result.MT
-                    .Cells(1, tableObject.ListColumns("UnitPrice").Index).Value = _
-                        IIf(priceByMT, result.TotalPerMT, result.TotalPerM)
+                    .Cells(1, tableObject.ListColumns("UnitPrice").Index).Value = result.AppliedPrice
                     .Cells(1, tableObject.ListColumns("PriceUnit").Index).Value = _
                         IIf(priceByMT, "MT", "Metres")
                     .Cells(1, tableObject.ListColumns("LineTotal").Index).Value = result.LineValue
-                    .Cells(1, tableObject.ListColumns("Status").Index).Value = "CALCULATED"
+                    
+                    ' Persist dynamic staged costing and price-source fields
+                    Dim colCalcP As Long, colSrc As Long, colVar As Long
+                    On Error Resume Next
+                    colCalcP = tableObject.ListColumns("CalculatedUnitPrice").Index
+                    colSrc = tableObject.ListColumns("PriceSource").Index
+                    colVar = tableObject.ListColumns("PriceVariance").Index
+                    On Error GoTo LineCalcError
+                    
+                    If colCalcP > 0 Then .Cells(1, colCalcP).Value = result.CalculatedPrice
+                    If colSrc > 0 Then .Cells(1, colSrc).Value = result.PriceSource
+                    If colVar > 0 Then .Cells(1, colVar).Value = result.PriceVariance
+                    
+                    If result.PriceSource = "MANUAL_OVERRIDE" Then
+                        .Cells(1, tableObject.ListColumns("Status").Index).Value = "OVERRIDDEN"
+                    Else
+                        .Cells(1, tableObject.ListColumns("Status").Index).Value = "CALCULATED"
+                    End If
                     
                     summary.TotalMetres = summary.TotalMetres + CDec(result.Metres)
                     summary.TotalWeightMT = summary.TotalWeightMT + CDec(result.MT)
@@ -302,7 +365,7 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     End If
     
     ws.Range("D12").Value = "Mode"
-    ws.Range("E12").Value = IIf(header.LegacyMode, "LEGACY", "NORMAL (Option 1)")
+    ws.Range("E12").Value = IIf(header.LegacyMode, "LEGACY", "NORMAL")
     
     ws.Range("D13").Value = "Supplying Plant"
     ws.Range("E13").Value = header.PlantID
@@ -353,50 +416,83 @@ Public Sub UpdateLiveSummary(ByRef summary As QuoteSummaryData, ByRef header As 
     Application.DisplayAlerts = prevAlerts
 End Sub
 
+Public Function GetQuotationPriceBasis(ByRef wsQ As Worksheet) As String
+    Dim basis As String
+    basis = Trim$(CStr(wsQ.Range("B16").Value))
+    If Len(basis) = 0 Or IsNumeric(basis) Then
+        basis = Trim$(CStr(wsQ.Range("B17").Value))
+    End If
+    If Len(basis) = 0 Then basis = "Metres"
+    GetQuotationPriceBasis = basis
+End Function
+
+Public Function GetPriceBasisUnitLabel(ByVal priceBasis As String) As String
+    Select Case UCase$(Trim$(priceBasis))
+        Case "MT", "PER MT", "INR/MT", "RS/MT"
+            GetPriceBasisUnitLabel = ChrW$(8377) & "/MT"
+        Case "NOS", "PER NO", "PCS", "PIECES"
+            GetPriceBasisUnitLabel = ChrW$(8377) & "/pc"
+        Case Else
+            GetPriceBasisUnitLabel = ChrW$(8377) & "/m"
+    End Select
+End Function
+
+Public Sub UpdateManualPriceUnitDisplay(ByRef wsQ As Worksheet)
+    Dim pBasis As String
+    Dim uLabel As String
+    pBasis = GetQuotationPriceBasis(wsQ)
+    uLabel = GetPriceBasisUnitLabel(pBasis)
+    On Error Resume Next
+    wsQ.Range("C32").Value = uLabel
+    wsQ.Range("C32").Font.Name = "Calibri"
+    wsQ.Range("C32").Font.Bold = True
+    wsQ.Range("C32").Font.Size = 9.5
+    wsQ.Range("C32").Font.Color = RGB(30, 80, 40)
+    wsQ.Range("C32").HorizontalAlignment = xlCenter
+    wsQ.Range("C32").VerticalAlignment = xlCenter
+    On Error GoTo 0
+End Sub
+
 Public Sub RecalculateQuote()
-    Dim previousEnableEvents As Boolean
-    Dim previousScreenUpdating As Boolean
-    Dim previousDisplayAlerts As Boolean
-    Dim header As QuoteHeaderData
-    Dim summary As QuoteSummaryData
     Dim wsQ As Worksheet
     Dim wsLines As Worksheet
+    Dim header As QuoteHeaderData
+    Dim summary As QuoteSummaryData
+    Dim prevEvents As Boolean
     
     On Error GoTo ErrorHandler
-    
-    previousEnableEvents = Application.EnableEvents
-    previousScreenUpdating = Application.ScreenUpdating
-    previousDisplayAlerts = Application.DisplayAlerts
+    prevEvents = Application.EnableEvents
     Application.EnableEvents = False
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
     
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
+    
     modProtection.UnprotectSheet wsQ
     modProtection.UnprotectSheet wsLines
     
     header = ReadQuoteSheet()
     summary = CalcAllLines(header)
     UpdateLiveSummary summary, header
+    UpdateManualPriceUnitDisplay wsQ
+    
+    ' Automatically refresh COMPARE dashboard when quotation recalculates or plant changes (interactive mode only)
+    If Application.Visible Then
+        On Error Resume Next
+        Application.Run "BuildCompareSheet"
+        On Error GoTo ErrorHandler
+    End If
     
 CleanExit:
     modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
     modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
-    Application.DisplayAlerts = previousDisplayAlerts
-    Application.EnableEvents = previousEnableEvents
-    Application.ScreenUpdating = previousScreenUpdating
+    Application.EnableEvents = prevEvents
     Exit Sub
 
 ErrorHandler:
     On Error Resume Next
     modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
     modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
-    On Error GoTo 0
-    Application.DisplayAlerts = previousDisplayAlerts
-    Application.EnableEvents = previousEnableEvents
-    Application.ScreenUpdating = previousScreenUpdating
-    Err.Raise Err.Number, "RecalculateQuote", Err.Description
+    Application.EnableEvents = prevEvents
 End Sub
 
 Public Sub ClearQuoteLines()

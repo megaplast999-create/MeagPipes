@@ -22,7 +22,7 @@ Public Sub SetupQuoteHeader()
     ApplyInlineValidation ThisWorkbook.Worksheets("QUOTE").Range("B16"), _
         "Metres,MT,Nos", "Select Metres, MT, or Nos."
     ApplyInlineValidation ThisWorkbook.Worksheets("QUOTE").Range("B17"), _
-        "NORMAL (Option 1),LEGACY", "Select Pricing Mode."
+        "NORMAL,LEGACY", "Select Pricing Mode."
     Exit Sub
 
 ErrorHandler:

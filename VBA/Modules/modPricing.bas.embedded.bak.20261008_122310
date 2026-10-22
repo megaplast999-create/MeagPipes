@@ -1,0 +1,207 @@
+Attribute VB_Name = "modPricing"
+Option Explicit
+
+Public Type LineInput
+    Basis As String
+    SizeMM As Variant
+    WT As Variant
+    Qty As Variant
+    Unit As String
+    PipeLen As Variant
+    PerTrailer As Variant
+    HasExt As Boolean
+    HasInt As Boolean
+End Type
+
+Public Type RateInput
+    Steel As Variant
+    GradeExtra As Variant
+    YieldPct As Variant
+    Conversion As Variant
+    Testing As Variant
+    Margin As Variant
+    FinPct As Variant
+    GSTPct As Variant
+    PI As Variant
+    ExtRate As Variant
+    IntRate As Variant
+    Handling As Variant
+    TripRate As Variant
+    ManualFC As Variant
+    LegacyMode As Boolean
+End Type
+
+Public Type LineResult
+    OD As Variant
+    ID As Variant
+    MassPerM As Variant
+    Metres As Variant
+    MT As Variant
+    Pipes As Variant
+    Trailers As Variant
+    FreightPerMT As Variant
+    FCperMT As Variant
+    ExMillPerMT As Variant
+    BarePerM As Variant
+    ExtPerM As Variant
+    IntPerM As Variant
+    FreightPerM As Variant
+    TotalPerM As Variant
+    TotalPerMT As Variant
+    LineValue As Variant
+End Type
+
+Public Function CalcLine(ByVal lineInput As LineInput, ByVal rates As RateInput, _
+                         ByVal priceByMT As Boolean) As LineResult
+    Dim result As LineResult
+    Dim od As Variant, idd As Variant, massKgPerM As Variant
+    Dim pre As Variant, ext As Variant, intc As Variant
+    Dim freight As Variant, baseCost As Variant, financial As Variant
+    Dim k As Variant
+
+    If UCase$(Trim$(lineInput.Basis)) = "OD" Then
+        od = CDec(lineInput.SizeMM)
+        idd = CDec(CalculateID(CDbl(od), CDbl(lineInput.WT), "OD"))
+    ElseIf UCase$(Trim$(lineInput.Basis)) = "ID" Then
+        idd = CDec(lineInput.SizeMM)
+        od = CDec(CalculateOD(CDbl(idd), CDbl(lineInput.WT), "ID"))
+    Else
+        Err.Raise vbObjectError + 1710, "CalcLine", "Basis must be OD or ID."
+    End If
+
+    If Not IsValidGeometry(CDbl(od), CDbl(idd), CDbl(lineInput.WT)) Then
+        Err.Raise vbObjectError + 1711, "CalcLine", "Invalid pipe geometry."
+    End If
+    massKgPerM = CDec(CalculateMassKgPerM(CDbl(od), CDbl(lineInput.WT)))
+
+    Select Case UCase$(Trim$(lineInput.Unit))
+        Case "METRES"
+            result.Metres = CDec(lineInput.Qty)
+        Case "MT"
+            result.Metres = CDec(lineInput.Qty) / (massKgPerM / CDec(1000))
+        Case "NOS"
+            result.Metres = CDec(lineInput.Qty) * CDec(lineInput.PipeLen)
+        Case Else
+            Err.Raise vbObjectError + 1712, "CalcLine", "Unit must be Metres, MT, or Nos."
+    End Select
+
+    result.MT = result.Metres * massKgPerM / CDec(1000)
+    result.Pipes = RoundUpD(result.Metres / CDec(lineInput.PipeLen), 0)
+    result.Trailers = RoundUpD(result.Pipes / CDec(lineInput.PerTrailer), 0)
+
+    pre = CDec(rates.Steel) + CDec(rates.GradeExtra)
+    pre = pre + pre * CDec(rates.YieldPct) / CDec(100)
+    pre = pre + CDec(rates.Conversion) + CDec(rates.Testing) + CDec(rates.Margin)
+
+    If lineInput.HasExt Then
+        ext = CDec(rates.ExtRate) * CDec(rates.PI) * od / CDec(1000) / massKgPerM
+    Else
+        ext = CDec(0)
+    End If
+    If lineInput.HasInt Then
+        intc = CDec(rates.IntRate) * CDec(rates.PI) * idd / CDec(1000) / massKgPerM
+    Else
+        intc = CDec(0)
+    End If
+
+    freight = RoundUpD(CDec(rates.TripRate) * CDec(result.Trailers) / result.MT, 0) + CDec(rates.Handling)
+    If rates.LegacyMode Then
+        financial = CDec(rates.ManualFC)
+    Else
+        baseCost = pre + ext + intc + freight
+        k = (CDec(rates.FinPct) / CDec(100)) * (CDec(1) + CDec(rates.GSTPct) / CDec(100))
+        If k <= 0 Or k >= 1 Then Err.Raise vbObjectError + 1713, "CalcLine", "Invalid financial/GST factor."
+        financial = k * baseCost / (CDec(1) - k)
+    End If
+
+    result.OD = od
+    result.ID = idd
+    result.MassPerM = massKgPerM
+    result.FreightPerMT = freight
+    result.FCperMT = financial
+    result.ExMillPerMT = pre + financial + ext + intc
+    result.BarePerM = RoundUpD((pre + financial) * massKgPerM, 0)
+    result.ExtPerM = RoundUpD(ext * massKgPerM, 0)
+    result.IntPerM = RoundUpD(intc * massKgPerM, 0)
+    result.FreightPerM = RoundUpD(freight * massKgPerM, 0)
+    result.TotalPerM = result.BarePerM + result.ExtPerM + result.IntPerM + result.FreightPerM
+    result.TotalPerMT = RoundUpD(pre + financial, 0) + RoundUpD(ext, 0) + RoundUpD(intc, 0) + result.FreightPerMT
+    If priceByMT Then
+        result.LineValue = result.TotalPerMT * result.MT
+    Else
+        result.LineValue = result.TotalPerM * result.Metres
+    End If
+    CalcLine = result
+End Function
+
+Public Function SettingValue(ByVal key As String) As Variant
+    Dim settings As ListObject
+    Dim rowObject As ListRow
+    Set settings = ThisWorkbook.Worksheets("SETTINGS").ListObjects("tblSettings")
+    For Each rowObject In settings.ListRows
+        If StrComp(CStr(rowObject.Range.Cells(1, settings.ListColumns("SettingKey").Index).Value2), key, vbTextCompare) = 0 Then
+            SettingValue = rowObject.Range.Cells(1, settings.ListColumns("SettingValue").Index).Value2
+            Exit Function
+        End If
+    Next rowObject
+    Err.Raise vbObjectError + 1714, "SettingValue", "Setting not found: " & key
+End Function
+
+Public Sub LoadDefaultRateInput(ByRef rates As RateInput, ByVal legacyMode As Boolean)
+    With rates
+        .Steel = CDec(SettingValue("DefaultSteelRate"))
+        .GradeExtra = CDec(SettingValue("DefaultGradeExtra"))
+        .YieldPct = CDec(SettingValue("DefaultYieldPct"))
+        .Conversion = CDec(SettingValue("DefaultConversion"))
+        .Testing = CDec(SettingValue("DefaultTesting"))
+        .Margin = CDec(SettingValue("DefaultMargin"))
+        .FinPct = CDec(SettingValue("DefaultFinancialPct"))
+        .GSTPct = CDec(SettingValue("GSTPct"))
+        .PI = CDec(SettingValue("PIPct"))
+        .Handling = CDec(SettingValue("HandlingRsPerMT"))
+        .LegacyMode = legacyMode
+        If legacyMode Then
+            .TripRate = CDec(SettingValue("TripRateManual"))
+        Else
+            .TripRate = CDec(SettingValue("RatePerKm")) * CDec(SettingValue("ReferenceDistanceKm"))
+        End If
+    End With
+End Sub
+
+Public Function P3GoldenTotal(ByVal legacy As Boolean) As Variant
+    Dim ids As Variant
+    Dim lengths As Variant
+    Dim manualFinancial As Variant
+    Dim rates As RateInput
+    Dim lineInput As LineInput
+    Dim result As LineResult
+    Dim index As Long
+    Dim total As Variant
+
+    ids = Array(1226, 1300, 1350, 1400)
+    lengths = Array(2000, 350, 500, 4400)
+    manualFinancial = Array(1542, 1534, 1529, 1525)
+    LoadDefaultRateInput rates, legacy
+    rates.ExtRate = CDec(500)
+    rates.IntRate = CDec(275)
+    rates.TripRate = IIf(legacy, CDec(98000), CDec(12532) / CDec(100) * CDec(782))
+    total = CDec(0)
+
+    For index = 0 To 3
+        With lineInput
+            .Basis = "ID"
+            .SizeMM = CDec(ids(index))
+            .WT = CDec(8.4)
+            .Qty = CDec(lengths(index))
+            .Unit = "Metres"
+            .PipeLen = CDec(12)
+            .PerTrailer = CDec(4)
+            .HasExt = True
+            .HasInt = True
+        End With
+        rates.ManualFC = CDec(manualFinancial(index))
+        result = CalcLine(lineInput, rates, False)
+        total = total + result.LineValue
+    Next index
+    P3GoldenTotal = total
+End Function

@@ -1,0 +1,88 @@
+================================================================================
+MEGA PIPES QUOTATION SYSTEM — CENTRAL EXPORT & LOCAL COPY TEST SUITE
+Timestamp: 2026-10-16 10:43:03
+Target Workbook: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\DEV\Mega_Pipes_Quotation_PILOT_COPY.xlsm
+================================================================================
+
+[PRE-FLIGHT] Opening PILOT_COPY workbook...
+PILOT_COPY workbook opened successfully.
+
+--- TEST 1: Successful Central Export & Local Copy ---
+Dual Export Result: Status=OK;QuoteID=MEGA_OFFER_26-27_594;Filename=MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104316.xlsx;CentralStatus=SUCCESS;CentralPath=C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_t1\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104316.xlsx;CentralError=;LocalStatus=SUCCESS;LocalPath=C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\local_t1\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104316.xlsx;LocalError=;StagedPath=C:\Users\ADMINI~1\AppData\Local\Temp\MegaPipes_Staging\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104316.xlsx;Verification=PASS
+Central file verified: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_t1\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104316.xlsx (13594 bytes)
+Local file verified: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\local_t1\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104316.xlsx (13594 bytes)
+Binary match between Central and Local: PASS (100% byte-for-byte identical)
+TEST 1: PASS
+
+--- TEST 2: Central Share Unavailable ---
+Dual Export Result: Status=PARTIAL;QuoteID=MEGA_OFFER_26-27_594;Filename=MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104317.xlsx;CentralStatus=PENDING;CentralPath=;CentralError=Central export folder does not exist and cannot be created: Path not found;LocalStatus=SUCCESS;LocalPath=C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\local_t2\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104317.xlsx;LocalError=;StagedPath=C:\Users\ADMINI~1\AppData\Local\Temp\MegaPipes_Staging\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104317.xlsx;Verification=PASS
+Pending file preserved safely at: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\EXPORTS\Pending_Central_Archive\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104317.xlsx
+Local copy succeeded at: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\local_t2\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104317.xlsx
+Central error accurately reported: Central export folder does not exist and cannot be created: Path not found
+TEST 2: PASS
+
+--- TEST 3: Access Denied on Central Share ---
+Access Denied Result: Status=PARTIAL;QuoteID=MEGA_OFFER_26-27_594;Filename=MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104318.xlsx;CentralStatus=PENDING;CentralPath=;CentralError=Permission denied;LocalStatus=SUCCESS;LocalPath=C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\local_t3\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104318.xlsx;LocalError=;StagedPath=C:\Users\ADMINI~1\AppData\Local\Temp\MegaPipes_Staging\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104318.xlsx;Verification=PASS
+Central reported: PENDING (Error: Permission denied)
+Local copy succeeded at: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\local_t3\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104318.xlsx
+TEST 3: PASS
+
+--- TEST 4: Local Copy Cancelled & Local Retry Workflow ---
+Local Cancelled Result: Status=OK;QuoteID=MEGA_OFFER_26-27_594;Filename=MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104319.xlsx;CentralStatus=SUCCESS;CentralPath=C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_t4\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104319.xlsx;CentralError=;LocalStatus=SKIPPED;LocalPath=;LocalError=Local copy explicitly skipped.;StagedPath=C:\Users\ADMINI~1\AppData\Local\Temp\MegaPipes_Staging\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104319.xlsx;Verification=PASS
+Executing RetryLocalExport using central archive as source...
+RetryLocalExport returned: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\local_retry_t4\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104319.xlsx
+TEST 4: PASS
+
+--- TEST 5: Duplicate Filename & Collision Prevention ---
+Export 1: MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104319.xlsx
+Export 2: MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104320.xlsx
+ResolveCollisionFilename for existing 'MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104319' -> 'MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104319_1.xlsx'
+TEST 5: PASS
+
+--- TEST 6: Interrupted Copy & Retry Pending Central Archive ---
+Found 2 pending export(s) in queue: ['MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104317.xlsx', 'MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104318.xlsx']
+RetryPendingCentralExports Result: Processed 2 pending file(s): 2 uploaded successfully, 0 failed.
+Uploaded file in central: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_restored\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104317.xlsx (13596 bytes)
+TEST 6: PASS
+
+--- TEST 7: Concurrent Export Handling ---
+Consecutive/Concurrent Export paths:
+C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_t7\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104321.xlsx
+C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_t7\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104322.xlsx
+C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_t7\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104322_1.xlsx
+TEST 7: PASS
+
+--- TEST 8: Data Sanitization & Confidentiality Verification ---
+Inspecting customer workbook: C:\Users\Administrator\Desktop\Mega Pipes\Quotation System\TESTS\test_run_exports\central_t7\MEGA_OFFER_26-27_594_UNIPRO_Customer_20261016_104321.xlsx
+Worksheets present: ['OFFER', 'Synopsis']
+Formulas detected: 0 (100% values-only verified)
+Internal keywords detected: 0 (Confidentiality verified)
+TEST 8: PASS
+
+--- TEST 9: Sequence Number Allocation Decoupling ---
+CurrentEnquirySerial before tests: 639.0
+CurrentEnquirySerial after tests: 639.0
+TEST 9: PASS
+
+--- TEST 10: Golden Baselines Regression ---
+RunGoldenLegacy: PASS
+RunGoldenNormal: PASS
+TEST 10: PASS
+
+--- TEST 11: Unified Self-Test Suite Regression (RunAllSelfTests) ---
+RunAllSelfTests Result: PASS
+  [PASS] P18 Export Engine (PDF, Sanitized Customer Excel, Internal Excel)
+  [PASS] P19 Document Numbering Idempotency & Debounce
+  [PASS] P20 Audit Logging & Password Masking
+  [PASS] P21 Admin & Approval Workflow State Machine
+  [PASS] P22 User Identity & Filesystem Sanitization
+  [PASS] P23 Workbook Protection & Selective Cell Locking
+  [PASS] P1.4 SYNOPSIS Report Generation & Layout
+  [PASS] P0.4 Dynamic Multi-Size Quotation Lines
+  [PASS] P0.4 Custom Pipe Size Geometry Validation
+  SUMMARY: Total Evaluated: 26 | Passed: 24 | Needs Human: 2 | Failed: 0
+TEST 11: PASS
+
+================================================================================
+FINAL RESULT: 11/11 TESTS PASSED (100% SUCCESS)
+================================================================================
