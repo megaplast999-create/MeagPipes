@@ -7,192 +7,142 @@ Option Explicit
 ' Purpose:
 '   P11 COSTING sheet generator
 '   Reproduces reference layout from "CS Stacking 10-09-26"
-'   Values only (no formulas)
+'   Values only (no formulas); every number comes from modPricing.CalcLine
 '   Row colors from visual style specification
 '   One column per size + weighted average / total column
 ' ============================================================
 
 Public Sub WriteCostingSheet()
+    ' COSTING = the reference "CS Stacking" layout, VALUES ONLY.
+    ' Every figure comes straight from CalcLine (the one calculation engine),
+    ' nothing is re-derived here - so the sheet can never disagree with QUOTE.
+    '   rows 44-48  per-metre prices  = CalcLine ROUNDUP results (they sum to row 48)
+    '   column "total" = MT-weighted average, exactly the sheet's SUMPRODUCT(row, MT)/total MT
     Dim wsC As Worksheet
-    Dim wsQ As Worksheet
     Dim wsLines As Worksheet
     Dim tblLines As ListObject
     Dim header As QuoteHeaderData
     Dim lineObj As ListRow
     Dim numLines As Long
-    Dim colIdx As Long
-    Dim r As Long
+    Dim j As Long
+    Dim totCol As Long
     Dim rates As RateInput
     Dim lineData As QuoteLineInput
     Dim res As LineResult
     Dim legacyMode As Boolean
     Dim priceByMT As Boolean
-    
-    ' Line-level storage arrays
+    Dim gstPct As Double
+
+    ' Per-line values
     Dim ids() As Double, ods() As Double, wts() As Double
-    Dim masses() As Double, metres() As Double, mts() As Double
-    Dim pipes() As Long, trailers() As Long
-    Dim pres() As Double, fcs() As Double, exts() As Double, ints() As Double
-    Dim freights() As Double, subTotals() As Double
-    Dim totalsM() As Double, lineVals() As Double
-    Dim calcPrices() As Double, appliedPrices() As Double
-    Dim priceSources() As String, priceVariances() As Double
-    Dim steelRates() As Double, yieldPcts() As Double, convRates() As Double
-    
-    ' Total accumulators
-    Dim totMetres As Double, totMT As Double, totPipes As Long, totTrailers As Long
-    Dim totLineVal As Double
-    Dim wtBareM As Double, wtExtM As Double, wtIntM As Double, wtFreightM As Double
-    
+    Dim massMT() As Double, metres() As Double, mts() As Double
+    Dim pipes() As Long, trips() As Double
+    Dim steel() As Double, gradeX() As Double, yieldLoss() As Double, conv() As Double
+    Dim testing() As Double, margin() As Double
+    Dim fc() As Double, bare() As Double, ext() As Double, intc() As Double
+    Dim exMill() As Double, freight() As Double, subTot() As Double
+    Dim gst() As Double, grand() As Double, fcCheck() As Double, valMT() As Double
+    Dim bareM() As Double, extM() As Double, intM() As Double, frM() As Double, totM() As Double
+    Dim lineVal() As Double, appliedP() As Double, variance() As Double
+    Dim src() As String
+    Dim finPct As Double, extRate As Double, intRate As Double, tripRate As Double
+    Dim pipeLen() As Double
+
+    Dim totMetres As Double, totMT As Double, totPipes As Long, totTrips As Double, totLineVal As Double
+
     Set wsC = ThisWorkbook.Worksheets("COSTING")
-    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
-    
+
     header = ReadQuoteSheet()
     legacyMode = header.LegacyMode
     priceByMT = (UCase$(Trim$(header.PriceBasis)) = "MT")
-    
+    gstPct = CDbl(SettingValueOr("GSTPct", 18))
+
     numLines = 0
     For Each lineObj In tblLines.ListRows
         If Len(Trim$(CStr(lineObj.Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) > 0 Then
             numLines = numLines + 1
         End If
     Next lineObj
-    
     If numLines = 0 Then Exit Sub
-    
+
     ReDim ids(1 To numLines), ods(1 To numLines), wts(1 To numLines)
-    ReDim masses(1 To numLines), metres(1 To numLines), mts(1 To numLines)
-    ReDim pipes(1 To numLines), trailers(1 To numLines)
-    ReDim pres(1 To numLines), fcs(1 To numLines), exts(1 To numLines), ints(1 To numLines)
-    ReDim freights(1 To numLines), subTotals(1 To numLines)
-    ReDim totalsM(1 To numLines), lineVals(1 To numLines)
-    ReDim calcPrices(1 To numLines), appliedPrices(1 To numLines)
-    ReDim priceSources(1 To numLines), priceVariances(1 To numLines)
-    ReDim steelRates(1 To numLines), yieldPcts(1 To numLines), convRates(1 To numLines)
-    
-    colIdx = 1
-    totMetres = 0#: totMT = 0#: totPipes = 0: totTrailers = 0: totLineVal = 0#
-    
+    ReDim massMT(1 To numLines), metres(1 To numLines), mts(1 To numLines)
+    ReDim pipes(1 To numLines), trips(1 To numLines), pipeLen(1 To numLines)
+    ReDim steel(1 To numLines), gradeX(1 To numLines), yieldLoss(1 To numLines), conv(1 To numLines)
+    ReDim testing(1 To numLines), margin(1 To numLines)
+    ReDim fc(1 To numLines), bare(1 To numLines), ext(1 To numLines), intc(1 To numLines)
+    ReDim exMill(1 To numLines), freight(1 To numLines), subTot(1 To numLines)
+    ReDim gst(1 To numLines), grand(1 To numLines), fcCheck(1 To numLines), valMT(1 To numLines)
+    ReDim bareM(1 To numLines), extM(1 To numLines), intM(1 To numLines), frM(1 To numLines), totM(1 To numLines)
+    ReDim lineVal(1 To numLines), appliedP(1 To numLines), variance(1 To numLines)
+    ReDim src(1 To numLines)
+
+    j = 0
     For Each lineObj In tblLines.ListRows
         If Len(Trim$(CStr(lineObj.Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) > 0 Then
-            With lineObj.Range
-                lineData.Basis = Trim$(CStr(.Cells(1, tblLines.ListColumns("Basis").Index).Value))
-                lineData.SizeMM = CDec(Val(.Cells(1, tblLines.ListColumns("SizeMM").Index).Value))
-                lineData.WT = CDec(Val(.Cells(1, tblLines.ListColumns("ThicknessMM").Index).Value))
-                lineData.Qty = CDec(Val(.Cells(1, tblLines.ListColumns("Quantity").Index).Value))
-                lineData.Unit = Trim$(CStr(.Cells(1, tblLines.ListColumns("QuantityUnit").Index).Value))
-                lineData.PipeLen = CDec(Val(.Cells(1, tblLines.ListColumns("PipeLengthM").Index).Value))
-                If lineData.PipeLen <= 0 Then lineData.PipeLen = CDec(12)
-                lineData.PerTrailer = CDec(4)
-                lineData.HasExt = True
-                lineData.HasInt = True
-            End With
-            
-            LoadDefaultRateInput rates, legacyMode
-            rates.Option1Mode = False
-            rates.ExtRate = CDec(500)
-            rates.IntRate = CDec(250)
-            rates.PI = CDec(3.14)
-            rates.TripRate = CDec(SettingValue("TripRateManual"))
-            
-            ' Read optional line-level commercial overrides
-            Dim colFC As Long, colSteel As Long, colYield As Long, colConv As Long
-            Dim colExtR As Long, colIntR As Long, colTrip As Long, colFin As Long
-            Dim colManP As Long, colReas As Long
-            
-            On Error Resume Next
-            colFC = tblLines.ListColumns("ManualFC").Index
-            If colFC = 0 Then colFC = tblLines.ListColumns("FCOverride").Index
-            colSteel = tblLines.ListColumns("SteelRate").Index
-            colYield = tblLines.ListColumns("YieldPct").Index
-            colConv = tblLines.ListColumns("ConversionRate").Index
-            colExtR = tblLines.ListColumns("ExtCoatingRate").Index
-            colIntR = tblLines.ListColumns("IntCoatingRate").Index
-            colTrip = tblLines.ListColumns("TripRate").Index
-            colFin = tblLines.ListColumns("FinPct").Index
-            colManP = tblLines.ListColumns("ManualSellingPrice").Index
-            colReas = tblLines.ListColumns("OverrideReason").Index
-            On Error GoTo 0
-            
-            If colFC > 0 And Val(lineObj.Range.Cells(1, colFC).Value) > 0 Then
-                rates.ManualFC = CDec(Val(lineObj.Range.Cells(1, colFC).Value))
-            Else
-                rates.ManualFC = CDec(0)
-            End If
-            If colSteel > 0 And Val(lineObj.Range.Cells(1, colSteel).Value) > 0 Then
-                rates.Steel = CDec(Val(lineObj.Range.Cells(1, colSteel).Value))
-            End If
-            If colYield > 0 And Val(lineObj.Range.Cells(1, colYield).Value) > 0 Then
-                rates.YieldPct = CDec(Val(lineObj.Range.Cells(1, colYield).Value))
-            End If
-            If colConv > 0 And Val(lineObj.Range.Cells(1, colConv).Value) > 0 Then
-                rates.Conversion = CDec(Val(lineObj.Range.Cells(1, colConv).Value))
-            End If
-            If colExtR > 0 And Val(lineObj.Range.Cells(1, colExtR).Value) > 0 Then
-                rates.ExtRate = CDec(Val(lineObj.Range.Cells(1, colExtR).Value))
-            End If
-            If colIntR > 0 And Val(lineObj.Range.Cells(1, colIntR).Value) > 0 Then
-                rates.IntRate = CDec(Val(lineObj.Range.Cells(1, colIntR).Value))
-            End If
-            If colTrip > 0 And Val(lineObj.Range.Cells(1, colTrip).Value) > 0 Then
-                rates.TripRate = CDec(Val(lineObj.Range.Cells(1, colTrip).Value))
-            End If
-            If colFin > 0 And Val(lineObj.Range.Cells(1, colFin).Value) > 0 Then
-                rates.FinPct = CDec(Val(lineObj.Range.Cells(1, colFin).Value))
-            End If
-            If colManP > 0 And Val(lineObj.Range.Cells(1, colManP).Value) > 0 Then
-                rates.ManualSellingPrice = CDec(Val(lineObj.Range.Cells(1, colManP).Value))
-            Else
-                rates.ManualSellingPrice = CDec(0)
-            End If
-            If colReas > 0 Then
-                rates.OverrideReason = Trim$(CStr(lineObj.Range.Cells(1, colReas).Value))
-            Else
-                rates.OverrideReason = ""
-            End If
-            
+            j = j + 1
+            LoadLineInputsFromRow lineData, rates, tblLines, lineObj, legacyMode
             res = CalcLine(lineData, rates, priceByMT)
-            
-            ids(colIdx) = CDbl(res.ID)
-            ods(colIdx) = CDbl(res.od)
-            wts(colIdx) = CDbl(lineData.WT)
-            masses(colIdx) = CDbl(res.MassPerM) / 1000# ' MT/Mtr
-            metres(colIdx) = CDbl(res.Metres)
-            mts(colIdx) = CDbl(res.MT)
-            pipes(colIdx) = CLng(res.Pipes)
-            trailers(colIdx) = CLng(res.Trailers)
-            pres(colIdx) = CDbl(rates.Steel * (CDec(1) + CDec(rates.YieldPct) / CDec(100)) + rates.Conversion + rates.Testing + rates.Margin)
-            fcs(colIdx) = CDbl(res.FCperMT)
-            exts(colIdx) = Round(CDbl(rates.ExtRate) * 3.14 * ods(colIdx) / 1000# / masses(colIdx), 2)
-            ints(colIdx) = Round(CDbl(rates.IntRate) * 3.14 * ods(colIdx) / 1000# / masses(colIdx), 2)
-            freights(colIdx) = CDbl(res.FreightPerMT)
-            subTotals(colIdx) = CDbl(res.TotalPerMT)
-            totalsM(colIdx) = CDbl(res.TotalPerM)
-            lineVals(colIdx) = CDbl(res.LineValue)
-            
-            calcPrices(colIdx) = CDbl(res.CalculatedPrice)
-            appliedPrices(colIdx) = CDbl(res.AppliedPrice)
-            priceSources(colIdx) = res.PriceSource
-            priceVariances(colIdx) = CDbl(res.PriceVariance)
-            steelRates(colIdx) = CDbl(rates.Steel)
-            yieldPcts(colIdx) = CDbl(rates.YieldPct)
-            convRates(colIdx) = CDbl(rates.Conversion)
-            
-            totMetres = totMetres + metres(colIdx)
-            totMT = totMT + mts(colIdx)
-            totPipes = totPipes + pipes(colIdx)
-            totTrailers = totTrailers + trailers(colIdx)
-            totLineVal = totLineVal + lineVals(colIdx)
-            
-            colIdx = colIdx + 1
+
+            ids(j) = CDbl(res.ID)
+            ods(j) = CDbl(res.od)
+            wts(j) = CDbl(lineData.WT)
+            massMT(j) = CDbl(res.MassPerM) / 1000#
+            metres(j) = CDbl(res.Metres)
+            mts(j) = CDbl(res.MT)
+            pipes(j) = CLng(res.Pipes)
+            trips(j) = CDbl(res.FreightTrips)
+            pipeLen(j) = CDbl(lineData.PipeLen)
+
+            steel(j) = CDbl(rates.Steel)
+            gradeX(j) = CDbl(rates.GradeExtra)
+            yieldLoss(j) = CDbl((rates.Steel + rates.GradeExtra) * rates.YieldPct / CDec(100))
+            conv(j) = CDbl(rates.Conversion)
+            testing(j) = CDbl(rates.Testing)
+            margin(j) = CDbl(rates.Margin)
+
+            fc(j) = CDbl(res.FCperMT)
+            bare(j) = CDbl(res.BarePipeCostPerMT) + fc(j)
+            ext(j) = CDbl(res.ExtPerMT)
+            intc(j) = CDbl(res.IntPerMT)
+            exMill(j) = bare(j) + ext(j) + intc(j)
+            freight(j) = CDbl(res.FreightPerMT)
+            subTot(j) = exMill(j) + freight(j)
+            gst(j) = subTot(j) * gstPct / 100#
+            grand(j) = subTot(j) + gst(j)
+            fcCheck(j) = grand(j) * CDbl(rates.FinPct) / 100#
+            valMT(j) = subTot(j) * mts(j)
+
+            bareM(j) = CDbl(res.BarePerM)
+            extM(j) = CDbl(res.ExtPerM)
+            intM(j) = CDbl(res.IntPerM)
+            frM(j) = CDbl(res.FreightPerM)
+            totM(j) = CDbl(res.TotalPerM)
+            lineVal(j) = CDbl(res.LineValue)
+            appliedP(j) = CDbl(res.AppliedPrice)
+            variance(j) = CDbl(res.PriceVariance)
+            src(j) = res.PriceSource
+
+            finPct = CDbl(rates.FinPct)
+            extRate = CDbl(rates.ExtRate)
+            intRate = CDbl(rates.IntRate)
+            tripRate = CDbl(rates.TripRate)
+
+            totMetres = totMetres + metres(j)
+            totMT = totMT + mts(j)
+            totPipes = totPipes + pipes(j)
+            totTrips = totTrips + trips(j)
+            totLineVal = totLineVal + lineVal(j)
         End If
     Next lineObj
-    
+
+    totCol = numLines + 3
+
     ' Clear existing sheet contents and styles
     wsC.Cells.Clear
-    
+
     ' Top Information Block
     wsC.Range("A1").Value = "Date: " & Format$(Now, "dd/mm/yyyy")
     wsC.Range("B1").Value = "TO BE SUPPLIED FROM " & header.PlantID
@@ -204,245 +154,169 @@ Public Sub WriteCostingSheet()
     wsC.Range("B6").Value = header.QuoteID
     wsC.Range("A7").Value = "Delivery Location"
     wsC.Range("B7").Value = header.DeliveryPlace
-    
+
     ' Row 12: Column headers
     wsC.Range("A12").Value = "Sr.No."
-    For colIdx = 1 To numLines
-        wsC.Cells(12, colIdx + 2).Value = colIdx
-    Next colIdx
-    wsC.Cells(12, numLines + 3).Value = "total"
-    ColourRow wsC.Range(wsC.Cells(12, 1), wsC.Cells(12, numLines + 3)), "BDD7EE", "000000"
-    wsC.Range(wsC.Cells(12, 1), wsC.Cells(12, numLines + 3)).Font.Bold = True
-    
-    ' Row 13: Pipe OD (Inch)
-    wsC.Range("A13").Value = "Pipe OD (Inch)"
-    For colIdx = 1 To numLines
-        wsC.Cells(13, colIdx + 2).Value = Round(ods(colIdx) / 25.4, 0)
-    Next colIdx
-    ColourRow wsC.Range(wsC.Cells(13, 1), wsC.Cells(13, numLines + 3)), "1A5E38", "FFFFFF"
-    wsC.Range(wsC.Cells(13, 1), wsC.Cells(13, numLines + 3)).Font.Bold = True
-    
-    ' Row 14: Pipe ID (mm)
-    wsC.Range("A14").Value = "Pipe ID (mm)"
-    For colIdx = 1 To numLines: wsC.Cells(14, colIdx + 2).Value = ids(colIdx): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(14, 1), wsC.Cells(14, numLines + 3)), "70AD47", "000000"
-    
-    ' Row 15: Pipe OD (mm)
-    wsC.Range("A15").Value = "Pipe OD (mm)"
-    For colIdx = 1 To numLines: wsC.Cells(15, colIdx + 2).Value = ods(colIdx): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(15, 1), wsC.Cells(15, numLines + 3)), "70AD47", "000000"
-    
-    ' Row 16: WT (mm)
-    wsC.Range("A16").Value = "WT (mm)"
-    For colIdx = 1 To numLines: wsC.Cells(16, colIdx + 2).Value = wts(colIdx): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(16, 1), wsC.Cells(16, numLines + 3)), "70AD47", "000000"
-    
-    ' Row 17: Mass (MT/Mtr)
-    wsC.Range("A17").Value = "Mass (MT/Mtr)"
-    For colIdx = 1 To numLines
-        wsC.Cells(17, colIdx + 2).Value = masses(colIdx)
-        wsC.Cells(17, colIdx + 2).NumberFormat = "0.00000000"
-    Next colIdx
-    ColourRow wsC.Range(wsC.Cells(17, 1), wsC.Cells(17, numLines + 3)), "A9D18E", "000000"
-    
-    ' Row 18: Qty (Mtr)
-    wsC.Range("A18").Value = "Qty (Mtr)"
-    For colIdx = 1 To numLines: wsC.Cells(18, colIdx + 2).Value = metres(colIdx): Next colIdx
-    wsC.Cells(18, numLines + 3).Value = totMetres
-    ColourRow wsC.Range(wsC.Cells(18, 1), wsC.Cells(18, numLines + 3)), "FFFF00", "000000"
-    wsC.Range(wsC.Cells(18, 1), wsC.Cells(18, numLines + 3)).Font.Bold = True
-    
-    ' Row 19: Qty (MT)
-    wsC.Range("A19").Value = "Qty (MT)"
-    For colIdx = 1 To numLines: wsC.Cells(19, colIdx + 2).Value = Round(mts(colIdx), 3): Next colIdx
-    wsC.Cells(19, numLines + 3).Value = Round(totMT, 3)
-    ColourRow wsC.Range(wsC.Cells(19, 1), wsC.Cells(19, numLines + 3)), "FFFF00", "000000"
-    wsC.Range(wsC.Cells(19, 1), wsC.Cells(19, numLines + 3)).Font.Bold = True
-    
-    ' Row 20: Coating factor
+    For j = 1 To numLines: wsC.Cells(12, j + 2).Value = j: Next j
+    wsC.Cells(12, totCol).Value = "total"
+    ColourRow wsC.Range(wsC.Cells(12, 1), wsC.Cells(12, totCol)), "BDD7EE", "000000"
+    wsC.Range(wsC.Cells(12, 1), wsC.Cells(12, totCol)).Font.Bold = True
+
+    CostRow wsC, 13, "Pipe OD (Inch)", ods, numLines, "1A5E38", "FFFFFF", True, 0, True
+    For j = 1 To numLines: wsC.Cells(13, j + 2).Value = WorksheetFunction.Round(ods(j) / 25.4, 0): Next j
+    CostRow wsC, 14, "Pipe ID (mm)", ids, numLines, "70AD47", "000000", False, -1, False
+    CostRow wsC, 15, "Pipe OD (mm)", ods, numLines, "70AD47", "000000", False, -1, False
+    CostRow wsC, 16, "WT (mm)", wts, numLines, "70AD47", "000000", False, -1, False
+    CostRow wsC, 17, "Mass (MT/Mtr)", massMT, numLines, "A9D18E", "000000", False, 8, False
+    CostRow wsC, 18, "Qty (Mtr)", metres, numLines, "FFFF00", "000000", True, 0, False
+    wsC.Cells(18, totCol).Value = totMetres
+    CostRow wsC, 19, "Qty (MT)", mts, numLines, "FFFF00", "000000", True, 3, False
+    wsC.Cells(19, totCol).Value = totMT
+
+    ' Row 20: Coating factor = PI x OD / 1000 (PI from SETTINGS, 3.14 in the reference sheet)
     wsC.Range("A20").Value = "Coating factor"
-    For colIdx = 1 To numLines: wsC.Cells(20, colIdx + 2).Value = Round(3.14159265 * ods(colIdx) / 1000#, 4): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(20, 1), wsC.Cells(20, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 21: Pipe Weight (MT)
+    For j = 1 To numLines: wsC.Cells(20, j + 2).Value = CDbl(rates.PI) * ods(j) / 1000#: Next j
+    ColourRow wsC.Range(wsC.Cells(20, 1), wsC.Cells(20, totCol)), "FFFFFF", "000000"
+
     wsC.Range("A21").Value = "Pipe Weight (MT)"
-    For colIdx = 1 To numLines: wsC.Cells(21, colIdx + 2).Value = Round(masses(colIdx) * 12#, 3): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(21, 1), wsC.Cells(21, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 22: Pipe Nos
+    For j = 1 To numLines: wsC.Cells(21, j + 2).Value = massMT(j) * pipeLen(j): Next j
+    ColourRow wsC.Range(wsC.Cells(21, 1), wsC.Cells(21, totCol)), "FFFFFF", "000000"
+
     wsC.Range("A22").Value = "Pipe Nos"
-    For colIdx = 1 To numLines: wsC.Cells(22, colIdx + 2).Value = pipes(colIdx): Next colIdx
-    wsC.Cells(22, numLines + 3).Value = totPipes
-    ColourRow wsC.Range(wsC.Cells(22, 1), wsC.Cells(22, numLines + 3)), "FFFF00", "000000"
-    wsC.Range(wsC.Cells(22, 1), wsC.Cells(22, numLines + 3)).Font.Bold = True
-    
-    ' Rows 25-29: Base cost breakdown
-    wsC.Range("A25").Value = "Steel BEN + GE"
-    For colIdx = 1 To numLines: wsC.Cells(25, colIdx + 2).Value = CDbl(steelRates(colIdx)): Next colIdx
-    wsC.Cells(25, numLines + 3).Value = CDbl(steelRates(1))
-    ColourRow wsC.Range(wsC.Cells(25, 1), wsC.Cells(25, numLines + 3)), "FFFFFF", "000000"
-    
-    wsC.Range("A27").Value = "Steel Cost (Delivered)"
-    For colIdx = 1 To numLines: wsC.Cells(27, colIdx + 2).Value = CDbl(steelRates(colIdx)): Next colIdx
-    wsC.Cells(27, numLines + 3).Value = CDbl(steelRates(1))
-    ColourRow wsC.Range(wsC.Cells(27, 1), wsC.Cells(27, numLines + 3)), "FFFFFF", "000000"
-    
-    wsC.Range("A28").Value = "Yield Loss @ " & CStr(yieldPcts(1)) & "%"
-    For colIdx = 1 To numLines: wsC.Cells(28, colIdx + 2).Value = CDbl(steelRates(colIdx) * (yieldPcts(colIdx) / 100)): Next colIdx
-    wsC.Cells(28, numLines + 3).Value = CDbl(steelRates(1) * (yieldPcts(1) / 100))
-    ColourRow wsC.Range(wsC.Cells(28, 1), wsC.Cells(28, numLines + 3)), "F2F2F2", "000000"
-    
-    wsC.Range("A29").Value = "Conversion"
-    For colIdx = 1 To numLines: wsC.Cells(29, colIdx + 2).Value = CDbl(convRates(colIdx)): Next colIdx
-    wsC.Cells(29, numLines + 3).Value = CDbl(convRates(1))
-    ColourRow wsC.Range(wsC.Cells(29, 1), wsC.Cells(29, numLines + 3)), "F2F2F2", "000000"
-    
-    ' Row 32: FC (top, row 1)
-    wsC.Range("A32").Value = "FC-" & CStr(rates.FinPct) & "% + 25% adv. Bal against LC"
-    wsC.Range("B32").Value = CDbl(rates.FinPct / 100)
-    For colIdx = 1 To numLines: wsC.Cells(32, colIdx + 2).Value = Round(fcs(colIdx), 0): Next colIdx
-    wsC.Cells(32, numLines + 3).Value = Round(totLineVal * CDbl(rates.FinPct / 100) / totMT, 2)
-    ColourRow wsC.Range(wsC.Cells(32, 1), wsC.Cells(32, numLines + 3)), "F4B8C1", "C00000"
-    wsC.Range(wsC.Cells(32, 1), wsC.Cells(32, numLines + 3)).Font.Bold = True
-    
-    ' Row 33: Bare Pipe Price
-    wsC.Range("A33").Value = "Bare Pipe Price"
-    For colIdx = 1 To numLines: wsC.Cells(33, colIdx + 2).Value = Round(pres(colIdx) + fcs(colIdx), 0): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(33, 1), wsC.Cells(33, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 34: Ext Coating
-    wsC.Range("A34").Value = "Ext: PU (1000 Micron)"
-    wsC.Range("B34").Value = CDbl(rates.ExtRate)
-    For colIdx = 1 To numLines: wsC.Cells(34, colIdx + 2).Value = Round(exts(colIdx), 2): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(34, 1), wsC.Cells(34, numLines + 3)), "DDEEFF", "000000"
-    
-    ' Row 35: Int Coating
-    wsC.Range("A35").Value = "Int:  FGE (406 Micron)"
-    wsC.Range("B35").Value = CDbl(rates.IntRate)
-    For colIdx = 1 To numLines: wsC.Cells(35, colIdx + 2).Value = Round(ints(colIdx), 2): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(35, 1), wsC.Cells(35, numLines + 3)), "DDEEFF", "000000"
-    
-    ' Row 36: Ex Mill Price
-    wsC.Range("A36").Value = "Ex Mill Price"
-    For colIdx = 1 To numLines: wsC.Cells(36, colIdx + 2).Value = Round(pres(colIdx) + fcs(colIdx) + exts(colIdx) + ints(colIdx), 2): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(36, 1), wsC.Cells(36, numLines + 3)), "FFFFFF", "000000"
-    wsC.Range(wsC.Cells(36, 1), wsC.Cells(36, numLines + 3)).Font.Bold = True
-    
-    ' Row 37: Freight (Stacking)
-    wsC.Range("A37").Value = "Freight : Bagodar (Stacking)"
-    For colIdx = 1 To numLines: wsC.Cells(37, colIdx + 2).Value = freights(colIdx): Next colIdx
-    wsC.Cells(37, numLines + 3).Value = Round(totLineVal * 0.08 / totMT, 2)
-    ColourRow wsC.Range(wsC.Cells(37, 1), wsC.Cells(37, numLines + 3)), "70AD47", "FFFFFF"
-    wsC.Range(wsC.Cells(37, 1), wsC.Cells(37, numLines + 3)).Font.Bold = True
-    
-    ' Row 38: Sub Total
-    wsC.Range("A38").Value = "Sub Total"
-    For colIdx = 1 To numLines: wsC.Cells(38, colIdx + 2).Value = Round(subTotals(colIdx), 2): Next colIdx
-    wsC.Cells(38, numLines + 3).Value = Round(totLineVal / totMT, 2)
-    ColourRow wsC.Range(wsC.Cells(38, 1), wsC.Cells(38, numLines + 3)), "FFFF00", "000000"
-    wsC.Range(wsC.Cells(38, 1), wsC.Cells(38, numLines + 3)).Font.Bold = True
-    
-    ' Row 39: GST @ 18%
-    wsC.Range("A39").Value = "GST @ 18%"
-    For colIdx = 1 To numLines: wsC.Cells(39, colIdx + 2).Value = Round(subTotals(colIdx) * 0.18, 2): Next colIdx
-    wsC.Cells(39, numLines + 3).Value = Round((totLineVal / totMT) * 0.18, 2)
-    ColourRow wsC.Range(wsC.Cells(39, 1), wsC.Cells(39, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 40: Grand Total GST INC.
-    wsC.Range("A40").Value = "Grand Total GST INC."
-    For colIdx = 1 To numLines: wsC.Cells(40, colIdx + 2).Value = Round(subTotals(colIdx) * 1.18, 2): Next colIdx
-    wsC.Cells(40, numLines + 3).Value = Round((totLineVal / totMT) * 1.18, 2)
-    ColourRow wsC.Range(wsC.Cells(40, 1), wsC.Cells(40, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 41: FC
-    wsC.Range("A41").Value = "FC-" & CStr(rates.FinPct) & "% + 25% adv. Bal against LC"
-    wsC.Range("B41").Value = CDbl(rates.FinPct / 100)
-    For colIdx = 1 To numLines: wsC.Cells(41, colIdx + 2).Value = Round(fcs(colIdx), 2): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(41, 1), wsC.Cells(41, numLines + 3)), "F4B8C1", "C00000"
-    wsC.Range(wsC.Cells(41, 1), wsC.Cells(41, numLines + 3)).Font.Bold = True
-    
-    ' Row 42: Total Value (Excl. GST)
+    For j = 1 To numLines: wsC.Cells(22, j + 2).Value = pipes(j): Next j
+    wsC.Cells(22, totCol).Value = totPipes
+    ColourRow wsC.Range(wsC.Cells(22, 1), wsC.Cells(22, totCol)), "FFFF00", "000000"
+    wsC.Range(wsC.Cells(22, 1), wsC.Cells(22, totCol)).Font.Bold = True
+
+    ' Rows 25-31: base cost build-up. "total" column = MT-weighted average (sheet SUMPRODUCT).
+    CostRowW wsC, 25, "Steel BEN + GE", steel, mts, numLines, "FFFFFF", "000000", False
+    CostRowW wsC, 26, "Grade Extra", gradeX, mts, numLines, "FFFFFF", "000000", False
+    Dim steelDelivered() As Double
+    ReDim steelDelivered(1 To numLines)
+    For j = 1 To numLines: steelDelivered(j) = steel(j) + gradeX(j): Next j
+    CostRowW wsC, 27, "Steel Cost (Delivered)", steelDelivered, mts, numLines, "FFFFFF", "000000", False
+    CostRowW wsC, 28, "Yield Loss @ " & CStr(CDbl(rates.YieldPct)) & "%", yieldLoss, mts, numLines, "F2F2F2", "000000", False
+    CostRowW wsC, 29, "Conversion", conv, mts, numLines, "F2F2F2", "000000", False
+    CostRowW wsC, 30, "Testing + Hospitality", testing, mts, numLines, "F2F2F2", "000000", False
+    CostRowW wsC, 31, "Margin", margin, mts, numLines, "F2F2F2", "000000", False
+
+    CostRowW wsC, 32, "FC-" & CStr(finPct) & "% + 25% adv. Bal against LC", fc, mts, numLines, "F4B8C1", "C00000", True
+    wsC.Range("B32").Value = finPct / 100#
+    CostRowW wsC, 33, "Bare Pipe Price", bare, mts, numLines, "FFFFFF", "000000", False
+    CostRowW wsC, 34, "Ext: PU (1000 Micron)", ext, mts, numLines, "DDEEFF", "000000", False
+    wsC.Range("B34").Value = extRate
+    CostRowW wsC, 35, "Int:  FGE (406 Micron)", intc, mts, numLines, "DDEEFF", "000000", False
+    wsC.Range("B35").Value = intRate
+    CostRowW wsC, 36, "Ex Mill Price", exMill, mts, numLines, "FFFFFF", "000000", True
+    CostRowW wsC, 37, "Freight : " & header.DeliveryPlace, freight, mts, numLines, "70AD47", "FFFFFF", True
+    wsC.Cells(37, totCol + 1).Value = Format$(totTrips, "0.00") & " trips @ " & Format$(tripRate, "#,##0")
+    CostRowW wsC, 38, "Sub Total", subTot, mts, numLines, "FFFF00", "000000", True
+    CostRowW wsC, 39, "GST @ " & CStr(gstPct) & "%", gst, mts, numLines, "FFFFFF", "000000", False
+    CostRowW wsC, 40, "Grand Total GST INC.", grand, mts, numLines, "FFFFFF", "000000", False
+
+    ' Row 41: the sheet's own check cell = Grand Total x FC%. With automatic FC it equals row 32.
+    wsC.Range("A41").Value = "FC-" & CStr(finPct) & "% + 25% adv. Bal against LC"
+    wsC.Range("B41").Value = finPct / 100#
+    For j = 1 To numLines: wsC.Cells(41, j + 2).Value = fcCheck(j): Next j
+    ColourRow wsC.Range(wsC.Cells(41, 1), wsC.Cells(41, totCol)), "F4B8C1", "C00000"
+    wsC.Range(wsC.Cells(41, 1), wsC.Cells(41, totCol)).Font.Bold = True
+
+    ' Row 42 = Sub Total x MT (sheet); Row 49 = per-metre price x metres (what is quoted)
     wsC.Range("A42").Value = "Total Value (Excl. GST)"
-    For colIdx = 1 To numLines: wsC.Cells(42, colIdx + 2).Value = lineVals(colIdx): Next colIdx
-    wsC.Cells(42, numLines + 3).Value = totLineVal
-    ColourRow wsC.Range(wsC.Cells(42, 1), wsC.Cells(42, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 44: Bare Pipe Price/meter
-    wsC.Range("A44").Value = "Bare Pipe Price/meter"
-    For colIdx = 1 To numLines: wsC.Cells(44, colIdx + 2).Value = Round((pres(colIdx) + fcs(colIdx)) * masses(colIdx), 0): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(44, 1), wsC.Cells(44, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 45: EXT Coating Price/meter
-    wsC.Range("A45").Value = "EXT Coating Price/meter"
-    wsC.Range("B45").Value = CDbl(rates.ExtRate)
-    For colIdx = 1 To numLines: wsC.Cells(45, colIdx + 2).Value = Round(exts(colIdx) * masses(colIdx), 0): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(45, 1), wsC.Cells(45, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 46: INT Coating Price/meter
-    wsC.Range("A46").Value = "INT Coating Price/meter"
-    wsC.Range("B46").Value = CDbl(rates.IntRate)
-    For colIdx = 1 To numLines: wsC.Cells(46, colIdx + 2).Value = Round(ints(colIdx) * masses(colIdx), 0): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(46, 1), wsC.Cells(46, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 47: Freight Price/meter
-    wsC.Range("A47").Value = "Freight Price/meter"
-    For colIdx = 1 To numLines: wsC.Cells(47, colIdx + 2).Value = Round(freights(colIdx) * masses(colIdx), 0): Next colIdx
-    ColourRow wsC.Range(wsC.Cells(47, 1), wsC.Cells(47, numLines + 3)), "FFFFFF", "000000"
-    
-    ' Row 48: Total Price/meter (Calculated)
-    wsC.Range("A48").Value = "Total Price/meter"
-    For colIdx = 1 To numLines: wsC.Cells(48, colIdx + 2).Value = totalsM(colIdx): Next colIdx
-    wsC.Cells(48, numLines + 3).Value = Round(totLineVal / totMetres, 2)
-    ColourRow wsC.Range(wsC.Cells(48, 1), wsC.Cells(48, numLines + 3)), "FFFF00", "000000"
-    wsC.Range(wsC.Cells(48, 1), wsC.Cells(48, numLines + 3)).Font.Bold = True
-    
-    ' Row 49: Total Value (Excl. GST) bottom
-    wsC.Range("A49").Value = "Total Value (Excl. GST)"
-    For colIdx = 1 To numLines: wsC.Cells(49, colIdx + 2).Value = lineVals(colIdx): Next colIdx
-    wsC.Cells(49, numLines + 3).Value = totLineVal
-    ColourRow wsC.Range(wsC.Cells(49, 1), wsC.Cells(49, numLines + 3)), "FFFF00", "000000"
-    wsC.Range(wsC.Cells(49, 1), wsC.Cells(49, numLines + 3)).Font.Bold = True
-    
-    ' Row 51-53: Display Manual Selling Price Overrides and Price Sources if present
+    Dim sumValMT As Double
+    For j = 1 To numLines
+        wsC.Cells(42, j + 2).Value = valMT(j)
+        sumValMT = sumValMT + valMT(j)
+    Next j
+    wsC.Cells(42, totCol).Value = sumValMT
+    ColourRow wsC.Range(wsC.Cells(42, 1), wsC.Cells(42, totCol)), "FFFFFF", "000000"
+
+    ' Rows 44-48: per-metre prices straight from CalcLine - they add up to row 48 by construction
+    CostRow wsC, 44, "Bare Pipe Price/meter", bareM, numLines, "FFFFFF", "000000", False, 0, False
+    CostRow wsC, 45, "EXT Coating Price/meter", extM, numLines, "FFFFFF", "000000", False, 0, False
+    wsC.Range("B45").Value = extRate
+    CostRow wsC, 46, "INT Coating Price/meter", intM, numLines, "FFFFFF", "000000", False, 0, False
+    wsC.Range("B46").Value = intRate
+    CostRow wsC, 47, "Freight Price/meter", frM, numLines, "FFFFFF", "000000", False, 0, False
+    CostRow wsC, 48, "Total Price/meter", totM, numLines, "FFFF00", "000000", True, 0, False
+    If totMetres > 0 Then wsC.Cells(48, totCol).Value = totLineVal / totMetres
+
+    CostRow wsC, 49, "Total Value (Excl. GST)", lineVal, numLines, "FFFF00", "000000", True, 0, False
+    wsC.Cells(49, totCol).Value = totLineVal
+
+    ' Rows 51-53: manual selling price overrides, if any
     Dim hasOverride As Boolean
     hasOverride = False
-    For colIdx = 1 To numLines
-        If priceSources(colIdx) = "MANUAL_OVERRIDE" Then hasOverride = True: Exit For
-    Next colIdx
-    
+    For j = 1 To numLines
+        If src(j) = "MANUAL_OVERRIDE" Then hasOverride = True: Exit For
+    Next j
+
     If hasOverride Then
-        wsC.Range("A51").Value = "Applied Selling Price / Unit"
-        For colIdx = 1 To numLines: wsC.Cells(51, colIdx + 2).Value = appliedPrices(colIdx): Next colIdx
-        wsC.Cells(51, numLines + 3).Value = Round(totLineVal / totMetres, 2)
-        ColourRow wsC.Range(wsC.Cells(51, 1), wsC.Cells(51, numLines + 3)), "EBF1DE", "000000"
-        wsC.Range(wsC.Cells(51, 1), wsC.Cells(51, numLines + 3)).Font.Bold = True
-        
+        CostRow wsC, 51, "Applied Selling Price / Unit", appliedP, numLines, "EBF1DE", "000000", True, 0, False
+        If totMetres > 0 Then wsC.Cells(51, totCol).Value = totLineVal / totMetres
         wsC.Range("A52").Value = "Price Source"
-        For colIdx = 1 To numLines: wsC.Cells(52, colIdx + 2).Value = priceSources(colIdx): Next colIdx
-        wsC.Cells(52, numLines + 3).Value = "OVERRIDDEN"
-        ColourRow wsC.Range(wsC.Cells(52, 1), wsC.Cells(52, numLines + 3)), "F2F2F2", "000000"
-        
-        wsC.Range("A53").Value = "Price Variance (Override - Calc)"
-        For colIdx = 1 To numLines: wsC.Cells(53, colIdx + 2).Value = priceVariances(colIdx): Next colIdx
-        wsC.Cells(53, numLines + 3).Value = Round((totLineVal - (totLineVal - 0)) / totMetres, 2)
-        ColourRow wsC.Range(wsC.Cells(53, 1), wsC.Cells(53, numLines + 3)), "FCE4D6", "C00000"
-        wsC.Range(wsC.Cells(53, 1), wsC.Cells(53, numLines + 3)).Font.Bold = True
+        For j = 1 To numLines: wsC.Cells(52, j + 2).Value = src(j): Next j
+        wsC.Cells(52, totCol).Value = "OVERRIDDEN"
+        ColourRow wsC.Range(wsC.Cells(52, 1), wsC.Cells(52, totCol)), "F2F2F2", "000000"
+        CostRow wsC, 53, "Price Variance (Override - Calc)", variance, numLines, "FCE4D6", "C00000", True, 0, False
     End If
-    
-    ' Borders and formatting
+
     Dim maxCostRow As Long
     maxCostRow = IIf(hasOverride, 53, 49)
-    With wsC.Range(wsC.Cells(12, 1), wsC.Cells(maxCostRow, numLines + 3))
+    With wsC.Range(wsC.Cells(12, 1), wsC.Cells(maxCostRow, totCol))
         .Borders.LineStyle = xlContinuous
         .Borders.Weight = xlThin
         .Font.Name = "Calibri"
     End With
-    
+
     wsC.Columns("A:A").ColumnWidth = 32
     wsC.Columns("B:B").ColumnWidth = 10
-    For colIdx = 3 To numLines + 3
-        wsC.Columns(colIdx).ColumnWidth = 16
-    Next colIdx
+    For j = 3 To totCol
+        wsC.Columns(j).ColumnWidth = 16
+    Next j
+End Sub
+
+' One COSTING row, one value per line (no total column unless the caller adds it).
+' decimals: -1 = leave General, otherwise a "0.000.." format.
+Private Sub CostRow(ByVal ws As Worksheet, ByVal r As Long, ByVal label As String, _
+                    ByRef vals() As Double, ByVal n As Long, _
+                    ByVal bgHex As String, ByVal fgHex As String, ByVal isBold As Boolean, _
+                    ByVal decimals As Long, ByVal skipValues As Boolean)
+    Dim j As Long
+    ws.Cells(r, 1).Value = label
+    If Not skipValues Then
+        For j = 1 To n
+            ws.Cells(r, j + 2).Value = vals(j)
+            If decimals = 0 Then
+                ws.Cells(r, j + 2).NumberFormat = "#,##0"
+            ElseIf decimals > 0 Then
+                ws.Cells(r, j + 2).NumberFormat = "0." & String$(decimals, "0")
+            End If
+        Next j
+    End If
+    ColourRow ws.Range(ws.Cells(r, 1), ws.Cells(r, n + 3)), bgHex, fgHex
+    If isBold Then ws.Range(ws.Cells(r, 1), ws.Cells(r, n + 3)).Font.Bold = True
+End Sub
+
+' Same, plus the "total" column = MT-weighted average, i.e. the sheet's SUMPRODUCT(row, MT)/total MT.
+Private Sub CostRowW(ByVal ws As Worksheet, ByVal r As Long, ByVal label As String, _
+                     ByRef vals() As Double, ByRef weights() As Double, ByVal n As Long, _
+                     ByVal bgHex As String, ByVal fgHex As String, ByVal isBold As Boolean)
+    Dim j As Long
+    Dim sw As Double, sv As Double
+    ws.Cells(r, 1).Value = label
+    For j = 1 To n
+        ws.Cells(r, j + 2).Value = vals(j)
+        ws.Cells(r, j + 2).NumberFormat = "#,##0.00"
+        sv = sv + vals(j) * weights(j)
+        sw = sw + weights(j)
+    Next j
+    If sw > 0 Then
+        ws.Cells(r, n + 3).Value = sv / sw
+        ws.Cells(r, n + 3).NumberFormat = "#,##0.00"
+    End If
+    ColourRow ws.Range(ws.Cells(r, 1), ws.Cells(r, n + 3)), bgHex, fgHex
+    If isBold Then ws.Range(ws.Cells(r, 1), ws.Cells(r, n + 3)).Font.Bold = True
 End Sub
 
 Public Function RunCostingSelfTests() As String

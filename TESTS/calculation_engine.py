@@ -13,6 +13,14 @@ from math import ceil
 
 PI_CONSTANT: float = 3.14
 
+# The policy of the reference cost sheet ('CS Stacking') - the one the sales
+# team actually quotes with.  Pass as calc_line(..., **REFERENCE_POLICY).
+REFERENCE_POLICY: dict = {
+    "freight_trailers": "FRACTIONAL",
+    "int_coating_basis": "OD",
+    "fc_method": "ALGEBRAIC",
+}
+
 
 class CalculationError(ValueError):
     """Raised when documented input constraints are violated."""
@@ -118,13 +126,30 @@ def internal_coating_per_mt(
     *,
     legacy_mode: bool = False,
     approved_mode: bool = False,
+    basis: str | None = None,
 ) -> float:
-    """Calculates internal coating cost per MT (uses InnerD for Option 1 normal, OD for legacy or approved)."""
-    diameter = od_mm if (legacy_mode or approved_mode) else inner_d_mm
+    """Internal coating cost per MT.
+
+    basis='OD' reproduces the reference cost sheet (row 35 reuses the OD-based
+    coating factor of row 20); basis='ID' coats the true inside surface.
+    With basis=None the legacy flags decide (backward compatible).
+    """
+    if basis is None:
+        basis = "OD" if (legacy_mode or approved_mode) else "ID"
+    basis = basis.upper().strip()
+    if basis not in ("OD", "ID"):
+        raise CalculationError("internal coating basis must be OD or ID")
+    diameter = od_mm if basis == "OD" else inner_d_mm
     return coating_cost_per_mt(rate_rs_per_m2, diameter, mass_mt_per_m_val, legacy_mode=legacy_mode)
 
 
-def freight_per_mt(
+def freight_per_mt(*args, **kwargs) -> tuple[int, float]:
+    """Backward-compatible wrapper: returns (physical whole trailers, freight Rs/MT)."""
+    physical, _trips, freight = freight_detail(*args, **kwargs)
+    return physical, freight
+
+
+def freight_detail(
     trip_rate: float,
     metres: float,
     pipe_length_m: float,
@@ -134,10 +159,28 @@ def freight_per_mt(
     *,
     legacy_mode: bool = False,
     approved_mode: bool = False,
-) -> tuple[int, float]:
-    """Calculates required trailer count and freight cost per MT."""
+    whole_trailers: bool | None = None,
+    trips_override: float | None = None,
+) -> tuple[int, float, float]:
+    """Returns (physical_trailers, costed_trips, freight_rs_per_mt).
+
+    physical_trailers = whole trailers that physically move the pipes;
+    costed_trips      = the trip count the freight Rs/MT is actually built on
+                        (fractional in the reference sheet).
+
+    Reference cost-sheet formula (CS Stacking, rows 57-60, col P):
+        trips   = (metres / pipe_length) / pipes_per_trailer      (fractional)
+        freight = ROUNDUP(trip_rate * trips / line_MT, 0) + handling
+
+    whole_trailers=True switches `trips` to CEILING(CEILING(metres/len)/ppt).
+    trips_override lets the user key trips taken from a manual loading plan
+    (e.g. the nesting plan); it wins over both rules.
+    When whole_trailers is None the legacy flags decide (backward compatible).
+    """
     if min(trip_rate, metres, pipe_length_m, mass_mt_per_m_val, pipes_per_trailer) <= 0:
         raise CalculationError("freight inputs must be positive")
+    if whole_trailers is None:
+        whole_trailers = not (legacy_mode or approved_mode)
     d_metres = Decimal(str(metres))
     d_len = Decimal(str(pipe_length_m))
     d_per_trailer = Decimal(str(pipes_per_trailer))
@@ -145,15 +188,16 @@ def freight_per_mt(
     d_mass = Decimal(str(mass_mt_per_m_val))
     weight_mt = d_metres * d_mass
 
-    pipes = roundup(d_metres / d_len, 0)
-    trailers = int(roundup(Decimal(str(pipes)) / d_per_trailer, 0))
-
-    if legacy_mode or approved_mode:
-        fractional_trailers = (d_metres / d_len) / d_per_trailer
-        freight = roundup(d_trip * fractional_trailers / weight_mt, 0) + handling_rs_per_mt
+    if trips_override is not None and trips_override > 0:
+        trips = Decimal(str(trips_override))
+    elif whole_trailers:
+        pipes = roundup(d_metres / d_len, 0)
+        trips = Decimal(str(int(roundup(Decimal(str(pipes)) / d_per_trailer, 0))))
     else:
-        freight = roundup(d_trip * Decimal(trailers) / weight_mt, 0) + handling_rs_per_mt
-    return trailers, float(freight)
+        trips = (d_metres / d_len) / d_per_trailer
+    freight = roundup(d_trip * trips / weight_mt, 0) + handling_rs_per_mt
+    physical = int(roundup(Decimal(str(roundup(d_metres / d_len, 0))) / d_per_trailer, 0))
+    return physical, float(trips), float(freight)
 
 
 def financial_cost(
@@ -167,25 +211,43 @@ def financial_cost(
     legacy_mode: bool = False,
     approved_mode: bool = False,
     manual_fc: float = 0.0,
+    method: str | None = None,
 ) -> float:
-    """Calculates financial cost algebraically in normal option 1 mode, or manual override / approved formula in legacy or approved mode."""
-    if legacy_mode or approved_mode:
-        if manual_fc > 100.0:
-            return float(manual_fc)
-        d_fin = Decimal(str(financial_pct)) / Decimal(100)
-        d_gst = Decimal(str(gst_pct)) / Decimal(100)
-        base = Decimal(str(pre_cost)) + Decimal(str(external)) + Decimal(str(internal)) + Decimal(str(freight))
-        # Approved Excel CostSheet formula: ROUND((PreCost + Ext + Int + Freight) * (1 + GST) * FinPct, 0)
-        fc = round(float(base * (Decimal(1) + d_gst) * d_fin))
-        return float(fc)
-    d_fin = Decimal(str(financial_pct))
-    d_gst = Decimal(str(gst_pct))
-    k = (d_fin / Decimal(100)) * (Decimal(1) + d_gst / Decimal(100))
+    """Financial cost (Rs/MT).
+
+    A manual FC (> 0) always wins - it is the typed value in cost-sheet row 32.
+    Otherwise:
+      ALGEBRAIC (default): FC = k*base/(1-k), k = fin% * (1+GST).
+          This is the exact fixed point of the reference sheet's own check
+          cell (row 41 = Grand Total incl. GST x fin%), because row 32 feeds
+          the Bare price which feeds that Grand Total.
+      SIMPLE (old 'approved' mode): FC = ROUND(base * (1+GST) * fin%) - it leaves
+          FC itself out of the base, so it under-states FC by ~1.2% of itself
+          (Rs 1,019 vs the sheet's Rs 1,031 for Unipro line 1).
+    """
+    explicit = method is not None
+    if method is None:
+        method = "SIMPLE" if (legacy_mode or approved_mode) else "ALGEBRAIC"
+    method = method.upper().strip()
+    # Old flag-only 'normal' mode deliberately ignored typed FC; the explicit
+    # policy (and legacy/approved) honour it.
+    if explicit:
+        honour_manual = manual_fc > 0
+    else:
+        honour_manual = (legacy_mode or approved_mode) and manual_fc > 100.0
+    if honour_manual:
+        return float(manual_fc)
+    d_fin = Decimal(str(financial_pct)) / Decimal(100)
+    d_gst = Decimal(str(gst_pct)) / Decimal(100)
+    base = Decimal(str(pre_cost)) + Decimal(str(external)) + Decimal(str(internal)) + Decimal(str(freight))
+    if method == "SIMPLE":
+        return float(round(float(base * (Decimal(1) + d_gst) * d_fin)))
+    if method != "ALGEBRAIC":
+        raise CalculationError("fc method must be ALGEBRAIC or SIMPLE")
+    k = d_fin * (Decimal(1) + d_gst)
     if not 0 <= k < 1:
         raise CalculationError("financial and GST percentages produce an invalid factor")
-    base = Decimal(str(pre_cost)) + Decimal(str(external)) + Decimal(str(internal)) + Decimal(str(freight))
-    fc = k * base / (Decimal(1) - k)
-    return float(fc)
+    return float(k * base / (Decimal(1) - k))
 
 
 @dataclass(frozen=True)
@@ -276,6 +338,7 @@ class QuoteLineResult:
     override_reason: str = ""
     raw_material_cost_per_mt: float = 0.0
     bare_pipe_cost_per_mt: float = 0.0
+    freight_trips: float = 0.0
 
 
 def calc_line(
@@ -306,10 +369,27 @@ def calc_line(
     approved_mode: bool | None = None,
     manual_selling_price: float = 0.0,
     override_reason: str = "",
+    freight_trailers: str | None = None,
+    int_coating_basis: str | None = None,
+    fc_method: str | None = None,
+    trips_override: float | None = None,
 ) -> QuoteLineResult:
-    """Calculates a complete quotation line mirroring VBA modPricing.CalcLine."""
+    """Calculates a complete quotation line mirroring VBA modPricing.CalcLine.
+
+    Cost policy - pass these three explicitly (the VBA reads them from SETTINGS):
+      freight_trailers  'FRACTIONAL' (reference sheet) | 'WHOLE'
+      int_coating_basis 'OD' (reference sheet)         | 'ID'
+      fc_method         'ALGEBRAIC' (reference fixed point) | 'SIMPLE'
+    Any left as None falls back to the old legacy/approved/normal behaviour,
+    including the old heuristic (steel_rate==62000 or conversion==4000 =>
+    approved).  That heuristic is DEPRECATED: it silently changes the price
+    method when somebody happens to type 62000.  Use REFERENCE_POLICY instead.
+    """
+    explicit_policy = (freight_trailers is not None or int_coating_basis is not None
+                       or fc_method is not None)
     if approved_mode is None:
-        approved_mode = (steel_rate == 62000.0 or conversion == 4000.0)
+        approved_mode = False if explicit_policy else (steel_rate == 62000.0 or conversion == 4000.0)
+    whole_trailers = None if freight_trailers is None else (freight_trailers.upper().strip() == "WHOLE")
 
     od_mm, inner_d_mm, mass_kg = geometry(size_mm, thickness_mm, basis)
     mass_mt = mass_mt_per_m(od_mm, thickness_mm)
@@ -331,19 +411,22 @@ def calc_line(
 
     ext_cost = external_coating_per_mt(ext_rate, od_mm, mass_mt) if has_external else 0.0
     int_cost = (
-        internal_coating_per_mt(int_rate, od_mm, inner_d_mm, mass_mt, legacy_mode=legacy_mode, approved_mode=approved_mode)
+        internal_coating_per_mt(int_rate, od_mm, inner_d_mm, mass_mt, legacy_mode=legacy_mode,
+                                approved_mode=approved_mode, basis=int_coating_basis)
         if has_internal
         else 0.0
     )
 
-    trailers, freight = freight_per_mt(
+    trailers, freight_trips, freight = freight_detail(
         trip_rate, metres, pipe_length_m, mass_mt, pipes_per_trailer, handling,
-        legacy_mode=legacy_mode, approved_mode=approved_mode
+        legacy_mode=legacy_mode, approved_mode=approved_mode,
+        whole_trailers=whole_trailers, trips_override=trips_override,
     )
 
     fc = financial_cost(
         pre_cost, ext_cost, int_cost, freight, financial_pct, gst_pct,
-        legacy_mode=legacy_mode, approved_mode=approved_mode, manual_fc=manual_fc
+        legacy_mode=legacy_mode, approved_mode=approved_mode, manual_fc=manual_fc,
+        method=fc_method,
     )
 
     per_m = selling_price_per_m(pre_cost, fc, ext_cost, int_cost, freight, mass_mt, metres)
@@ -397,6 +480,7 @@ def calc_line(
         override_reason=override_reason,
         raw_material_cost_per_mt=float(raw_material_d),
         bare_pipe_cost_per_mt=pre_cost,
+        freight_trips=freight_trips,
     )
 
 
@@ -405,3 +489,83 @@ def calc_quote(lines: list[dict], *, legacy_mode: bool = False) -> tuple[list[Qu
     results = [calc_line(**line_kwargs, legacy_mode=legacy_mode) for line_kwargs in lines]
     grand_total = sum(r.line_value for r in results)
     return results, grand_total
+
+
+@dataclass(frozen=True)
+class CostSheet:
+    """Whole-quotation result laid out like the reference cost sheet."""
+    lines: list
+    total_metres: float
+    total_mt: float
+    total_trips: float
+    subtotal_excl_gst: float
+    gst: float
+    grand_total: float
+    # 'total' column (G) of the sheet = SUMPRODUCT(row, line MT) / total MT
+    weighted: dict
+
+
+def _mt_weighted(values: list[float], weights: list[float]) -> float:
+    total_w = sum(weights)
+    return sum(v * w for v, w in zip(values, weights)) / total_w if total_w else 0.0
+
+
+def calc_costsheet(
+    lines: list[dict],
+    *,
+    pooled_trips: float | None = None,
+    gst_pct: float = 18.0,
+    policy: dict | None = None,
+) -> CostSheet:
+    """Calculate a whole quotation the way the reference cost sheet does.
+
+    lines        list of calc_line keyword dicts (size_mm, thickness_mm, basis,
+                 quantity, steel_rate, manual_fc, ... ).  Every rate may differ
+                 per line, exactly like a column of the sheet.
+    pooled_trips manual loading-plan trips for the WHOLE quote (the 'nesting'
+                 sheet).  Freight is then one pooled figure
+                 ROUNDUP(trip_rate*pooled_trips/total_MT)+handling for all
+                 lines.  Leave None for the stacking method (per-line trips).
+    policy       defaults to REFERENCE_POLICY.
+    """
+    pol = dict(REFERENCE_POLICY if policy is None else policy)
+    prepared = []
+    for raw in lines:
+        kw = {**raw, **pol}
+        kw.setdefault("gst_pct", gst_pct)
+        prepared.append(kw)
+
+    if pooled_trips:
+        mts = []
+        for kw in prepared:
+            od, _id, _kg = geometry(kw["size_mm"], kw["thickness_mm"], kw["basis"])
+            mass = mass_mt_per_m(od, kw["thickness_mm"])
+            metres, _p, wt = quantity_conversion(kw["quantity"], kw.get("unit", "Metres"), mass,
+                                                 kw.get("pipe_length_m", 12.0))
+            mts.append(wt)
+        total_mt_pre = sum(mts)
+        for kw, wt in zip(prepared, mts):
+            kw["trips_override"] = pooled_trips * wt / total_mt_pre
+
+    results = [calc_line(**kw) for kw in prepared]
+    mts = [r.weight_mt for r in results]
+    subtotal = sum(r.line_value for r in results)
+    gst = subtotal * gst_pct / 100.0
+    weighted = {
+        "financial_cost_per_mt": _mt_weighted([r.financial_cost_per_mt for r in results], mts),
+        "freight_per_mt": _mt_weighted([r.freight_per_mt for r in results], mts),
+        "external_per_mt": _mt_weighted([r.external_cost_per_mt for r in results], mts),
+        "internal_per_mt": _mt_weighted([r.internal_cost_per_mt for r in results], mts),
+        "bare_per_mt": _mt_weighted([r.pre_cost + r.financial_cost_per_mt for r in results], mts),
+        "subtotal_per_mt": subtotal / sum(mts) if sum(mts) else 0.0,
+    }
+    return CostSheet(
+        lines=results,
+        total_metres=sum(r.metres for r in results),
+        total_mt=sum(mts),
+        total_trips=sum(r.freight_trips for r in results),
+        subtotal_excl_gst=subtotal,
+        gst=gst,
+        grand_total=subtotal + gst,
+        weighted=weighted,
+    )

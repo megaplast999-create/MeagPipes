@@ -56,6 +56,13 @@ Public Type RateInput
     ReferenceDistanceKm As Variant
     legacyMode As Boolean
     Option1Mode As Boolean
+    ' Cost policy (set from SETTINGS by ApplyCostPolicy). All three default to
+    ' False = the reference cost-sheet behaviour of the old non-Option1 path,
+    ' so code that never calls ApplyCostPolicy is unchanged.
+    WholeTrailers As Boolean        ' True: CEILING trailers; False: fractional trips (reference sheet)
+    IntCoatOnID As Boolean          ' True: inside surface (ID); False: OD factor (reference sheet)
+    FCAlgebraic As Boolean          ' True: FC = k*base/(1-k); False: old ROUND(base*(1+GST)*fin)
+    TripsOverride As Variant        ' optional manual loading-plan trips for THIS line (Empty = off)
 End Type
 
 
@@ -88,6 +95,9 @@ Public Type LineResult
     RawMaterialCostPerMT As Variant
     BarePipeCostPerMT As Variant
     LineValue As Variant
+    FreightTrips As Variant         ' trips the freight Rs/MT was actually built on
+    ExtPerMT As Variant             ' external coating Rs/MT (unrounded)
+    IntPerMT As Variant             ' internal coating Rs/MT (unrounded)
 End Type
 
 
@@ -372,7 +382,7 @@ Public Function CalcLine( _
 
     If lineData.HasInt Then
 
-        If rates.Option1Mode Then
+        If rates.Option1Mode Or rates.IntCoatOnID Then
             intc = _
                 CDec(rates.IntRate) * _
                 CDec(rates.PI) * _
@@ -407,56 +417,77 @@ Public Function CalcLine( _
 
     End If
 
-    If rates.Option1Mode Then
-        freight = _
-            RoundUpD( _
-                CDec(rates.TripRate) * _
-                CDec(result.Trailers) / _
-                result.MT, _
-                0 _
-            ) + _
-            CDec(rates.Handling)
-    Else
-        freight = _
-            RoundUpD( _
-                CDec(rates.TripRate) * _
-                (CDec(result.Metres) / CDec(lineData.PipeLen)) / _
-                CDec(lineData.PerTrailer) / _
-                result.MT, _
-                0 _
-            ) + _
-            CDec(rates.Handling)
+    ' Trips the freight is built on:
+    '   manual loading-plan trips (TripsOverride)        - if the user keyed them
+    '   else whole trailers  = CEILING(pipes / per trailer)
+    '   else fractional trips = (metres / pipe length) / per trailer   [reference sheet]
+    Dim costedTrips As Variant
+    costedTrips = Empty
+    If Not IsEmpty(rates.TripsOverride) Then
+        If IsNumeric(rates.TripsOverride) Then
+            If CDec(rates.TripsOverride) > 0 Then costedTrips = CDec(rates.TripsOverride)
+        End If
     End If
+    If IsEmpty(costedTrips) Then
+        If rates.Option1Mode Or rates.WholeTrailers Then
+            costedTrips = CDec(result.Trailers)
+        Else
+            costedTrips = (CDec(result.Metres) / CDec(lineData.PipeLen)) / _
+                          CDec(lineData.PerTrailer)
+        End If
+    End If
+
+    freight = _
+        RoundUpD( _
+            CDec(rates.TripRate) * _
+            costedTrips / _
+            result.MT, _
+            0 _
+        ) + _
+        CDec(rates.Handling)
+    result.FreightTrips = costedTrips
 
 
     ' --------------------------------------------------------
     ' FINANCIAL COST
     ' --------------------------------------------------------
 
-    If rates.Option1Mode Then
+    If rates.Option1Mode Or rates.FCAlgebraic Then
 
-        baseCost = _
-            pre + _
-            ext + _
-            intc + _
-            freight
+        ' A typed FC wins under the explicit policy (cost-sheet row 32).
+        ' The old Option1 contract keeps ignoring it.
+        If rates.FCAlgebraic And Not rates.Option1Mode And CDec(rates.ManualFC) > 0 Then
 
-        k = _
-            (CDec(rates.FinPct) / CDec(100)) * _
-            (CDec(1) + CDec(rates.GSTPct) / CDec(100))
+            financial = CDec(rates.ManualFC)
 
-        If k <= 0 Or k >= 1 Then
+        Else
 
-            Err.Raise vbObjectError + 1713, _
-                      "CalcLine", _
-                      "Invalid financial/GST factor."
+            baseCost = _
+                pre + _
+                ext + _
+                intc + _
+                freight
+
+            k = _
+                (CDec(rates.FinPct) / CDec(100)) * _
+                (CDec(1) + CDec(rates.GSTPct) / CDec(100))
+
+            If k <= 0 Or k >= 1 Then
+
+                Err.Raise vbObjectError + 1713, _
+                          "CalcLine", _
+                          "Invalid financial/GST factor."
+
+            End If
+
+            ' Fixed point of the cost sheet's own check cell (row 41):
+            ' FC = fin% * (1+GST) * (base + FC)  =>  FC = k*base/(1-k)
+            financial = _
+                k * _
+                baseCost / _
+                (CDec(1) - k)
 
         End If
-
-        financial = _
-            k * _
-            baseCost / _
-            (CDec(1) - k)
 
     Else
 
@@ -464,7 +495,7 @@ Public Function CalcLine( _
             ' Explicit user manual override in Rs/MT (e.g. 1024, 1014, 1011, 1008 or legacy 1542, 1500)
             financial = CDec(rates.ManualFC)
         Else
-            ' Approved formulaic financial cost:
+            ' Old simple formula (leaves FC itself out of the base):
             ' ROUND((PreCost + Ext + Int + Freight) * (1 + GST) * FinPct/100, 0)
             baseCost = pre + ext + intc + freight
             financial = Round( _
@@ -488,6 +519,8 @@ Public Function CalcLine( _
     result.MassPerM = massKgPerM
 
     result.FreightPerMT = freight
+    result.ExtPerMT = ext
+    result.IntPerMT = intc
 
     result.FCperMT = financial
 
@@ -846,3 +879,219 @@ Public Function ApprovedGoldenLine(ByVal index As Long) As LineResult
     rates.ManualFC = CDec(manualFinancial(index))
     ApprovedGoldenLine = CalcLine(lineData, rates, False)
 End Function
+
+
+' ============================================================
+' COST POLICY + SINGLE LINE-INPUT LOADER
+'
+' Every place that prices a quote line (AddQuoteLine,
+' UpdateQuoteLineFull, CalcAllLines, WriteCostingSheet) used to carry its
+' own 60-line copy of "build the rates", each with its own hard-coded
+' 500 / 250 / 3.14 / 4-pipes-per-trailer and different override handling.
+' They disagreed (e.g. editing a line dropped its typed FC), so the same
+' line priced differently depending on the button pressed.
+' LoadLineInputsFromRow is now the only place that does this.
+' ============================================================
+
+Public Function SettingValueOr(ByVal key As String, ByVal defaultValue As Variant) As Variant
+    Dim v As Variant
+    On Error Resume Next
+    v = SettingValue(key)
+    If Err.Number <> 0 Then
+        Err.Clear
+        On Error GoTo 0
+        SettingValueOr = defaultValue
+        Exit Function
+    End If
+    On Error GoTo 0
+    If IsNull(v) Then
+        SettingValueOr = defaultValue
+    ElseIf IsEmpty(v) Then
+        SettingValueOr = defaultValue
+    ElseIf Len(Trim$(CStr(v))) = 0 Then
+        SettingValueOr = defaultValue
+    Else
+        SettingValueOr = v
+    End If
+End Function
+
+' Reads the three cost-policy switches from SETTINGS (defaults = reference cost sheet).
+Public Sub ApplyCostPolicy(ByRef rates As RateInput)
+    rates.WholeTrailers = (UCase$(Trim$(CStr(SettingValueOr("FreightTrailerRounding", "FRACTIONAL")))) = "WHOLE")
+    rates.IntCoatOnID = (UCase$(Trim$(CStr(SettingValueOr("IntCoatingBasis", "OD")))) = "ID")
+    rates.FCAlgebraic = (UCase$(Trim$(CStr(SettingValueOr("FCMethod", "ALGEBRAIC")))) = "ALGEBRAIC")
+End Sub
+
+' Adds the new SETTINGS rows if the workbook does not have them yet. Idempotent.
+Public Sub EnsureCostPolicySettings()
+    Dim tbl As ListObject
+    Dim keys As Variant, vals As Variant, descs As Variant
+    Dim i As Long
+    Dim rowObj As ListRow
+    Dim found As Boolean
+    Dim newRow As ListRow
+
+    On Error GoTo Skip
+    Set tbl = ThisWorkbook.Worksheets("SETTINGS").ListObjects("tblSettings")
+    keys = Array("FreightTrailerRounding", "IntCoatingBasis", "FCMethod", "DefaultExtCoatingRate", "DefaultIntCoatingRate")
+    vals = Array("FRACTIONAL", "OD", "ALGEBRAIC", 500, 250)
+    descs = Array("Freight trips: FRACTIONAL (reference cost sheet) or WHOLE (round trailers up)", _
+                  "Internal coating area basis: OD (reference cost sheet) or ID (true inside surface)", _
+                  "Financial cost: ALGEBRAIC (self-consistent, matches sheet check cell) or SIMPLE (old shortcut)", _
+                  "Fallback external coating rate Rs/m2 when the coating master has no rate", _
+                  "Fallback internal coating rate Rs/m2 when the coating master has no rate")
+    For i = 0 To UBound(keys)
+        found = False
+        For Each rowObj In tbl.ListRows
+            If StrComp(CStr(rowObj.Range.Cells(1, tbl.ListColumns("SettingKey").Index).Value), CStr(keys(i)), vbTextCompare) = 0 Then
+                found = True
+                Exit For
+            End If
+        Next rowObj
+        If Not found Then
+            Set newRow = tbl.ListRows.Add
+            newRow.Range.Cells(1, tbl.ListColumns("SettingKey").Index).Value = keys(i)
+            newRow.Range.Cells(1, tbl.ListColumns("SettingValue").Index).Value = vals(i)
+            newRow.Range.Cells(1, tbl.ListColumns("Description").Index).Value = descs(i)
+            newRow.Range.Cells(1, tbl.ListColumns("DefaultValue").Index).Value = vals(i)
+            newRow.Range.Cells(1, tbl.ListColumns("Editable").Index).Value = "Yes"
+            newRow.Range.Cells(1, tbl.ListColumns("Category").Index).Value = "Pricing"
+        End If
+    Next i
+Skip:
+End Sub
+
+Private Function ColIdx(ByVal tbl As ListObject, ByVal colName As String) As Long
+    Dim c As ListColumn
+    ColIdx = 0
+    For Each c In tbl.ListColumns
+        If StrComp(c.Name, colName, vbTextCompare) = 0 Then
+            ColIdx = c.Index
+            Exit Function
+        End If
+    Next c
+End Function
+
+Private Function RowNum(ByVal tbl As ListObject, ByVal lineRow As ListRow, ByVal colName As String) As Double
+    Dim ci As Long
+    ci = ColIdx(tbl, colName)
+    If ci > 0 Then RowNum = Val(lineRow.Range.Cells(1, ci).Value) Else RowNum = 0#
+End Function
+
+Private Function RowText(ByVal tbl As ListObject, ByVal lineRow As ListRow, ByVal colName As String) As String
+    Dim ci As Long
+    ci = ColIdx(tbl, colName)
+    If ci > 0 Then RowText = Trim$(CStr(lineRow.Range.Cells(1, ci).Value)) Else RowText = ""
+End Function
+
+' Rs/m2 for a selected coating from the MASTERS coating table; fallback when blank/zero.
+Public Function CoatingRateFor(ByVal tableName As String, ByVal coatingId As String, ByVal fallbackRate As Double) As Double
+    Dim tbl As ListObject
+    Dim rowObj As ListRow
+    Dim rate As Double
+
+    CoatingRateFor = fallbackRate
+    If Len(Trim$(coatingId)) = 0 Then Exit Function
+    On Error GoTo Done
+    Set tbl = ThisWorkbook.Worksheets("MASTERS").ListObjects(tableName)
+    For Each rowObj In tbl.ListRows
+        If StrComp(Trim$(CStr(rowObj.Range.Cells(1, tbl.ListColumns("CoatingID").Index).Value)), coatingId, vbTextCompare) = 0 Then
+            rate = Val(rowObj.Range.Cells(1, tbl.ListColumns("RateRsPerM2").Index).Value)
+            If rate > 0 Then CoatingRateFor = rate
+            Exit Function
+        End If
+    Next rowObj
+Done:
+End Function
+
+' Which coatings does the line carry? The stored coating selection decides;
+' only when both are blank does the product (P02/P04 = coated) decide.
+Public Sub LineCoatingFlags(ByVal productId As String, ByVal extId As String, ByVal intId As String, _
+                            ByRef hasExt As Boolean, ByRef hasInt As Boolean)
+    Dim extSel As Boolean, intSel As Boolean
+    extSel = (Len(extId) > 0 And UCase$(extId) <> "BARE" And UCase$(extId) <> "NONE")
+    intSel = (Len(intId) > 0 And UCase$(intId) <> "BARE" And UCase$(intId) <> "NONE")
+    If extSel Or intSel Then
+        hasExt = extSel
+        hasInt = intSel
+    Else
+        hasExt = (InStr(1, productId, "02", vbTextCompare) > 0 Or InStr(1, productId, "04", vbTextCompare) > 0)
+        hasInt = hasExt
+    End If
+End Sub
+
+' Builds QuoteLineInput + RateInput for one QUOTE_LINES row. Callers may overwrite
+' individual rates afterwards (e.g. a manual selling price typed in the form).
+Public Sub LoadLineInputsFromRow(ByRef lineData As QuoteLineInput, ByRef rates As RateInput, _
+                                 ByVal tbl As ListObject, ByVal lineRow As ListRow, _
+                                 ByVal legacyMode As Boolean)
+    Dim basisVal As String
+    Dim sizeVal As Double, wtVal As Double, pipeLen As Double
+    Dim odMm As Double, massKg As Double
+    Dim prodId As String, extId As String, intId As String
+    Dim hasExt As Boolean, hasInt As Boolean
+    Dim perTrailer As Long
+    Dim v As Double
+
+    basisVal = RowText(tbl, lineRow, "Basis")
+    sizeVal = RowNum(tbl, lineRow, "SizeMM")
+    wtVal = RowNum(tbl, lineRow, "ThicknessMM")
+    pipeLen = RowNum(tbl, lineRow, "PipeLengthM")
+    If pipeLen < 6# Or pipeLen > 13# Then pipeLen = 12#
+    prodId = RowText(tbl, lineRow, "ProductID")
+    extId = RowText(tbl, lineRow, "CoatingExternalID")
+    intId = RowText(tbl, lineRow, "CoatingInternalID")
+
+    LineCoatingFlags prodId, extId, intId, hasExt, hasInt
+
+    ' Pipes per trailer from the stacking master (tblStacking), else payload / pipe weight.
+    perTrailer = 4
+    On Error Resume Next
+    odMm = CalculateOD(sizeVal, wtVal, basisVal)
+    massKg = CalculateMassKgPerM(odMm, wtVal)
+    If Err.Number = 0 And odMm > 0 And massKg > 0 Then
+        perTrailer = GetPipesPerTrailer(odMm, massKg * pipeLen / 1000#)
+    End If
+    Err.Clear
+    On Error GoTo 0
+    If perTrailer <= 0 Then perTrailer = 4
+
+    With lineData
+        .Basis = basisVal
+        .SizeMM = CDec(sizeVal)
+        .WT = CDec(wtVal)
+        .Qty = CDec(RowNum(tbl, lineRow, "Quantity"))
+        .Unit = RowText(tbl, lineRow, "QuantityUnit")
+        .PipeLen = CDec(pipeLen)
+        .PerTrailer = CDec(perTrailer)
+        .HasExt = hasExt
+        .HasInt = hasInt
+    End With
+
+    LoadDefaultRateInput rates, legacyMode
+    rates.Option1Mode = False
+    rates.TripsOverride = Empty      ' rates is reused line after line - never inherit the previous line's trips
+    ApplyCostPolicy rates
+    rates.PI = CDec(SettingValueOr("PIPct", 3.14))
+    rates.ExtRate = CDec(CoatingRateFor("tblExternalCoatings", extId, CDbl(SettingValueOr("DefaultExtCoatingRate", 500))))
+    rates.IntRate = CDec(CoatingRateFor("tblInternalCoatings", intId, CDbl(SettingValueOr("DefaultIntCoatingRate", 250))))
+    rates.TripRate = CDec(SettingValue("TripRateManual"))
+    rates.ManualFC = CDec(0)
+    rates.ManualSellingPrice = CDec(0)
+    rates.OverrideReason = ""
+
+    ' Optional per-line typed values (blank = use master / settings)
+    v = RowNum(tbl, lineRow, "ManualFC")
+    If v <= 0 Then v = RowNum(tbl, lineRow, "FCOverride")
+    If v > 0 Then rates.ManualFC = CDec(v)
+    v = RowNum(tbl, lineRow, "SteelRate"):          If v > 0 Then rates.Steel = CDec(v)
+    v = RowNum(tbl, lineRow, "YieldPct"):           If v > 0 Then rates.YieldPct = CDec(v)
+    v = RowNum(tbl, lineRow, "ConversionRate"):     If v > 0 Then rates.Conversion = CDec(v)
+    v = RowNum(tbl, lineRow, "ExtCoatingRate"):     If v > 0 Then rates.ExtRate = CDec(v)
+    v = RowNum(tbl, lineRow, "IntCoatingRate"):     If v > 0 Then rates.IntRate = CDec(v)
+    v = RowNum(tbl, lineRow, "TripRate"):           If v > 0 Then rates.TripRate = CDec(v)
+    v = RowNum(tbl, lineRow, "FinPct"):             If v > 0 Then rates.FinPct = CDec(v)
+    v = RowNum(tbl, lineRow, "ManualSellingPrice"): If v > 0 Then rates.ManualSellingPrice = CDec(v)
+    v = RowNum(tbl, lineRow, "ManualTrips"):        If v > 0 Then rates.TripsOverride = CDec(v)
+    rates.OverrideReason = RowText(tbl, lineRow, "OverrideReason")
+End Sub

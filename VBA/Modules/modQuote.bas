@@ -164,85 +164,9 @@ Public Function CalcAllLines(ByRef header As QuoteHeaderData) As QuoteSummaryDat
                 
                 If lineValid Then
                     On Error GoTo LineCalcError
-                    hasExt = (InStr(1, prodId, "02", vbTextCompare) > 0 Or InStr(1, prodId, "04", vbTextCompare) > 0)
-                    hasInt = hasExt
-                    
-                    With lineData
-                        .Basis = basisVal
-                        .SizeMM = CDec(sizeVal)
-                        .WT = CDec(wtVal)
-                        .Qty = CDec(qtyVal)
-                        .Unit = unitVal
-                        .PipeLen = CDec(pipeLenVal)
-                        .PerTrailer = CDec(4)
-                        .HasExt = hasExt
-                        .HasInt = hasInt
-                    End With
-                    
-                    LoadDefaultRateInput rates, legacyMode
-                    rates.Option1Mode = False
-                    rates.ExtRate = CDec(500)
-                    rates.IntRate = CDec(250)
-                    rates.PI = CDec(3.14)
-                    rates.TripRate = CDec(SettingValue("TripRateManual"))
-                    
-                    ' Read optional line-level commercial input overrides
-                    Dim colFC As Long, colSteel As Long, colYield As Long, colConv As Long
-                    Dim colExtR As Long, colIntR As Long, colTrip As Long, colFin As Long
-                    Dim colManP As Long, colReas As Long
-                    
-                    On Error Resume Next
-                    colFC = tableObject.ListColumns("ManualFC").Index
-                    If colFC = 0 Then colFC = tableObject.ListColumns("FCOverride").Index
-                    colSteel = tableObject.ListColumns("SteelRate").Index
-                    colYield = tableObject.ListColumns("YieldPct").Index
-                    colConv = tableObject.ListColumns("ConversionRate").Index
-                    colExtR = tableObject.ListColumns("ExtCoatingRate").Index
-                    colIntR = tableObject.ListColumns("IntCoatingRate").Index
-                    colTrip = tableObject.ListColumns("TripRate").Index
-                    colFin = tableObject.ListColumns("FinPct").Index
-                    colManP = tableObject.ListColumns("ManualSellingPrice").Index
-                    colReas = tableObject.ListColumns("OverrideReason").Index
-                    On Error GoTo LineCalcError
-                    
-                    If colFC > 0 And Val(.Cells(1, colFC).Value) > 0 Then
-                        rates.ManualFC = CDec(Val(.Cells(1, colFC).Value))
-                    Else
-                        rates.ManualFC = CDec(0)
-                    End If
-                    
-                    If colSteel > 0 And Val(.Cells(1, colSteel).Value) > 0 Then
-                        rates.Steel = CDec(Val(.Cells(1, colSteel).Value))
-                    End If
-                    If colYield > 0 And Val(.Cells(1, colYield).Value) > 0 Then
-                        rates.YieldPct = CDec(Val(.Cells(1, colYield).Value))
-                    End If
-                    If colConv > 0 And Val(.Cells(1, colConv).Value) > 0 Then
-                        rates.Conversion = CDec(Val(.Cells(1, colConv).Value))
-                    End If
-                    If colExtR > 0 And Val(.Cells(1, colExtR).Value) > 0 Then
-                        rates.ExtRate = CDec(Val(.Cells(1, colExtR).Value))
-                    End If
-                    If colIntR > 0 And Val(.Cells(1, colIntR).Value) > 0 Then
-                        rates.IntRate = CDec(Val(.Cells(1, colIntR).Value))
-                    End If
-                    If colTrip > 0 And Val(.Cells(1, colTrip).Value) > 0 Then
-                        rates.TripRate = CDec(Val(.Cells(1, colTrip).Value))
-                    End If
-                    If colFin > 0 And Val(.Cells(1, colFin).Value) > 0 Then
-                        rates.FinPct = CDec(Val(.Cells(1, colFin).Value))
-                    End If
-                    If colManP > 0 And Val(.Cells(1, colManP).Value) > 0 Then
-                        rates.ManualSellingPrice = CDec(Val(.Cells(1, colManP).Value))
-                    Else
-                        rates.ManualSellingPrice = CDec(0)
-                    End If
-                    If colReas > 0 Then
-                        rates.OverrideReason = Trim$(CStr(.Cells(1, colReas).Value))
-                    Else
-                        rates.OverrideReason = ""
-                    End If
-                    
+                    ' One shared loader builds the inputs (coatings, trip rate, stacking,
+                    ' typed overrides, cost policy) - identical for every pricing path.
+                    LoadLineInputsFromRow lineData, rates, tableObject, rowObject, legacyMode
                     result = CalcLine(lineData, rates, priceByMT)
                     
                     .Cells(1, tableObject.ListColumns("CalculatedODMM").Index).Value = result.od
@@ -277,7 +201,7 @@ Public Function CalcAllLines(ByRef header As QuoteHeaderData) As QuoteSummaryDat
                     summary.TotalMetres = summary.TotalMetres + CDec(result.Metres)
                     summary.TotalWeightMT = summary.TotalWeightMT + CDec(result.MT)
                     summary.TotalPipeCount = summary.TotalPipeCount + CLng(result.Pipes)
-                    summary.TotalTrailers = summary.TotalTrailers + CLng(result.Trailers)
+                    summary.TotalTrailers = summary.TotalTrailers + CLng(result.FreightTrips)
                     summary.TotalExclGST = summary.TotalExclGST + CDec(result.LineValue)
                     summary.ValidLineCount = summary.ValidLineCount + 1
                 Else
@@ -288,7 +212,7 @@ Public Function CalcAllLines(ByRef header As QuoteHeaderData) As QuoteSummaryDat
         End With
     Next rowObject
     
-    summary.GSTAmount = CDec(summary.TotalExclGST) * CDec("0.18")
+    summary.GSTAmount = CDec(summary.TotalExclGST) * CDec(SettingValueOr("GSTPct", 18)) / CDec(100)
     summary.GrandTotalInclGST = CDec(summary.TotalExclGST) + summary.GSTAmount
     CalcAllLines = summary
     Exit Function
@@ -470,6 +394,7 @@ Public Sub RecalculateQuote()
     modProtection.UnprotectSheet wsQ
     modProtection.UnprotectSheet wsLines
     
+    EnsureCostPolicySettings
     header = ReadQuoteSheet()
     summary = CalcAllLines(header)
     UpdateLiveSummary summary, header

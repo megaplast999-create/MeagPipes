@@ -128,56 +128,19 @@ Public Sub AddQuoteLine(ByVal quoteId As String, ByVal productId As String, ByVa
 
     On Error GoTo CalculationError
 
-    If Len(extCoating) > 0 And UCase$(extCoating) <> "BARE" And UCase$(extCoating) <> "NONE" Then
-        hasCoating = True
-    ElseIf Len(intCoating) > 0 And UCase$(intCoating) <> "NONE" Then
-        hasCoating = True
-    Else
-        hasCoating = (InStr(1, productId, "02", vbTextCompare) > 0 Or _
-                      InStr(1, productId, "04", vbTextCompare) > 0)
+    ' Inputs come from the row just written (coatings, typed FC, rates) via the
+    ' single shared loader; only the form-level arguments are applied on top.
+    LoadLineInputsFromRow lineData, rates, tableObject, lineObject, legacyMode
+    If Not IsMissing(tripRate) Then
+        If Val(tripRate) > 0 Then rates.TripRate = CDec(tripRate)
     End If
-    With lineData
-        .Basis = basis
-        .SizeMM = sizeMm
-        .WT = thicknessMm
-        .Qty = quantity
-        .Unit = quantityUnit
-        .PipeLen = pipeLengthM
-        .PerTrailer = CDec(4)
-        .HasExt = hasCoating
-        .HasInt = hasCoating
-    End With
-
-    LoadDefaultRateInput rates, legacyMode
-    rates.Option1Mode = False
-    rates.ExtRate = CDec(500)
-    rates.IntRate = CDec(250)
-    rates.PI = CDec(3.14)
-    If IsMissing(tripRate) Then
-        rates.TripRate = CDec(SettingValue("TripRateManual"))
-    Else
-        rates.TripRate = CDec(tripRate)
+    If Not IsMissing(manualFC) Then
+        If Val(manualFC) > 0 Then rates.ManualFC = CDec(manualFC)
     End If
-    If IsMissing(manualFC) Then
-        rates.ManualFC = CDec(0)
-    Else
-        rates.ManualFC = CDec(manualFC)
-    End If
-    
     If Not IsMissing(manualSellingPrice) Then
-        If Val(manualSellingPrice) > 0 Then
-            rates.ManualSellingPrice = CDec(Val(manualSellingPrice))
-        Else
-            rates.ManualSellingPrice = CDec(0)
-        End If
-    Else
-        rates.ManualSellingPrice = CDec(0)
+        If Val(manualSellingPrice) > 0 Then rates.ManualSellingPrice = CDec(Val(manualSellingPrice))
     End If
-    If Len(Trim$(overrideReason)) > 0 Then
-        rates.OverrideReason = Trim$(overrideReason)
-    Else
-        rates.OverrideReason = ""
-    End If
+    If Len(Trim$(overrideReason)) > 0 Then rates.OverrideReason = Trim$(overrideReason)
 
     result = CalcLine(lineData, rates, priceByMT)
     WriteCalculatedQuoteLine lineObject, tableObject, result, priceByMT
@@ -475,61 +438,29 @@ Public Sub UpdateQuoteLineFull(ByVal targetLineId As String, ByVal productId As 
         End If
     End With
     
-    If Len(extCoating) > 0 And UCase$(extCoating) <> "BARE" And UCase$(extCoating) <> "NONE" Then
-        hasCoating = True
-    ElseIf Len(intCoating) > 0 And UCase$(intCoating) <> "NONE" Then
-        hasCoating = True
-    Else
-        hasCoating = (InStr(1, productId, "02", vbTextCompare) > 0 Or InStr(1, productId, "04", vbTextCompare) > 0)
-    End If
-    
-    With lineData
-        .Basis = basis
-        .SizeMM = sizeMm
-        .WT = thicknessMm
-        .Qty = quantity
-        .Unit = quantityUnit
-        .PipeLen = pipeLengthM
-        .PerTrailer = CDec(4)
-        .HasExt = hasCoating
-        .HasInt = hasCoating
-    End With
-    
-    LoadDefaultRateInput rates, legacyMode
-    rates.Option1Mode = False
-    rates.ExtRate = CDec(500)
-    rates.IntRate = CDec(250)
-    rates.PI = CDec(3.14)
-    rates.TripRate = CDec(SettingValue("TripRateManual"))
-    rates.ManualFC = CDec(0)
-    
-    ' Read or set manual selling price & override reason
+    ' Same shared loader as Add / Recalculate: editing a line no longer drops its
+    ' typed FC / steel / conversion / trip-rate overrides.
+    LoadLineInputsFromRow lineData, rates, tblLines, targetRow, legacyMode
+
+    ' Manual selling price & override reason: argument wins, else keep what the row holds
     Dim colManP As Long, colReas As Long
     On Error Resume Next
     colManP = tblLines.ListColumns("ManualSellingPrice").Index
     colReas = tblLines.ListColumns("OverrideReason").Index
     On Error GoTo 0
-    
+
     If Not IsMissing(manualSellingPrice) Then
         If Val(manualSellingPrice) > 0 Then
             rates.ManualSellingPrice = CDec(Val(manualSellingPrice))
         Else
             rates.ManualSellingPrice = CDec(0)
         End If
-    ElseIf colManP > 0 And Val(targetRow.Range.Cells(1, colManP).Value) > 0 Then
-        rates.ManualSellingPrice = CDec(Val(targetRow.Range.Cells(1, colManP).Value))
-    Else
-        rates.ManualSellingPrice = CDec(0)
     End If
-    
+
     If Len(Trim$(overrideReason)) > 0 Then
         rates.OverrideReason = Trim$(overrideReason)
-    ElseIf colReas > 0 Then
-        rates.OverrideReason = Trim$(CStr(targetRow.Range.Cells(1, colReas).Value))
-    Else
-        rates.OverrideReason = ""
     End If
-    
+
     result = CalcLine(lineData, rates, priceByMT)
     WriteCalculatedQuoteLine targetRow, tblLines, result, priceByMT
     modProtection.ProtectSheet wsLines, userInterfaceOnly:=True
