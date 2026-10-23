@@ -502,15 +502,38 @@ Public Sub WriteOfferSheet(Optional ByVal forceLegacy As Boolean = False)
     Set tblLines = wsLines.ListObjects("tblQuoteLines")
     
     header = ReadQuoteSheet()
-    offerNo = "MEGA/OFFER/26-27/594"
-    offerDate = "17th September 2026"
-    purchaser = IIf(Len(header.Customer) > 0, header.Customer, "Unipro Techno Infrastructure Pvt. Ltd.")
-    plantName = "M/s. Mega Pipes Pvt Limited (Jabalpur)"
-    delivPlace = IIf(Len(header.DeliveryPlace) > 0, header.DeliveryPlace, "Krishna Nagar, Bagodar, Jharkhand - 825322")
-    
-    valDays = CLng(Val(SettingValue("ValidityDays")))
-    If valDays <= 0 Then valDays = 5
-    validUntilDate = "15th September 2026"
+    If forceLegacy Then
+        offerNo = "MEGA/OFFER/26-27/594"
+        offerDate = "17th September 2026"
+        purchaser = IIf(Len(header.Customer) > 0, header.Customer, "Unipro Techno Infrastructure Pvt. Ltd.")
+        plantName = "M/s. Mega Pipes Pvt Limited (Jabalpur)"
+        delivPlace = IIf(Len(header.DeliveryPlace) > 0, header.DeliveryPlace, "Krishna Nagar, Bagodar, Jharkhand - 825322")
+        valDays = CLng(Val(SettingValue("ValidityDays")))
+        If valDays <= 0 Then valDays = 5
+        validUntilDate = "15th September 2026"
+    Else
+        If Len(header.QuoteID) > 0 Then
+            offerNo = modSequence.AllocateOfferNumber(header.QuoteID)
+        Else
+            offerNo = "MEGA/OFFER/26-27/594"
+        End If
+        If IsDate(header.QuoteDate) Then
+            offerDate = Format$(header.QuoteDate, "d mmmm yyyy")
+        Else
+            offerDate = Format$(Date, "d mmmm yyyy")
+        End If
+        purchaser = header.Customer
+        plantName = "M/s. Mega Pipes Pvt Limited (Jabalpur)"
+        delivPlace = header.DeliveryPlace
+        valDays = header.ValidityDays
+        If valDays <= 0 Then valDays = CLng(Val(SettingValue("ValidityDays")))
+        If valDays <= 0 Then valDays = 30
+        If IsDate(header.QuoteDate) Then
+            validUntilDate = Format$(CDate(header.QuoteDate) + valDays, "d mmmm yyyy")
+        Else
+            validUntilDate = Format$(Date + valDays, "d mmmm yyyy")
+        End If
+    End If
     
     ' Clear OFFER sheet
     wsOffer.Cells.Clear

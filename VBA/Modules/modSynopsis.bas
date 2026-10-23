@@ -63,19 +63,25 @@ Public Sub BuildSynopsisSheet()
     If Len(qType) = 0 Then qType = "HSAW Coated"
     
     custName = Trim$(CStr(wsQ.Range("B8").Value))
-    If Len(custName) = 0 Or UCase$(custName) = "UNIPRO" Then
+    If UCase$(custName) = "UNIPRO" Then
+        custName = "Unipro Techno Infrastructure Pvt. Ltd"
+    ElseIf Len(custName) = 0 And qNum = "MKTG/ENQ/26-27/594" Then
         custName = "Unipro Techno Infrastructure Pvt. Ltd"
     End If
     
     contactPerson = Trim$(CStr(wsQ.Range("B9").Value))
-    If Len(contactPerson) = 0 Then contactPerson = "Rakesh Gupta"
+    If Len(contactPerson) = 0 And qNum = "MKTG/ENQ/26-27/594" Then
+        contactPerson = "Rakesh Gupta"
+    End If
     
     deliveryPlace = Trim$(CStr(wsQ.Range("B10").Value))
     If Len(deliveryPlace) = 0 Then deliveryPlace = Trim$(CStr(wsQ.Range("B11").Value))
-    If Len(deliveryPlace) = 0 Then deliveryPlace = "Krishna Nagar, Bagodar, Jharkhand - 825322"
+    If Len(deliveryPlace) = 0 And qNum = "MKTG/ENQ/26-27/594" Then
+        deliveryPlace = "Krishna Nagar, Bagodar, Jharkhand - 825322"
+    End If
     
     tenderName = Trim$(CStr(wsQ.Range("B11").Value))
-    If Len(tenderName) = 0 Or tenderName = deliveryPlace Then
+    If (Len(tenderName) = 0 Or tenderName = deliveryPlace) And qNum = "MKTG/ENQ/26-27/594" Then
         tenderName = "Konar, Jharkhand Project"
     End If
     

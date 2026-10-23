@@ -45,6 +45,9 @@ Public Sub OnWorkbookOpen()
     ' Hide internal backend calculation sheets
     HideBackendSheets
     
+    ' Hide commercial output sheets until quotation is calculated
+    HideOutputSheets
+    
     ' Ensure no sheet protection prevents editing
     modProtection.UnprotectAllSheets
     
@@ -711,7 +714,7 @@ Public Sub SetupQuoteSheetUI()
                     ws.Range("A37"), ws.Range("A37"), RGB(40, 120, 90), UI_WHITE, True
     AddModernButton ws, "btnQuoteClearLine", "CLEAR INPUTS", "modUI.UI_ClearLine", _
                     ws.Range("B37"), ws.Range("B37"), RGB(110, 120, 130), UI_WHITE, False
-    AddModernButton ws, "btnQuoteClear", "CLEAR ALL", "modUI.UI_ClearAllItems", _
+    AddModernButton ws, "btnQuoteClear", "CLEAR ALL", "modUI.UI_ClearAllInputs", _
                     ws.Range("C37"), ws.Range("C37"), RGB(90, 90, 90), UI_WHITE, False
                     
     ' Guidance Tip (Row 38)
@@ -1063,36 +1066,44 @@ Public Sub UI_NewQuotation()
     ' Allocate fresh enquiry number
     modQuoteHeader.InitializeNewQuote forceNew:=True
     
-    ' Populate clean guided header defaults
+    ' Populate clean guided header defaults (without hardcoded customer details)
     wsQ.Range("B5").Value = Date
     wsQ.Range("B6").Value = "Tender"
     wsQ.Range("B7").Value = "Coated HSAW"
-    wsQ.Range("B8").Value = "Unipro Techno Infrastructure Pvt. Ltd"
-    wsQ.Range("B9").Value = "Rakesh Gupta"
-    wsQ.Range("B10").Value = "Krishna Nagar, Bagodar, Jharkhand - 825322"
-    wsQ.Range("B11").Value = "Konar, Jharkhand Project"
-    wsQ.Range("B12").Value = "Commercial Sales Team"
-    wsQ.Range("B13").Value = "P02"
+    wsQ.Range("B8").Value = ""          ' Blank customer for new quotation entry
+    wsQ.Range("B9").Value = ""          ' Blank contact person
+    wsQ.Range("B10").Value = ""         ' Blank delivery place
+    wsQ.Range("B11").Value = ""         ' Blank project / tender ref
+    wsQ.Range("B12").Value = ""         ' Blank salesperson
+    wsQ.Range("B13").Value = "P01"      ' Default supplying plant
     wsQ.Range("B14").Value = "30 Days from Dispatch"
     wsQ.Range("B15").Value = 30
     wsQ.Range("B16").Value = "Metres"
     wsQ.Range("B17").Value = "NORMAL"
     
-    ' Clean input cells in product requirement area (Rows 20-30)
+    ' Clean input cells in product requirement area (Rows 20-33)
     wsQ.Range("B20").Value = "IS-3589-2001"
     wsQ.Range("B21").Value = "HSAW"
     wsQ.Range("B22").Value = "ID"
-    wsQ.Range("B23").Value = 1226
-    wsQ.Range("B24").Value = 8.4
+    wsQ.Range("B23").Value = 0
+    wsQ.Range("B24").Value = 0
     wsQ.Range("B25").Value = "Fe 410"
-    wsQ.Range("B26").Value = "PU 1000 micron"
-    wsQ.Range("B27").Value = "Food grade epoxy 406 micron"
-    wsQ.Range("B28").Value = 2000
+    wsQ.Range("B26").Value = "Bare"
+    wsQ.Range("B27").Value = "None"
+    wsQ.Range("B28").Value = 0
     wsQ.Range("B29").Value = "Metres"
     wsQ.Range("B30").Value = 12#
+    wsQ.Range("B31").Value = "NO"
+    wsQ.Range("C31").Value = ""
+    wsQ.Range("B32").Value = ""
+    wsQ.Range("B33").Value = ""
+    modQuote.UpdateManualPriceUnitDisplay wsQ
     
-    ' Clear quote lines table
+    ' Clear quote lines table (resets line records, transient costs, and live summary)
     modQuote.ClearQuoteLines
+    
+    ' Invalidate and hide commercial output sheets (OFFER and SYNOPSIS)
+    InvalidateOutputSheets
     
     ' Reset edit mode and selection
     IsEditMode = False
@@ -1108,7 +1119,7 @@ Public Sub UI_NewQuotation()
     modDependentDropdowns.SetupQuoteLineDropdowns
     RefreshQuoteLinesDisplay
     
-    SetFeedbackBanner "New quotation created. Configure product and click '+ ADD ITEM TO QUOTE'.", UI_GREEN_DARK
+    SetFeedbackBanner "New quotation created. Enter customer details and click '+ ADD ITEM TO QUOTE'.", UI_GREEN_DARK
     
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = True
@@ -1433,11 +1444,6 @@ ErrorHandler:
     SafeMsgBox "Custom size toggle error: " & Err.Description, vbExclamation
 End Sub
 
-ErrorHandler:
-    Application.ScreenUpdating = True
-    SafeMsgBox "Custom size entry rejected: " & Err.Description, vbExclamation
-End Sub
-
 Public Sub UI_RemoveItem()
     Dim wsQ As Worksheet
     Dim tbl As ListObject
@@ -1757,10 +1763,16 @@ Public Sub UI_ClearLine()
         RefreshQuoteLinesDisplay
     End If
     
-    ' Clear input quantity and reset custom inputs to defaults
+    ' Clear line input fields and reset inputs to clean defaults
+    wsQ.Range("B23").Value = 0          ' Pipe Size (mm)
+    wsQ.Range("B24").Value = 0          ' Wall Thickness (mm)
+    wsQ.Range("B26").Value = "Bare"     ' External Coating
+    wsQ.Range("B27").Value = "None"     ' Internal Coating
     wsQ.Range("B28").Value = 0          ' Quantity
+    wsQ.Range("B30").Value = 12#        ' Pipe Length
     wsQ.Range("B31").Value = "NO"       ' Custom Pipe Size toggle
-    wsQ.Range("B32").Value = ""         ' Manual Selling Price
+    wsQ.Range("C31").Value = ""         ' Custom Size Value
+    wsQ.Range("B32").Value = ""         ' Manual Selling Price Override
     wsQ.Range("B33").Value = ""         ' Override Reason
     modQuote.UpdateManualPriceUnitDisplay wsQ
     
@@ -1971,11 +1983,10 @@ Public Sub UI_ResetDraft()
     On Error GoTo 0
     
     modQuote.ClearQuoteLines
+    InvalidateOutputSheets
     modQuoteHeader.InitializeNewQuote forceNew:=False
     
-    wsQ.Range("B23").Value = 0
-    wsQ.Range("B24").Value = 0
-    wsQ.Range("B28").Value = 0
+    UI_ClearLine
     
     RefreshQuoteLinesDisplay
     SetFeedbackBanner "Quotation draft reset. Enter new quotation details.", UI_GREEN_DARK
@@ -1987,19 +1998,65 @@ ErrorHandler:
     SafeMsgBox "Error resetting draft: " & Err.Description, vbExclamation
 End Sub
 
-Public Sub UI_ClearAllItems()
+Public Sub UI_ClearAllInputs(Optional ByVal promptUser As Boolean = False)
     Dim wsQ As Worksheet
+    Dim prevEvents As Boolean, prevScreen As Boolean
+    
     On Error GoTo ErrorHandler
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     
-    If Application.DisplayAlerts And Application.UserControl Then
+    If promptUser And Application.DisplayAlerts And Application.UserControl Then
         Dim ans As VbMsgBoxResult
-        ans = MsgBox("Are you sure you want to delete ALL quotation lines?", _
-                     vbYesNo + vbQuestion + vbDefaultButton2, "Mega Pipes — Clear All Lines")
+        ans = MsgBox("Are you sure you want to clear all quotation inputs, lines, and outputs?" & vbCrLf & vbCrLf & _
+                     "(Settings, master data, configuration, and quote logs will be preserved.)", _
+                     vbYesNo + vbQuestion + vbDefaultButton2, "Mega Pipes — Clear All Inputs")
         If ans <> vbYes Then Exit Sub
     End If
     
-    ' Reset Edit Mode
+    prevEvents = Application.EnableEvents
+    prevScreen = Application.ScreenUpdating
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    
+    modProtection.UnprotectSheet wsQ
+    
+    ' 1. Clear customer & project header details (B8:B12) and reset dropdown fields
+    wsQ.Range("B8").Value = ""          ' Customer
+    wsQ.Range("B9").Value = ""          ' Contact Person
+    wsQ.Range("B10").Value = ""         ' Delivery Place
+    wsQ.Range("B11").Value = ""         ' Project / Tender Ref
+    wsQ.Range("B12").Value = ""         ' Salesperson
+    wsQ.Range("B13").Value = "P01"      ' Supplying Plant
+    wsQ.Range("B14").Value = "30 Days from Dispatch" ' Payment Terms
+    wsQ.Range("B15").Value = 30         ' Validity (Days)
+    wsQ.Range("B16").Value = "Metres"   ' Price Basis
+    wsQ.Range("B17").Value = "NORMAL"   ' Pricing Mode
+    
+    ' 2. Clear product line inputs form (Rows 20-33)
+    wsQ.Range("B20").Value = "IS-3589-2001"
+    wsQ.Range("B21").Value = "HSAW"
+    wsQ.Range("B22").Value = "ID"
+    wsQ.Range("B23").Value = 0          ' Size (mm)
+    wsQ.Range("B24").Value = 0          ' Wall Thickness (mm)
+    wsQ.Range("B25").Value = "Fe 410"
+    wsQ.Range("B26").Value = "Bare"     ' External Coating
+    wsQ.Range("B27").Value = "None"     ' Internal Coating
+    wsQ.Range("B28").Value = 0          ' Quantity
+    wsQ.Range("B29").Value = "Metres"
+    wsQ.Range("B30").Value = 12#        ' Pipe Length
+    wsQ.Range("B31").Value = "NO"       ' Custom Pipe Size toggle
+    wsQ.Range("C31").Value = ""         ' Custom Size Value
+    wsQ.Range("B32").Value = ""         ' Manual Selling Price override
+    wsQ.Range("B33").Value = ""         ' Override Reason
+    modQuote.UpdateManualPriceUnitDisplay wsQ
+    
+    ' 3. Clear all quotation line items from tblQuoteLines (includes ManualFC, TripRate, ManualTrips)
+    modQuote.ClearQuoteLines
+    
+    ' 4. Invalidate and hide commercial output sheets (OFFER and SYNOPSIS)
+    InvalidateOutputSheets
+    
+    ' 5. Reset line edit mode and selection state
     IsEditMode = False
     EditingLineID = ""
     SelectedLineID = ""
@@ -2008,18 +2065,29 @@ Public Sub UI_ClearAllItems()
     wsQ.Shapes("btnQuoteAdd").Fill.ForeColor.RGB = UI_GREEN_MID
     On Error GoTo 0
     
-    Application.ScreenUpdating = False
-    modQuote.ClearQuoteLines
-    modQuote.RecalculateQuote
+    ' 6. Refresh line item display and dependent dropdowns
+    modDependentDropdowns.SetupDependentDropdownArchitecture
+    modDependentDropdowns.SetupQuoteLineDropdowns
     RefreshQuoteLinesDisplay
     
-    SetFeedbackBanner "All quotation lines have been cleared.", UI_GREEN_DARK
+    ' 7. Feedback banner
+    SetFeedbackBanner "All user inputs, quotation lines, and outputs have been cleared.", UI_GREEN_DARK
+    
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    Application.EnableEvents = prevEvents
     Application.ScreenUpdating = True
     Exit Sub
-
+    
 ErrorHandler:
-    Application.ScreenUpdating = True
-    SafeMsgBox "Error clearing lines: " & Err.Description, vbExclamation
+    On Error Resume Next
+    modProtection.ProtectSheet wsQ, userInterfaceOnly:=True
+    Application.EnableEvents = prevEvents
+    Application.ScreenUpdating = prevScreen
+    SafeMsgBox "Error clearing all inputs: " & Err.Description, vbExclamation
+End Sub
+
+Public Sub UI_ClearAllItems()
+    UI_ClearAllInputs promptUser:=True
 End Sub
 
 Public Sub UI_QuotationHistory()
@@ -2064,49 +2132,79 @@ ErrorHandler:
 End Sub
 
 Public Sub UI_CalculateQuotation()
-    On Error GoTo ErrorHandler
-    Application.ScreenUpdating = False
-    
     Dim wsQ As Worksheet
+    
+    On Error GoTo ErrorHandler
     Set wsQ = ThisWorkbook.Worksheets("QUOTE")
     
+    ' 1. Validate Required Customer Input
     Dim cust As String
     cust = Trim$(CStr(wsQ.Range("B8").Value))
     If Len(cust) = 0 Then
-        Application.ScreenUpdating = True
-        SetFeedbackBanner "Please select a Customer in cell B8 before calculating.", UI_RED
-        SafeMsgBox "Please select a customer from the dropdown list before calculating.", vbExclamation
+        HideOutputSheets
+        SetFeedbackBanner "Validation Error: Customer is required. Select or enter Customer in B8 before calculating.", UI_RED
+        SafeMsgBox "Please select or enter a Customer in cell B8 before calculating.", vbExclamation, "Mega Pipes — Validation Required"
         Exit Sub
     End If
     
-    ' Recalculate quote
+    ' 2. Validate Required Quotation Line Items
+    Dim tblLines As ListObject
+    Set tblLines = ThisWorkbook.Worksheets("QUOTE_LINES").ListObjects("tblQuoteLines")
+    Dim validLines As Long, rL As ListRow
+    validLines = 0
+    If Not tblLines Is Nothing Then
+        For Each rL In tblLines.ListRows
+            If Len(Trim$(CStr(rL.Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) > 0 Then
+                If Val(rL.Range.Cells(1, tblLines.ListColumns("Quantity").Index).Value) > 0 Then
+                    validLines = validLines + 1
+                End If
+            End If
+        Next rL
+    End If
+    
+    If validLines = 0 Then
+        HideOutputSheets
+        SetFeedbackBanner "Validation Error: No line items found. Add at least one valid pipe item before calculating.", UI_RED
+        SafeMsgBox "Please add at least one valid line item to the quotation before calculating.", vbExclamation, "Mega Pipes — Validation Required"
+        Exit Sub
+    End If
+    
+    Application.ScreenUpdating = False
+    
+    ' 3. Recalculate quotation using existing approved engine
     modQuote.RecalculateQuote
     
-    ' Update COSTING, OFFER, and SYNOPSIS sheets
-    On Error Resume Next
+    ' 4. Generate COSTING, OFFER, and SYNOPSIS reports
     modExport.WriteCostingSheet
     modExport.WriteOfferSheet
     modSynopsis.PopulateSynopsisReport
-    On Error GoTo ErrorHandler
     
-    ' Refresh display table
+    ' 5. Refresh display table on QUOTE sheet
     RefreshQuoteLinesDisplay
+    
+    ' 6. Reveal OFFER and SYNOPSIS sheets now that calculation and generation succeeded
+    ShowOutputSheets
     
     Dim grandTotal As String
     grandTotal = "Rs. " & Format$(Val(wsQ.Range("E10").Value), "#,##0")
-    SetFeedbackBanner "Quotation calculated successfully! Grand Total: " & grandTotal & ". Ready for review or export.", UI_GREEN_DARK
+    SetFeedbackBanner "Quotation calculated successfully! Grand Total: " & grandTotal & ". OFFER and SYNOPSIS are now available.", UI_GREEN_DARK
     
     Application.ScreenUpdating = True
     SafeMsgBox "Quotation calculated successfully!" & vbCrLf & vbCrLf & _
                "Customer: " & cust & vbCrLf & _
                "Subtotal (Excl GST): Rs. " & Format$(Val(wsQ.Range("E8").Value), "#,##0") & vbCrLf & _
-               "Grand Total (Incl GST): " & grandTotal, vbInformation
+               "Grand Total (Incl GST): " & grandTotal & vbCrLf & vbCrLf & _
+               "OFFER and SYNOPSIS reports have been updated and are now available for review.", vbInformation, "Mega Pipes — Quotation Calculated"
     Exit Sub
 
 ErrorHandler:
+    On Error Resume Next
+    HideOutputSheets
     Application.ScreenUpdating = True
     SetFeedbackBanner "Calculation error: " & Err.Description, UI_RED
-    SafeMsgBox "Calculation failed: " & Err.Description, vbCritical
+    SafeMsgBox "Calculation failed: " & Err.Description & vbCrLf & vbCrLf & _
+               "OFFER and SYNOPSIS sheets remain hidden to prevent exposing uncalculated results.", _
+               vbCritical, "Mega Pipes — Calculation Error"
 End Sub
 
 Public Sub UI_SaveDraft()
@@ -2268,7 +2366,13 @@ Public Sub UI_PreviewOffer()
     On Error GoTo ErrorHandler
     Dim wsOff As Worksheet
     Set wsOff = ThisWorkbook.Worksheets("OFFER")
-    wsOff.Visible = xlSheetVisible
+    
+    If wsOff.Visible <> xlSheetVisible Then
+        SafeMsgBox "The Offer Letter is not available yet." & vbCrLf & vbCrLf & _
+                   "Please click 'CALCULATE QUOTATION' to calculate the quotation and generate the offer first.", _
+                   vbInformation, "Mega Pipes — Offer Preview"
+        Exit Sub
+    End If
     
     ' Return button on OFFER
     On Error Resume Next
@@ -2290,9 +2394,16 @@ End Sub
 Public Sub UI_PreviewSynopsis()
     On Error GoTo ErrorHandler
     Dim wsSyn As Worksheet
-    modSynopsis.PopulateSynopsisReport
     Set wsSyn = ThisWorkbook.Worksheets("SYNOPSIS")
-    wsSyn.Visible = xlSheetVisible
+    
+    If wsSyn.Visible <> xlSheetVisible Then
+        SafeMsgBox "The Synopsis Report is not available yet." & vbCrLf & vbCrLf & _
+                   "Please click 'CALCULATE QUOTATION' to calculate the quotation and generate the report first.", _
+                   vbInformation, "Mega Pipes — Synopsis Preview"
+        Exit Sub
+    End If
+    
+    modSynopsis.PopulateSynopsisReport
     wsSyn.Activate
     Exit Sub
 ErrorHandler:
@@ -2491,6 +2602,56 @@ Public Sub HideBackendSheets()
         Set ws = Nothing
         On Error GoTo 0
     Next i
+End Sub
+
+Public Sub HideOutputSheets()
+    On Error Resume Next
+    Dim wsOff As Worksheet, wsSyn As Worksheet
+    Set wsOff = ThisWorkbook.Worksheets("OFFER")
+    Set wsSyn = ThisWorkbook.Worksheets("SYNOPSIS")
+    
+    ' Ensure primary console is active so Excel never tries to hide all visible sheets
+    Dim wsActive As Worksheet
+    Set wsActive = ActiveSheet
+    If Not wsActive Is Nothing Then
+        If wsActive.Name = "OFFER" Or wsActive.Name = "SYNOPSIS" Then
+            ThisWorkbook.Worksheets("QUOTE").Activate
+        End If
+    End If
+    
+    If Not wsOff Is Nothing Then wsOff.Visible = xlSheetHidden
+    If Not wsSyn Is Nothing Then wsSyn.Visible = xlSheetHidden
+    On Error GoTo 0
+End Sub
+
+Public Sub ShowOutputSheets()
+    On Error Resume Next
+    Dim wsOff As Worksheet, wsSyn As Worksheet
+    Set wsOff = ThisWorkbook.Worksheets("OFFER")
+    If Not wsOff Is Nothing Then wsOff.Visible = xlSheetVisible
+    Set wsSyn = ThisWorkbook.Worksheets("SYNOPSIS")
+    If Not wsSyn Is Nothing Then wsSyn.Visible = xlSheetVisible
+    On Error GoTo 0
+End Sub
+
+Public Sub InvalidateOutputSheets()
+    On Error Resume Next
+    Dim wsOff As Worksheet, wsSyn As Worksheet
+    Set wsOff = ThisWorkbook.Worksheets("OFFER")
+    Set wsSyn = ThisWorkbook.Worksheets("SYNOPSIS")
+    
+    HideOutputSheets
+    
+    If Not wsOff Is Nothing Then
+        modProtection.UnprotectSheet wsOff
+        wsOff.Cells.Clear
+    End If
+    
+    If Not wsSyn Is Nothing Then
+        modProtection.UnprotectSheet wsSyn
+        wsSyn.Cells.Clear
+    End If
+    On Error GoTo 0
 End Sub
 
 Public Sub ShowAllSheets()
