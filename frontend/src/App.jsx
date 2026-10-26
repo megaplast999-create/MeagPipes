@@ -1,122 +1,118 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, { useState, useCallback } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Navbar } from './components/Navbar';
+import { LoginView } from './components/LoginView';
+import { DashboardView } from './components/DashboardView';
+import { QuotationEditorView } from './components/QuotationEditorView';
+import { CalculationResultsView } from './components/CalculationResultsView';
+import { NotificationToast } from './components/NotificationToast';
+import './App.css';
 
-function App() {
-  const [count, setCount] = useState(0)
+function MainContent() {
+  const { user, loading } = useAuth();
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [activeQuotationId, setActiveQuotationId] = useState(null);
+  const [activeSnapshot, setActiveSnapshot] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((message, type = 'info') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((current) => (current && current.message === message ? null : current));
+    }, 5000);
+  }, []);
+
+  const dismissToast = useCallback(() => {
+    setToast(null);
+  }, []);
+
+  const handleNavigate = (view) => {
+    if (view === 'new-quote') {
+      setActiveQuotationId(null);
+      setActiveSnapshot(null);
+      setCurrentView('new-quote');
+    } else {
+      setCurrentView(view);
+    }
+  };
+
+  const handleSelectQuotation = (id) => {
+    setActiveQuotationId(id);
+    setActiveSnapshot(null);
+    setCurrentView('edit-quote');
+  };
+
+  const handleViewResults = (id, snapshot) => {
+    setActiveQuotationId(id);
+    setActiveSnapshot(snapshot);
+    setCurrentView('results');
+  };
+
+  if (loading) {
+    return (
+      <div className="app-loading-screen">
+        <div className="spinner" />
+        <p>Connecting to Mega Pipes quotation engine...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <>
+        <LoginView />
+        <NotificationToast toast={toast} onDismiss={dismissToast} />
+      </>
+    );
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app-layout">
+      <Navbar currentView={currentView} onNavigate={handleNavigate} />
+      <main className="main-content">
+        {currentView === 'dashboard' && (
+          <DashboardView
+            onNavigate={handleNavigate}
+            onSelectQuotation={handleSelectQuotation}
+            onViewResults={handleViewResults}
+            showToast={showToast}
+          />
+        )}
+        {(currentView === 'new-quote' || currentView === 'edit-quote') && (
+          <QuotationEditorView
+            quotationId={activeQuotationId}
+            onNavigate={handleNavigate}
+            onViewResults={handleViewResults}
+            showToast={showToast}
+          />
+        )}
+        {currentView === 'results' && (
+          <CalculationResultsView
+            quotationId={activeQuotationId}
+            snapshot={activeSnapshot}
+            onNavigate={handleNavigate}
+            onEditQuotation={handleSelectQuotation}
+            showToast={showToast}
+          />
+        )}
+      </main>
+      <footer className="app-footer">
+        <div className="footer-container">
+          <span>&copy; {new Date().getFullYear()} Mega Pipes Quotation System &bull; Enterprise Web Pilot</span>
+          <span className="footer-links">
+            <span className="environment-badge">Live Render Production Backend</span>
+          </span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      </footer>
+      <NotificationToast toast={toast} onDismiss={dismissToast} />
+    </div>
+  );
 }
 
-export default App
+export default function App() {
+  return (
+    <AuthProvider>
+      <MainContent />
+    </AuthProvider>
+  );
+}
