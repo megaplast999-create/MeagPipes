@@ -37,18 +37,58 @@ def set_redis_client(client: Optional[redis.Redis]) -> None:
     _redis_client = client
 
 
+import ipaddress
+
+
+def is_trusted_proxy(ip_str: str) -> bool:
+    """Checks whether the connecting IP is a configured trusted reverse proxy or within a trusted subnet."""
+    if not ip_str:
+        return False
+    if "*" in settings.TRUSTED_PROXIES:
+        return True
+    try:
+        ip_obj = ipaddress.ip_address(ip_str)
+    except ValueError:
+        return False
+
+    for trusted in settings.TRUSTED_PROXIES:
+        trusted = trusted.strip()
+        if not trusted:
+            continue
+        try:
+            if "/" in trusted:
+                if ip_obj in ipaddress.ip_network(trusted, strict=False):
+                    return True
+            elif ip_obj == ipaddress.ip_address(trusted):
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def get_client_ip(request: Request) -> str:
-    """Extracts client IP safely, trusting forwarded headers only from configured trusted proxies."""
+    """Extracts client IP safely, trusting forwarded headers only from configured trusted proxies (e.g. Render/Vercel)."""
     direct_ip = request.client.host if request.client else "127.0.0.1"
-    
-    # Check if direct connection originates from a trusted proxy
-    if direct_ip in settings.TRUSTED_PROXIES:
+
+    # Only inspect forwarded headers if the direct connecting host is a trusted proxy
+    if is_trusted_proxy(direct_ip):
+        # 1. Standard X-Forwarded-For chain: client, proxy1, proxy2...
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
-            # The client IP is the first entry in X-Forwarded-For
             ips = [ip.strip() for ip in forwarded.split(",") if ip.strip()]
             if ips:
                 return ips[0]
+
+        # 2. X-Real-IP header (passed by Vercel/Nginx)
+        real_ip = request.headers.get("X-Real-IP")
+        if real_ip and real_ip.strip():
+            return real_ip.strip()
+
+        # 3. Cloudflare / Edge proxy header
+        cf_ip = request.headers.get("CF-Connecting-IP")
+        if cf_ip and cf_ip.strip():
+            return cf_ip.strip()
+
     return direct_ip
 
 

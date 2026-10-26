@@ -11,7 +11,7 @@ services:
     plan: standard
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.8
+        value: 3.12.7
       - key: ENVIRONMENT
         value: production
       - key: LOG_LEVEL
@@ -41,6 +41,7 @@ databases:
     plan: standard
     databaseName: megapipes
     user: megapipes_admin
+    postgresMajorVersion: 16
 
   - name: megapipes-redis
     plan: standard

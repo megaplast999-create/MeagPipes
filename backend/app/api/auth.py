@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.rate_limit import RateLimiter, get_client_ip
+from app.core.rate_limit import RateLimiter, get_client_ip, get_redis_client
 from app.core.security import (
     AuthSecurityError,
     clear_session_cookies,
@@ -134,19 +134,72 @@ async def login(
 ) -> Any:
     """Authenticates pilot user, issues secure session cookies, and records audit trail."""
     client_ip = get_client_ip(request)
+    clean_email = req.email.lower().strip()
+    lock_key = f"lockout:user:{clean_email}"
+    failed_key = f"failed_attempts:user:{clean_email}"
+
+    redis_client = get_redis_client()
+
+    # 1. Enforce Account Lockout (5 consecutive failures = 15-minute lockout)
+    try:
+        if redis_client.get(lock_key):
+            ttl = redis_client.ttl(lock_key)
+            mins = max(1, ttl // 60) if (ttl and ttl > 0) else settings.ACCOUNT_LOCKOUT_DURATION_MINUTES
+            raise HTTPException(
+                status_code=status.HTTP_423_LOCKED,
+                detail=f"Account is temporarily locked due to 5 consecutive failed login attempts. Try again in {mins} minutes.",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Redis lockout check failed: {e}")
+        # Fail closed policy on security infrastructure outage
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Security verification service temporarily unavailable",
+        )
 
     # Generic lookup: prevents timing and username disclosure
-    user = db.query(User).filter(User.email == req.email.lower().strip()).first()
+    user = db.query(User).filter(User.email == clean_email).first()
     if not user or not user.is_active or not verify_password(req.password, user.hashed_password):
+        # Record failed attempt counter in Redis
+        try:
+            pipe = redis_client.pipeline()
+            pipe.incr(failed_key)
+            pipe.expire(failed_key, settings.ACCOUNT_LOCKOUT_DURATION_MINUTES * 60)
+            res = pipe.execute()
+            failures = res[0]
+            if failures >= settings.ACCOUNT_LOCKOUT_MAX_FAILURES:
+                redis_client.set(lock_key, "locked", ex=settings.ACCOUNT_LOCKOUT_DURATION_MINUTES * 60)
+                redis_client.delete(failed_key)
+                logger.warning(
+                    f"Account locked: {clean_email} reached {failures} failed login attempts from IP {client_ip}."
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_423_LOCKED,
+                    detail="Account is temporarily locked due to 5 consecutive failed login attempts. Try again in 15 minutes.",
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to record lockout attempt in Redis: {e}")
+
         # Record failed login attempt in audit
         audit = AuditEvent(
             event_type="LOGIN_FAILED",
             client_ip=client_ip,
-            details={"email": req.email.lower().strip()},
+            details={"email": clean_email},
         )
         db.add(audit)
         db.commit()
         raise AuthSecurityError("Invalid email or password")
+
+    # Clear lockout counters upon successful authentication
+    try:
+        redis_client.delete(failed_key)
+        redis_client.delete(lock_key)
+    except Exception as e:
+        logger.warning(f"Failed to clear lockout keys in Redis: {e}")
 
     # Generate session and CSRF tokens
     session_token, csrf_token = create_session_token(

@@ -201,3 +201,33 @@ class TestCalculationEngineGoldenBaselines:
         assert result["subtotal_excl_gst"] == 178801050
         assert result["gst_amount"] == 32184189
         assert result["grand_total"] == 210985239
+
+    def test_costsheet_automation_reference_policy_golden_parity(self):
+        """CostSheet automation parity: typed FC totals 176,117,500; auto FC totals 176,142,150."""
+        unipro = [(1226, 2000), (1300, 350), (1350, 500), (1400, 4400)]
+        base = {
+            "basis": "ID",
+            "thickness_mm": 8.4,
+            "steel_rate": 62000.0,
+            "yield_pct": 2.0,
+            "conversion": 4000.0,
+            "ext_rate": 500.0,
+            "int_rate": 250.0,
+            "trip_rate": 93000.0,
+            "handling": 100.0,
+            "financial_pct": 1.0,
+        }
+
+        # 1. Typed FC: 1024, 1014, 1011, 1008 -> exact reference CostSheet total 176,117,500
+        typed_fcs = [1024, 1014, 1011, 1008]
+        typed_lines = [{**base, "size_mm": s, "quantity": q, "manual_fc": fc} for (s, q), fc in zip(unipro, typed_fcs)]
+        res_typed = CalculationService.calculate_quotation(typed_lines, mode="REFERENCE")
+        assert [r["total_per_m"] for r in res_typed["lines"]] == [22351.0, 23570.0, 24396.0, 25220.0]
+        assert res_typed["subtotal_excl_gst"] == 176117500.0
+
+        # 2. Auto FC: algebraic fixed point -> [22353, 23573, 24400, 25224], subtotal 176,142,150
+        auto_lines = [{**base, "size_mm": s, "quantity": q} for s, q in unipro]
+        res_auto = CalculationService.calculate_quotation(auto_lines, mode="REFERENCE")
+        assert [r["total_per_m"] for r in res_auto["lines"]] == [22353.0, 23573.0, 24400.0, 25224.0]
+        assert res_auto["subtotal_excl_gst"] == 176142150.0
+

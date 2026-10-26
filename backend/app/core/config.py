@@ -45,13 +45,23 @@ class Settings(BaseSettings):
     # CORS Allowed Origins
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:5173"]
 
-    # Trusted Proxies for Client IP Resolution
-    TRUSTED_PROXIES: List[str] = ["127.0.0.1", "::1"]
+    # Trusted Proxies for Client IP Resolution (Supports IPs, CIDR ranges, and wildcards)
+    TRUSTED_PROXIES: List[str] = [
+        "127.0.0.1",
+        "::1",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+    ]
 
     # Rate Limiting Parameters (Requests per minute)
-    RATE_LIMIT_LOGIN_PER_MINUTE: int = 5
+    RATE_LIMIT_LOGIN_PER_MINUTE: int = 10
     RATE_LIMIT_CALCULATE_PER_MINUTE: int = 30
     RATE_LIMIT_EXPORT_PER_MINUTE: int = 20
+
+    # Account Lockout Security (Consecutive failed attempts and duration)
+    ACCOUNT_LOCKOUT_MAX_FAILURES: int = 5
+    ACCOUNT_LOCKOUT_DURATION_MINUTES: int = 15
 
     # Pilot User Provisioning
     PILOT_USER_EMAIL: str = "pilot@megapipes.internal"
