@@ -1,28 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { quotationsAPI, APIError } from '../api/client';
+import { quotationsAPI, logisticsAPI, APIError } from '../api/client';
 import { formatNumber } from '../utils/format';
 
 const DEFAULT_LINE = {
   line_number: 1,
-  size_mm: 508,
-  thickness_mm: 6.4,
+  size_mm: 1226.0,
+  thickness_mm: 8.4,
   basis: 'ID',
-  quantity: 1000,
+  quantity: 2000,
   unit: 'Metres',
   pipe_length_m: 12.0,
   pipes_per_trailer: 4.0,
   has_external: true,
   has_internal: true,
-  steel_rate: 61000.0,
+  steel_rate: 62000.0,
   grade_extra: 0.0,
   yield_pct: 2.0,
-  conversion: 5000.0,
+  conversion: 4000.0,
   testing: 0.0,
   margin: 0.0,
   ext_rate: 500.0,
-  int_rate: 275.0,
+  int_rate: 250.0,
   handling: 100.0,
-  financial_pct: 1.5,
+  financial_pct: 1.0,
   gst_pct: 18.0,
   manual_fc: 0.0,
   manual_selling_price: 0.0,
@@ -37,8 +37,10 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
   const [customerName, setCustomerName] = useState('');
   const [projectName, setProjectName] = useState('');
   const [deliveryLocation, setDeliveryLocation] = useState('');
-  const [distanceKm, setDistanceKm] = useState(0);
+  const [deliveryPin, setDeliveryPin] = useState('825322');
+  const [distanceKm, setDistanceKm] = useState(782);
   const [tripRate, setTripRate] = useState(98000);
+  const [logisticsInfo, setLogisticsInfo] = useState(null);
   const [calculationMode, setCalculationMode] = useState('REFERENCE');
   const [lines, setLines] = useState([{ ...DEFAULT_LINE }]);
   const [expandedLineIndex, setExpandedLineIndex] = useState(null);
@@ -52,13 +54,33 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
   const [exporting, setExporting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
 
-  // Fetch existing quotation if editing
+  // Resolve logistics from pincode automatically
+  const resolveLogistics = async (pin, loc, mode) => {
+    try {
+      const res = await logisticsAPI.resolve(pin, loc, mode);
+      if (res && res.valid) {
+        setLogisticsInfo(res);
+        setDistanceKm(res.distance_km);
+        setTripRate(res.trip_rate);
+        if (!deliveryLocation && res.formatted_address) {
+          setDeliveryLocation(res.formatted_address);
+        }
+      }
+    } catch (e) {
+      console.warn('Logistics resolution failed, using defaults:', e);
+    }
+  };
+
+  // Fetch existing quotation if editing, or initialize new
   useEffect(() => {
     if (!quotationId) {
       // Pre-fill enquiry number for new quote with timestamp suffix
       const now = new Date();
-      const code = `ENQ-${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const code = `MKTGENQ26-${Math.floor(10000 + Math.random() * 90000)}`;
       setEnquiryNo(code);
+      setDeliveryPin('825322');
+      setDeliveryLocation('Bagodar, Jharkhand');
+      resolveLogistics('825322', 'Bagodar, Jharkhand', 'REFERENCE');
       return;
     }
 
@@ -70,11 +92,17 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
         setCustomerName(q.customer_name || '');
         setProjectName(q.project_name || '');
         setDeliveryLocation(q.delivery_location || '');
-        setDistanceKm(q.distance_km || 0);
+        setDistanceKm(q.distance_km || 782);
         setTripRate(q.trip_rate || 98000);
         setCalculationMode(q.calculation_mode || 'REFERENCE');
         setStatus(q.status || 'DRAFT');
         setVersion(q.version || 1);
+
+        // Extract PIN from delivery location if available
+        const pinMatch = (q.delivery_location || '').match(/\b([1-9][0-9]{5})\b/);
+        const pin = pinMatch ? pinMatch[1] : '825322';
+        setDeliveryPin(pin);
+        resolveLogistics(pin, q.delivery_location, q.calculation_mode || 'REFERENCE');
 
         if (q.lines && q.lines.length > 0) {
           // Normalize line numbers
@@ -423,28 +451,22 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
           </div>
 
           <div className="form-group">
-            <label htmlFor="distanceKm">Distance (km)</label>
+            <label htmlFor="deliveryPin">Delivery Pincode (6 digits) *</label>
             <input
-              id="distanceKm"
-              type="number"
-              min="0"
-              step="1"
+              id="deliveryPin"
+              type="text"
+              maxLength="6"
               className="input"
-              value={distanceKm}
-              onChange={(e) => setDistanceKm(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="tripRate">Trip Rate (₹ / Trailer)</label>
-            <input
-              id="tripRate"
-              type="number"
-              min="0"
-              step="500"
-              className="input"
-              value={tripRate}
-              onChange={(e) => setTripRate(e.target.value)}
+              value={deliveryPin}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, '');
+                setDeliveryPin(val);
+                if (val.length === 6 && !val.startsWith('0')) {
+                  resolveLogistics(val, deliveryLocation, calculationMode);
+                }
+              }}
+              placeholder="e.g. 825322"
+              required
             />
           </div>
 
@@ -454,14 +476,37 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
               id="calculationMode"
               className="input select-input"
               value={calculationMode}
-              onChange={(e) => setCalculationMode(e.target.value)}
+              onChange={(e) => {
+                setCalculationMode(e.target.value);
+                resolveLogistics(deliveryPin, deliveryLocation, e.target.value);
+              }}
             >
               <option value="REFERENCE">REFERENCE (Golden Policy — Exact Commercial Parity)</option>
-              <option value="NORMAL">NORMAL (Per-Line Ceiling Trailers)</option>
+              <option value="NORMAL">NORMAL (Dynamic Route Freight Tariff)</option>
               <option value="LEGACY">LEGACY (Legacy Desktop Emulation)</option>
             </select>
           </div>
         </div>
+
+        {logisticsInfo && (
+          <div className="logistics-badge-banner" style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(59, 130, 246, 0.1)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '6px', fontSize: '0.875rem' }}>
+            📍 <strong>Logistics (Auto-Calculated from PIN {deliveryPin})</strong>: {logisticsInfo.formatted_address || 'India'} • <strong>Road Distance</strong>: {distanceKm} km • <strong>Freight Rate</strong>: ₹{Number(tripRate).toLocaleString()} / trailer
+          </div>
+        )}
+
+        <details className="advanced-logistics-details" style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          <summary style={{ cursor: 'pointer', padding: '0.25rem 0' }}>⚙️ Advanced Logistics Overrides (Optional)</summary>
+          <div className="form-grid-2" style={{ marginTop: '0.5rem' }}>
+            <div className="form-group">
+              <label htmlFor="distanceKm">Distance (km)</label>
+              <input id="distanceKm" type="number" min="1" step="10" className="input" value={distanceKm} onChange={(e) => setDistanceKm(Number(e.target.value))} />
+            </div>
+            <div className="form-group">
+              <label htmlFor="tripRate">Trip Rate (₹ / Trailer)</label>
+              <input id="tripRate" type="number" min="1000" step="1000" className="input" value={tripRate} onChange={(e) => setTripRate(Number(e.target.value))} />
+            </div>
+          </div>
+        </details>
       </section>
 
       {/* Quotation Line Items Section */}
@@ -496,6 +541,15 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
                     <span className="line-number-pill">Line #{line.line_number}</span>
                     <span className="line-spec-summary">
                       {line.size_mm} mm ({line.basis}) &times; {line.thickness_mm} mm WT &bull; {formatNumber(line.quantity, 0)} {line.unit}
+                      {Number(line.manual_selling_price) > 0 ? (
+                        <span style={{ marginLeft: '0.5rem', color: '#10b981', fontWeight: 600 }}>
+                          • 🏷️ ₹{formatNumber(line.manual_selling_price, 2)} (Price Override)
+                        </span>
+                      ) : (
+                        <span style={{ marginLeft: '0.5rem', color: '#60a5fa' }}>
+                          • ⚙️ Auto-Formula
+                        </span>
+                      )}
                     </span>
                   </div>
 
@@ -639,6 +693,70 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
                       <span>Internal Coating (Epoxy)</span>
                     </label>
                   </div>
+                </div>
+
+                {/* Dedicated Primary Price & Commercial Section (Matching Excel QUOTE sheet) */}
+                <div className="line-price-entry-card" style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)', borderRadius: '6px' }}>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
+                    💰 Commercial Price Entry & Steel Costing (Line #{line.line_number})
+                  </h4>
+                  <div className="form-grid-3">
+                    <div className="form-group">
+                      <label>Selling Price Override (₹)</label>
+                      <input
+                        type="number"
+                        step="100"
+                        min="0"
+                        className="input"
+                        value={line.manual_selling_price || 0}
+                        onChange={(e) => handleLineChange(idx, 'manual_selling_price', e.target.value)}
+                        placeholder="0.00 (Leave 0 for Auto-Formula)"
+                      />
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {Number(line.manual_selling_price) > 0
+                          ? `Manual unit price locked at ₹${Number(line.manual_selling_price).toLocaleString()} / ${line.unit}`
+                          : 'Leave 0 to calculate unit price from cost formula'}
+                      </span>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Steel Base Rate (₹/MT)</label>
+                      <input
+                        type="number"
+                        step="500"
+                        min="0"
+                        className="input"
+                        value={line.steel_rate}
+                        onChange={(e) => handleLineChange(idx, 'steel_rate', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label>Margin (₹/MT)</label>
+                      <input
+                        type="number"
+                        step="100"
+                        min="0"
+                        className="input"
+                        value={line.margin}
+                        onChange={(e) => handleLineChange(idx, 'margin', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {Number(line.manual_selling_price) > 0 && (
+                    <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                      <label>Price Override Reason *</label>
+                      <input
+                        type="text"
+                        className="input"
+                        value={line.override_reason || ''}
+                        onChange={(e) => handleLineChange(idx, 'override_reason', e.target.value)}
+                        placeholder="e.g. Approved client tender rate / Special project pricing"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Collapsible Commercial Rates & Cost Sheet Modifiers */}

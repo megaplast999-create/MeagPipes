@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.auth import router as auth_router
 from app.api.quotations import router as quotations_router
+from app.api.logistics import router as logistics_router
 from app.core.config import settings, setup_logging
 from app.core.security import hash_password
 from app.db.models import Base, User
@@ -128,3 +129,4 @@ async def health_check() -> dict:
 # Include Routers
 app.include_router(auth_router)
 app.include_router(quotations_router)
+app.include_router(logistics_router)

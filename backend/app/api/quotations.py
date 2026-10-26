@@ -25,6 +25,7 @@ from app.db.models import (
 from app.db.session import get_db
 from app.services.calculation import CalculationService
 from app.services.export_excel import ExcelExportService
+from app.services.logistics import resolve_delivery_logistics
 
 logger = logging.getLogger(__name__)
 
@@ -200,13 +201,22 @@ async def create_quotation(
     current_user: User = Depends(get_current_user),
 ) -> Any:
     """Creates a new quotation draft belonging to the authenticated user."""
+    dist_km = req.distance_km
+    t_rate = req.trip_rate
+    if dist_km <= 0 or t_rate <= 0:
+        logistics = resolve_delivery_logistics(req.delivery_location, mode=req.calculation_mode)
+        if dist_km <= 0:
+            dist_km = logistics["distance_km"]
+        if t_rate <= 0:
+            t_rate = logistics["trip_rate"]
+
     quote = Quotation(
         enquiry_no=req.enquiry_no.strip(),
         customer_name=req.customer_name.strip(),
         project_name=req.project_name.strip() if req.project_name else None,
         delivery_location=req.delivery_location.strip() if req.delivery_location else None,
-        distance_km=req.distance_km,
-        trip_rate=req.trip_rate,
+        distance_km=dist_km,
+        trip_rate=t_rate,
         calculation_mode=req.calculation_mode,
         status=QuotationStatus.DRAFT,
         user_id=current_user.id,
@@ -304,6 +314,13 @@ async def update_quotation(
     if req.calculation_mode is not None:
         quote.calculation_mode = req.calculation_mode
 
+    if quote.distance_km <= 0 or quote.trip_rate <= 0:
+        logistics = resolve_delivery_logistics(quote.delivery_location, mode=quote.calculation_mode)
+        if quote.distance_km <= 0:
+            quote.distance_km = logistics["distance_km"]
+        if quote.trip_rate <= 0:
+            quote.trip_rate = logistics["trip_rate"]
+
     # If lines provided, replace existing lines
     if req.lines is not None:
         db.query(QuotationLine).filter(QuotationLine.quotation_id == quote.id).delete()
@@ -371,6 +388,15 @@ async def calculate_quotation(
             detail="Quotation contains no line items to calculate",
         )
 
+    # Ensure positive trip rate from logistics
+    effective_trip_rate = quote.trip_rate
+    if effective_trip_rate <= 0:
+        logistics = resolve_delivery_logistics(quote.delivery_location, mode=quote.calculation_mode)
+        effective_trip_rate = logistics["trip_rate"]
+        quote.trip_rate = effective_trip_rate
+        if quote.distance_km <= 0:
+            quote.distance_km = logistics["distance_km"]
+
     # Convert line models to dict for calculation engine
     engine_inputs = []
     for l in lines:
@@ -398,15 +424,22 @@ async def calculate_quotation(
             "manual_fc": l.manual_fc,
             "manual_selling_price": l.manual_selling_price,
             "override_reason": l.override_reason,
-            "trip_rate": quote.trip_rate,
+            "trip_rate": effective_trip_rate,
         })
 
     # Execute server-side calculation via thin engine adapter
-    calc_res = CalculationService.calculate_quotation(
-        engine_inputs,
-        trip_rate=quote.trip_rate,
-        mode=quote.calculation_mode,
-    )
+    try:
+        calc_res = CalculationService.calculate_quotation(
+            engine_inputs,
+            trip_rate=effective_trip_rate,
+            mode=quote.calculation_mode,
+        )
+    except Exception as err:
+        logger.error(f"Calculation failed for quotation {quote.id}: {err}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Calculation engine failed: {str(err)}",
+        )
 
     # Increment version and persist immutable calculation snapshot
     new_version = quote.version + 1

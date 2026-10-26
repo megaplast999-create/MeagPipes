@@ -133,3 +133,79 @@ class TestQuotationLifecycleAndAuthorization:
         ]
         resp = authenticated_client.post("/api/quotations", json=invalid_payload)
         assert resp.status_code == 422
+
+    def test_auto_logistics_and_manual_price_override(self, authenticated_client: TestClient):
+        """Zero distance and zero trip rate auto-resolve logistics, and manual selling price overrides formula."""
+        # 1. Create with zero distance and zero trip rate (auto-resolved from Bagodar PIN 825322)
+        payload = {
+            "enquiry_no": "MKTGENQ26-27594",
+            "customer_name": "Konar, Jharkhand",
+            "project_name": "Unipro Techno Infrastructure",
+            "delivery_location": "Bagodar, Jharkhand - 825322",
+            "distance_km": 0.0,
+            "trip_rate": 0.0,
+            "calculation_mode": "REFERENCE",
+            "lines": [
+                {
+                    "line_number": 1,
+                    "size_mm": 1226.0,
+                    "thickness_mm": 8.4,
+                    "basis": "ID",
+                    "quantity": 2000.0,
+                    "unit": "Metres",
+                    "pipe_length_m": 12.0,
+                    "pipes_per_trailer": 4.0,
+                    "has_external": True,
+                    "has_internal": True,
+                    "steel_rate": 62000.0,
+                    "conversion": 4000.0,
+                    "manual_selling_price": 0.0,
+                    "override_reason": "",
+                }
+            ],
+        }
+        res = authenticated_client.post("/api/quotations", json=payload)
+        assert res.status_code == 201
+        quote = res.json()
+        assert quote["distance_km"] == 782.0
+        assert quote["trip_rate"] >= 93000.0
+        quote_id = quote["id"]
+
+        # 2. Calculate without 500 error
+        calc_res = authenticated_client.post(f"/api/quotations/{quote_id}/calculate")
+        assert calc_res.status_code == 200
+        snap = calc_res.json()
+        assert snap["grand_total"] > 0
+
+        # 3. Apply manual price override
+        update_payload = {
+            "lines": [
+                {
+                    "line_number": 1,
+                    "size_mm": 1226.0,
+                    "thickness_mm": 8.4,
+                    "basis": "ID",
+                    "quantity": 2000.0,
+                    "unit": "Metres",
+                    "pipe_length_m": 12.0,
+                    "pipes_per_trailer": 4.0,
+                    "has_external": True,
+                    "has_internal": True,
+                    "steel_rate": 62000.0,
+                    "conversion": 4000.0,
+                    "manual_selling_price": 22353.0,
+                    "override_reason": "Target tender selling price",
+                }
+            ]
+        }
+        update_res = authenticated_client.put(f"/api/quotations/{quote_id}", json=update_payload)
+        assert update_res.status_code == 200
+
+        # 4. Recalculate with manual override
+        recalc_res = authenticated_client.post(f"/api/quotations/{quote_id}/calculate")
+        assert recalc_res.status_code == 200
+        recalc_snap = recalc_res.json()
+        line_result = recalc_snap["results_snapshot"]["lines"][0]
+        assert line_result["price_source"] == "MANUAL_OVERRIDE"
+        assert line_result["applied_unit_price"] == 22353.0
+

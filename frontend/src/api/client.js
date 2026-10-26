@@ -183,3 +183,21 @@ export const quotationsAPI = {
     return filename;
   },
 };
+
+export const logisticsAPI = {
+  lookupPincode: (pin, mode = 'REFERENCE') =>
+    apiRequest(`/api/logistics/pincode/${encodeURIComponent(pin)}?mode=${encodeURIComponent(mode)}`, {
+      method: 'GET',
+    }),
+
+  resolve: (pincode, deliveryLocation, mode = 'REFERENCE') =>
+    apiRequest('/api/logistics/resolve', {
+      method: 'POST',
+      body: {
+        pincode,
+        delivery_location: deliveryLocation,
+        calculation_mode: mode,
+      },
+    }),
+};
+
