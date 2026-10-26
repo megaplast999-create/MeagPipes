@@ -55,16 +55,16 @@ def render_login_view() -> None:
                 key="login_password_input",
             )
 
+            def _fill_demo() -> None:
+                st.session_state["login_email_input"] = "pilot@megapipes.internal"
+                st.session_state["login_password_input"] = "PilotMegaPipes2026!"
+
             col_btn1, col_btn2 = st.columns([2, 1])
             with col_btn1:
                 submit = st.button("Sign In to Mega Pipes", type="primary", use_container_width=True)
             with col_btn2:
-                demo_click = st.button("Fill Demo", use_container_width=True)
+                st.button("Fill Demo", on_click=_fill_demo, use_container_width=True)
 
-            if demo_click:
-                st.session_state["login_email_input"] = "pilot@megapipes.internal"
-                st.session_state["login_password_input"] = "PilotMegaPipes2026!"
-                st.rerun()
 
             if submit:
                 clean_email = email.strip()
