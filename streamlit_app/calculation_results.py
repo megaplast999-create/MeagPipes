@@ -5,8 +5,13 @@ from __future__ import annotations
 import streamlit as st
 import pandas as pd
 from typing import Dict, Any, Callable
-from .config import format_inr, format_number
-from .api_client import api_export_excel, APIError
+try:
+    from .config import format_inr, format_number
+    from .api_client import api_export_excel, APIError
+except (ImportError, ValueError):
+    from config import format_inr, format_number
+    from api_client import api_export_excel, APIError
+
 
 
 def render_calculation_results(

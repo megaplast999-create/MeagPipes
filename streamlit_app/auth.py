@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import streamlit as st
 from typing import Optional, Dict, Any
-from .api_client import api_login, api_get_me, api_logout, APIError
+try:
+    from .api_client import api_login, api_get_me, api_logout, APIError
+except (ImportError, ValueError):
+    from api_client import api_login, api_get_me, api_logout, APIError
+
 
 
 def check_authentication() -> Optional[Dict[str, Any]]:

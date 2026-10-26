@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import streamlit as st
 from typing import Tuple, Optional
-from .api_client import api_export_excel, APIError
+try:
+    from .api_client import api_export_excel, APIError
+except (ImportError, ValueError):
+    from api_client import api_export_excel, APIError
+
 
 
 def download_quotation_excel(quotation_id: int) -> Optional[Tuple[bytes, str]]:

@@ -7,11 +7,19 @@ from typing import Any, Dict, List, Optional, Tuple
 import requests
 import streamlit as st
 
-from .config import (
-    BACKEND_URL,
-    CSRF_COOKIE_NAME,
-    SESSION_COOKIE_NAME,
-)
+try:
+    from .config import (
+        BACKEND_URL,
+        CSRF_COOKIE_NAME,
+        SESSION_COOKIE_NAME,
+    )
+except (ImportError, ValueError):
+    from config import (
+        BACKEND_URL,
+        CSRF_COOKIE_NAME,
+        SESSION_COOKIE_NAME,
+    )
+
 
 
 class APIError(Exception):

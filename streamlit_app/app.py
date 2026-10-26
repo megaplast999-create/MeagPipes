@@ -5,11 +5,25 @@ Production Streamlit web client communicating with FastAPI PostgreSQL backend.
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 import streamlit as st
-from .auth import check_authentication, render_login_view, render_user_header
-from .quotation_history import render_dashboard
-from .quotation_form import render_quotation_editor
-from .calculation_results import render_calculation_results
+
+_CURRENT_DIR = Path(__file__).resolve().parent
+if str(_CURRENT_DIR) not in sys.path:
+    sys.path.insert(0, str(_CURRENT_DIR))
+
+try:
+    from .auth import check_authentication, render_login_view, render_user_header
+    from .quotation_history import render_dashboard
+    from .quotation_form import render_quotation_editor
+    from .calculation_results import render_calculation_results
+except (ImportError, ValueError):
+    from auth import check_authentication, render_login_view, render_user_header
+    from quotation_history import render_dashboard
+    from quotation_form import render_quotation_editor
+    from calculation_results import render_calculation_results
+
 
 
 def main() -> None:

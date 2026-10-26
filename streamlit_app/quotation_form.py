@@ -4,14 +4,25 @@ from __future__ import annotations
 
 import streamlit as st
 from typing import Dict, Any, List, Optional, Callable
-from .api_client import (
-    api_get_quotation,
-    api_create_quotation,
-    api_update_quotation,
-    api_calculate_quotation,
-    APIError,
-)
-from .config import DEFAULT_LINE, DEFAULT_CALCULATION_MODE, DEFAULT_TRIP_RATE
+try:
+    from .api_client import (
+        api_get_quotation,
+        api_create_quotation,
+        api_update_quotation,
+        api_calculate_quotation,
+        APIError,
+    )
+    from .config import DEFAULT_LINE, DEFAULT_CALCULATION_MODE, DEFAULT_TRIP_RATE
+except (ImportError, ValueError):
+    from api_client import (
+        api_get_quotation,
+        api_create_quotation,
+        api_update_quotation,
+        api_calculate_quotation,
+        APIError,
+    )
+    from config import DEFAULT_LINE, DEFAULT_CALCULATION_MODE, DEFAULT_TRIP_RATE
+
 
 
 def render_quotation_editor(

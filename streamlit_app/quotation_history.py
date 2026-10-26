@@ -4,14 +4,25 @@ from __future__ import annotations
 
 import streamlit as st
 from typing import List, Dict, Any, Callable
-from .api_client import (
-    api_list_quotations,
-    api_calculate_quotation,
-    api_get_snapshot,
-    api_export_excel,
-    APIError,
-)
-from .config import format_number
+try:
+    from .api_client import (
+        api_list_quotations,
+        api_calculate_quotation,
+        api_get_snapshot,
+        api_export_excel,
+        APIError,
+    )
+    from .config import format_number
+except (ImportError, ValueError):
+    from api_client import (
+        api_list_quotations,
+        api_calculate_quotation,
+        api_get_snapshot,
+        api_export_excel,
+        APIError,
+    )
+    from config import format_number
+
 
 
 def render_dashboard(
