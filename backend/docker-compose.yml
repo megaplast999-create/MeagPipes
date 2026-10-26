@@ -1,0 +1,55 @@
+# Docker Compose specification for Mega Pipes Backend Verification
+# Runs PostgreSQL 16, Redis 7, and Python 3.12 containerized test environment
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: megapipes-postgres-16
+    restart: always
+    environment:
+      POSTGRES_DB: megapipes_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_secure_password
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d megapipes_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: megapipes-redis-7
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend-test:
+    image: python:3.12-slim
+    container_name: megapipes-backend-test
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ..:/app
+    working_dir: /app
+    environment:
+      - ENVIRONMENT=test
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres_secure_password@db:5432/megapipes_test
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=test-docker-secret-key-at-least-32-chars-long
+      - PYTHONPATH=/app/backend:/app
+    command: >
+      bash -c "pip install --no-cache-dir -r backend/requirements.txt &&
+               cd backend &&
+               alembic upgrade head &&
+               cd .. &&
+               pytest backend/tests/ TESTS/test_calculation_engine.py TESTS/test_pricing_golden_baselines.py TESTS/test_costsheet_automation.py -v"
