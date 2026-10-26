@@ -58,7 +58,14 @@ class QuotationLineInput(BaseModel):
     gst_pct: float = Field(default=18.0, ge=0, le=100)
     manual_fc: float = Field(default=0.0, ge=0)
     manual_selling_price: float = Field(default=0.0, ge=0)
+    price_unit: Optional[str] = Field(default="₹/m", max_length=20)
     override_reason: str = Field(default="", max_length=255)
+    product_standard: Optional[str] = Field(default="IS-3589-2001", max_length=100)
+    pipe_family: Optional[str] = Field(default="HSAW", max_length=50)
+    steel_grade: Optional[str] = Field(default="Fe 410", max_length=50)
+    external_coating: Optional[str] = Field(default="Bare", max_length=50)
+    internal_coating: Optional[str] = Field(default="None", max_length=50)
+    custom_pipe_size: Optional[str] = Field(default="NO", max_length=10)
 
     @field_validator("basis")
     @classmethod
@@ -124,7 +131,14 @@ class QuotationLineResponse(BaseModel):
     gst_pct: float
     manual_fc: float
     manual_selling_price: float
+    price_unit: Optional[str] = "₹/m"
     override_reason: str
+    product_standard: Optional[str] = "IS-3589-2001"
+    pipe_family: Optional[str] = "HSAW"
+    steel_grade: Optional[str] = "Fe 410"
+    external_coating: Optional[str] = "Bare"
+    internal_coating: Optional[str] = "None"
+    custom_pipe_size: Optional[str] = "NO"
 
     model_config = {"from_attributes": True}
 

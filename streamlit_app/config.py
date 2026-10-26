@@ -25,14 +25,83 @@ DEFAULT_GST_PCT = 18.0
 DEFAULT_DELIVERY_PIN = "825322"
 DEFAULT_RATE_PER_KM = 125.32
 
+# Master Option Lists matching DEV/Mega_Pipes_Quotation_DEV.xlsm sheet QUOTE
+PRODUCT_STANDARDS = ["IS-3589-2001", "API 5L", "ASTM A139", "IS 1239 Part-1", "IS 1161"]
+PIPE_FAMILIES = ["HSAW", "HFW"]
+DIAMETER_BASES = ["ID", "OD"]
+
+STANDARD_SIZES = {
+    ("HSAW", "ID"): [1226.0, 1300.0, 1350.0, 1400.0],
+    ("HSAW", "OD"): [457.0, 508.0, 610.0, 762.0, 914.0, 1016.0, 1219.0, 1422.0, 1524.0, 1829.0, 2134.0, 2540.0],
+    ("HFW", "OD"): [168.3, 219.1, 273.1, 323.9, 355.6, 406.4, 457.2, 508.0],
+    ("HFW", "ID"): [168.3, 219.1, 273.1, 323.9, 355.6, 406.4, 457.2, 508.0],
+}
+
+STANDARD_THICKNESSES = {
+    "HSAW": [6.4, 7.1, 7.9, 8.4, 9.5, 11.1, 12.7, 15.9, 19.1, 25.4],
+    "HFW": [3.5, 4.0, 4.5, 5.0, 5.6, 6.4, 7.1, 8.0, 8.8, 10.0, 12.5, 14.2, 16.0],
+}
+
+GRADES_BY_FAMILY = {
+    "HSAW": [
+        "Fe 410",
+        "IS 3589 Fe 330",
+        "IS 3589 Fe 450",
+        "API 5L B",
+        "X42 PSL1",
+        "X52 PSL1",
+        "X60 PSL1",
+        "X65 PSL1",
+        "X70 PSL1",
+        "X52 PSL2",
+        "X65 PSL2",
+        "X70 PSL2",
+        "X80M PSL2",
+    ],
+    "HFW": [
+        "Fe 410",
+        "IS 3589 Fe 330",
+        "IS 3589 Fe 450",
+        "IS 1239 Part-1",
+        "IS 1161 YST210",
+        "IS 1161 YST240",
+        "IS 1161 YST310",
+        "API 5L A25",
+        "API 5L B",
+        "API 5L X42",
+        "API 5L X52",
+        "API 5L X60",
+        "API 5L X65",
+        "API 5L X70",
+        "API 5L X80M PSL2",
+        "API 5CT H40",
+        "API 5CT J55",
+        "API 5CT K55",
+    ],
+}
+
+STEEL_GRADES = GRADES_BY_FAMILY["HSAW"]
+
+EXTERNAL_COATINGS = ["Bare", "3LPE", "3LPP", "FBE", "DFBE", "PU", "Zinc Rich Epoxy"]
+INTERNAL_COATINGS = ["None", "Liquid Epoxy", "Food Grade Epoxy", "Solvent-Free Epoxy", "PU", "Zinc Rich Epoxy", "Cement Lining"]
+QUANTITY_UNITS = ["Metres", "MT", "Nos"]
+CUSTOM_PIPE_SIZE_OPTIONS = ["NO", "YES"]
+PRICE_UNITS = ["₹/m", "₹/MT"]
+
 DEFAULT_LINE: Dict[str, Any] = {
     "line_number": 1,
+    "product_standard": "IS-3589-2001",
+    "pipe_family": "HSAW",
+    "basis": "ID",
     "size_mm": 508.0,
     "thickness_mm": 6.4,
-    "basis": "ID",
+    "steel_grade": "Fe 410",
+    "external_coating": "3LPE",
+    "internal_coating": "Liquid Epoxy",
     "quantity": 1000.0,
     "unit": "Metres",
     "pipe_length_m": 12.0,
+    "custom_pipe_size": "NO",
     "pipes_per_trailer": 4.0,
     "has_external": True,
     "has_internal": True,
@@ -49,6 +118,7 @@ DEFAULT_LINE: Dict[str, Any] = {
     "gst_pct": DEFAULT_GST_PCT,
     "manual_fc": 0.0,
     "manual_selling_price": 0.0,
+    "price_unit": "₹/m",
     "override_reason": "",
 }
 

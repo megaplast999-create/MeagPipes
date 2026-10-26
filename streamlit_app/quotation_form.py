@@ -22,6 +22,18 @@ try:
         DEFAULT_STEEL_RATE,
         DEFAULT_CONVERSION,
         DEFAULT_DELIVERY_PIN,
+        PRODUCT_STANDARDS,
+        PIPE_FAMILIES,
+        DIAMETER_BASES,
+        STEEL_GRADES,
+        EXTERNAL_COATINGS,
+        INTERNAL_COATINGS,
+        QUANTITY_UNITS,
+        CUSTOM_PIPE_SIZE_OPTIONS,
+        PRICE_UNITS,
+        STANDARD_SIZES,
+        STANDARD_THICKNESSES,
+        GRADES_BY_FAMILY,
         format_inr,
     )
 except (ImportError, ValueError):
@@ -40,6 +52,18 @@ except (ImportError, ValueError):
         DEFAULT_STEEL_RATE,
         DEFAULT_CONVERSION,
         DEFAULT_DELIVERY_PIN,
+        PRODUCT_STANDARDS,
+        PIPE_FAMILIES,
+        DIAMETER_BASES,
+        STEEL_GRADES,
+        EXTERNAL_COATINGS,
+        INTERNAL_COATINGS,
+        QUANTITY_UNITS,
+        CUSTOM_PIPE_SIZE_OPTIONS,
+        PRICE_UNITS,
+        STANDARD_SIZES,
+        STANDARD_THICKNESSES,
+        GRADES_BY_FAMILY,
         format_inr,
     )
 
@@ -232,51 +256,98 @@ def render_quotation_editor(
                     if len(lines) > 1 and st.button("Delete", key=f"del_{idx}", use_container_width=True):
                         line_to_delete = idx
 
-            # Section A: Primary Technical Specifications
-            l_col1, l_col2, l_col3, l_col4 = st.columns(4)
-            with l_col1:
-                line["size_mm"] = st.number_input(
-                    "Size / OD (mm)",
-                    min_value=1.0,
-                    max_value=5000.0,
-                    value=float(line.get("size_mm", 1226.0)),
-                    step=1.0,
-                    key=f"size_{idx}",
-                )
-                line["basis"] = st.selectbox(
-                    "Sizing Basis",
-                    options=["ID", "OD"],
-                    index=0 if line.get("basis", "ID").upper() == "ID" else 1,
-                    key=f"basis_{idx}",
-                )
+            # Section A: 13 Pipe Configuration Options from Excel QUOTE sheet
+            st.markdown(f"##### 📋 Pipe Line Specifications (Line #{line_num})")
 
-            with l_col2:
-                line["thickness_mm"] = st.number_input(
-                    "Thickness (mm)",
-                    min_value=0.1,
-                    max_value=100.0,
-                    value=float(line.get("thickness_mm", 8.4)),
-                    step=0.1,
-                    key=f"thk_{idx}",
-                )
-                unit_opts = ["Metres", "MT", "Nos"]
-                curr_unit = line.get("unit", "Metres")
-                curr_unit_idx = unit_opts.index(curr_unit) if curr_unit in unit_opts else 0
-                line["unit"] = st.selectbox(
-                    "Quantity Unit",
-                    options=unit_opts,
-                    index=curr_unit_idx,
-                    key=f"unit_{idx}",
-                )
+            # Row 1: Standards, Family, Sizing Basis & Custom Sizing
+            r1_c1, r1_c2, r1_c3, r1_c4 = st.columns(4)
+            with r1_c1:
+                std_opts = PRODUCT_STANDARDS
+                curr_std = line.get("product_standard", "IS-3589-2001")
+                idx_std = std_opts.index(curr_std) if curr_std in std_opts else 0
+                line["product_standard"] = st.selectbox("Product Standard", std_opts, index=idx_std, key=f"std_{idx}")
 
-            with l_col3:
-                line["quantity"] = st.number_input(
-                    "Quantity",
-                    min_value=1.0,
-                    value=float(line.get("quantity", 2000.0)),
-                    step=10.0,
-                    key=f"qty_{idx}",
-                )
+            with r1_c2:
+                fam_opts = PIPE_FAMILIES
+                curr_fam = line.get("pipe_family", "HSAW")
+                idx_fam = fam_opts.index(curr_fam) if curr_fam in fam_opts else 0
+                line["pipe_family"] = st.selectbox("Pipe Family", fam_opts, index=idx_fam, key=f"fam_{idx}")
+
+            with r1_c3:
+                basis_opts = DIAMETER_BASES
+                curr_basis = line.get("basis", "ID").upper()
+                idx_basis = basis_opts.index(curr_basis) if curr_basis in basis_opts else 0
+                line["basis"] = st.selectbox("Diameter Basis", basis_opts, index=idx_basis, key=f"basis_{idx}")
+
+            with r1_c4:
+                cust_opts = CUSTOM_PIPE_SIZE_OPTIONS
+                curr_cust = line.get("custom_pipe_size", "NO").upper()
+                idx_cust = cust_opts.index(curr_cust) if curr_cust in cust_opts else 0
+                line["custom_pipe_size"] = st.selectbox("Custom Pipe Size", cust_opts, index=idx_cust, key=f"cust_{idx}")
+
+            # Row 2: Dimensions & Material Grade (Standard Dropdowns or Custom Input matching Excel)
+            r2_c1, r2_c2, r2_c3, r2_c4 = st.columns(4)
+            is_custom_size = (line.get("custom_pipe_size", "NO").upper() == "YES")
+
+            with r2_c1:
+                if not is_custom_size:
+                    size_key = (line.get("pipe_family", "HSAW"), line.get("basis", "ID").upper())
+                    avail_sizes = STANDARD_SIZES.get(size_key, [508.0, 610.0, 762.0, 1226.0, 1400.0])
+                    curr_val = float(line.get("size_mm", avail_sizes[0]))
+                    if curr_val not in avail_sizes:
+                        avail_sizes = sorted(avail_sizes + [curr_val])
+                    s_idx = avail_sizes.index(curr_val)
+                    line["size_mm"] = st.selectbox(
+                        "Size (mm) *",
+                        options=avail_sizes,
+                        index=s_idx,
+                        key=f"size_sel_{idx}",
+                        help="Standard diameter from Excel master tblSizes",
+                    )
+                else:
+                    line["size_mm"] = st.number_input(
+                        "Custom Size (mm) *",
+                        min_value=1.0,
+                        max_value=5000.0,
+                        value=float(line.get("size_mm", 1226.0)),
+                        step=1.0,
+                        key=f"size_num_{idx}",
+                    )
+
+            with r2_c2:
+                if not is_custom_size:
+                    thk_opts = STANDARD_THICKNESSES.get(line.get("pipe_family", "HSAW"), [6.4, 7.1, 7.9, 8.4, 9.5])
+                    curr_thk = float(line.get("thickness_mm", thk_opts[0]))
+                    if curr_thk not in thk_opts:
+                        thk_opts = sorted(thk_opts + [curr_thk])
+                    t_idx = thk_opts.index(curr_thk)
+                    line["thickness_mm"] = st.selectbox(
+                        "Wall Thickness (mm) *",
+                        options=thk_opts,
+                        index=t_idx,
+                        key=f"thk_sel_{idx}",
+                        help="Standard thickness from Excel master tblThickness",
+                    )
+                else:
+                    line["thickness_mm"] = st.number_input(
+                        "Custom Wall Thickness (mm) *",
+                        min_value=0.1,
+                        max_value=100.0,
+                        value=float(line.get("thickness_mm", 8.4)),
+                        step=0.1,
+                        key=f"thk_num_{idx}",
+                    )
+
+            with r2_c3:
+                fam = line.get("pipe_family", "HSAW")
+                grade_opts = GRADES_BY_FAMILY.get(fam, STEEL_GRADES)
+                curr_grade = line.get("steel_grade", "Fe 410")
+                if curr_grade not in grade_opts:
+                    grade_opts = [curr_grade] + grade_opts
+                idx_grade = grade_opts.index(curr_grade)
+                line["steel_grade"] = st.selectbox("Steel Grade", grade_opts, index=idx_grade, key=f"grade_{idx}")
+
+            with r2_c4:
                 line["pipe_length_m"] = st.number_input(
                     "Pipe Length (m)",
                     min_value=6.0,
@@ -286,7 +357,66 @@ def render_quotation_editor(
                     key=f"len_{idx}",
                 )
 
-            with l_col4:
+            # Row 3: Coatings & Quantities
+            r3_c1, r3_c2, r3_c3, r3_c4 = st.columns(4)
+            with r3_c1:
+                ext_opts = EXTERNAL_COATINGS
+                curr_ext = line.get("external_coating", "3LPE")
+                idx_ext = ext_opts.index(curr_ext) if curr_ext in ext_opts else 0
+                line["external_coating"] = st.selectbox("External Coating", ext_opts, index=idx_ext, key=f"ext_{idx}")
+                line["has_external"] = line["external_coating"].upper() not in ("BARE", "NONE", "")
+
+            with r3_c2:
+                int_opts = INTERNAL_COATINGS
+                curr_int = line.get("internal_coating", "Liquid Epoxy")
+                idx_int = int_opts.index(curr_int) if curr_int in int_opts else 0
+                line["internal_coating"] = st.selectbox("Internal Coating", int_opts, index=idx_int, key=f"int_{idx}")
+                line["has_internal"] = line["internal_coating"].upper() not in ("NONE", "BARE", "")
+
+            with r3_c3:
+                line["quantity"] = st.number_input(
+                    "Quantity *",
+                    min_value=1.0,
+                    value=float(line.get("quantity", 2000.0)),
+                    step=10.0,
+                    key=f"qty_{idx}",
+                )
+
+            with r3_c4:
+                unit_opts = QUANTITY_UNITS
+                curr_unit = line.get("unit", "Metres")
+                idx_unit = unit_opts.index(curr_unit) if curr_unit in unit_opts else 0
+                line["unit"] = st.selectbox("Quantity Unit", unit_opts, index=idx_unit, key=f"unit_{idx}")
+
+            # Row 4: Commercial Pricing & Selling Price Override (Direct Price Entry Matching Excel)
+            r4_c1, r4_c2, r4_c3, r4_c4 = st.columns(4)
+            with r4_c1:
+                line["manual_selling_price"] = st.number_input(
+                    "Manual Selling Price (Optional)",
+                    min_value=0.0,
+                    value=float(line.get("manual_selling_price", 0.0)),
+                    step=100.0,
+                    key=f"msp_{idx}",
+                    help="Custom target selling price. Leave 0 to calculate automatically from cost formula.",
+                )
+
+            with r4_c2:
+                punit_opts = PRICE_UNITS
+                curr_punit = line.get("price_unit", "₹/m")
+                idx_punit = punit_opts.index(curr_punit) if curr_punit in punit_opts else 0
+                line["price_unit"] = st.selectbox("Price Unit", punit_opts, index=idx_punit, key=f"punit_{idx}")
+
+            with r4_c3:
+                line["steel_rate"] = st.number_input(
+                    "Steel Base Rate (₹/MT)",
+                    min_value=0.0,
+                    value=float(line.get("steel_rate", DEFAULT_STEEL_RATE)),
+                    step=500.0,
+                    key=f"steel_{idx}",
+                    help="Base steel delivered cost per MT (default ₹61,000 / ₹62,000 from Excel SETTINGS).",
+                )
+
+            with r4_c4:
                 line["pipes_per_trailer"] = st.number_input(
                     "Pipes / Trailer",
                     min_value=1.0,
@@ -294,50 +424,6 @@ def render_quotation_editor(
                     value=float(line.get("pipes_per_trailer", 4.0)),
                     step=1.0,
                     key=f"trailer_{idx}",
-                )
-                line["has_external"] = st.checkbox(
-                    "External 3LPE Coating",
-                    value=bool(line.get("has_external", True)),
-                    key=f"ext_chk_{idx}",
-                )
-                line["has_internal"] = st.checkbox(
-                    "Internal Liquid Epoxy",
-                    value=bool(line.get("has_internal", True)),
-                    key=f"int_chk_{idx}",
-                )
-
-            # Section B: PROMINENT PRICE ENTRY & COMMERCIAL SPECIFICATION (Matching Excel QUOTE sheet)
-            st.markdown("##### 💰 Commercial Price Entry & Steel Costing")
-            p_col1, p_col2, p_col3 = st.columns(3)
-
-            with p_col1:
-                line["manual_selling_price"] = st.number_input(
-                    "Selling Price Override (₹)",
-                    min_value=0.0,
-                    value=float(line.get("manual_selling_price", 0.0)),
-                    step=100.0,
-                    key=f"msp_{idx}",
-                    help="Custom unit price. Leave 0 to calculate automatically from the steel & conversion formula.",
-                )
-
-            with p_col2:
-                line["steel_rate"] = st.number_input(
-                    "Steel Base Rate (₹/MT)",
-                    min_value=0.0,
-                    value=float(line.get("steel_rate", DEFAULT_STEEL_RATE)),
-                    step=500.0,
-                    key=f"steel_{idx}",
-                    help="Base steel delivered cost per MT (default ₹62,000 from Excel SETTINGS).",
-                )
-
-            with p_col3:
-                line["margin"] = st.number_input(
-                    "Margin (₹/MT)",
-                    min_value=0.0,
-                    value=float(line.get("margin", 0.0)),
-                    step=100.0,
-                    key=f"margin_{idx}",
-                    help="Commercial profit margin per MT (default ₹0).",
                 )
 
             if float(line["manual_selling_price"]) > 0:
@@ -347,7 +433,7 @@ def render_quotation_editor(
                     placeholder="e.g. Approved client tender rate / Special project pricing",
                     key=f"reason_{idx}",
                 )
-                st.caption(f"ℹ️ Manual price active: Unit price locked at **₹{line['manual_selling_price']:,.2f}** per {line['unit']}.")
+                st.caption(f"ℹ️ Manual price active: Unit price locked at **₹{line['manual_selling_price']:,.2f}** ({line['price_unit']}).")
             else:
                 st.caption(f"ℹ️ Formula costing active: Unit price calculated dynamically from Steel Rate (₹{line['steel_rate']:,.0f}) + Coating + Freight.")
 

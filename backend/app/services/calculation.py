@@ -34,18 +34,63 @@ except ImportError as err:
     ) from err
 
 
+CALC_LINE_ALLOWED_KEYS = {
+    "size_mm", "thickness_mm", "basis", "quantity", "unit",
+    "pipe_length_m", "pipes_per_trailer", "has_external", "has_internal",
+    "steel_rate", "grade_extra", "yield_pct", "conversion", "testing",
+    "margin", "ext_rate", "int_rate", "trip_rate", "handling",
+    "financial_pct", "gst_pct", "manual_fc", "legacy_mode",
+    "price_by_mt", "approved_mode", "manual_selling_price",
+    "override_reason", "freight_trailers", "int_coating_basis",
+    "fc_method", "trips_override",
+}
+
+
 class CalculationService:
     """Production adapter for the pure-Python calculation engine."""
 
-    @staticmethod
+    @classmethod
+    def _prepare_calc_kwargs(
+        cls,
+        raw: Dict[str, Any],
+        default_trip: float = 98000.0,
+        default_gst: float = 18.0,
+    ) -> Dict[str, Any]:
+        """Maps coating and price units and filters kwargs to calc_line signature."""
+        kw = dict(raw)
+        if "external_coating" in kw and "has_external" not in kw:
+            ext = str(kw["external_coating"]).strip().upper()
+            kw["has_external"] = ext not in ("BARE", "NONE", "")
+        elif "external_coating" in kw:
+            ext = str(kw["external_coating"]).strip().upper()
+            if ext in ("BARE", "NONE", ""):
+                kw["has_external"] = False
+
+        if "internal_coating" in kw and "has_internal" not in kw:
+            int_c = str(kw["internal_coating"]).strip().upper()
+            kw["has_internal"] = int_c not in ("NONE", "BARE", "")
+        elif "internal_coating" in kw:
+            int_c = str(kw["internal_coating"]).strip().upper()
+            if int_c in ("NONE", "BARE", ""):
+                kw["has_internal"] = False
+
+        if "price_unit" in kw and "price_by_mt" not in kw:
+            kw["price_by_mt"] = (kw["price_unit"] == "₹/MT")
+
+        kw.setdefault("trip_rate", default_trip)
+        kw.setdefault("gst_pct", default_gst)
+
+        return {k: v for k, v in kw.items() if k in CALC_LINE_ALLOWED_KEYS}
+
+    @classmethod
     def calculate_line(
+        cls,
         line_data: Dict[str, Any],
         trip_rate: float = 98000.0,
         mode: str = "REFERENCE",
     ) -> QuoteLineResult:
         """Calculates a single quotation line according to selected commercial mode."""
-        kw = dict(line_data)
-        kw.setdefault("trip_rate", trip_rate)
+        kw = cls._prepare_calc_kwargs(line_data, default_trip=trip_rate)
 
         # Apply calculation mode policy
         normalized_mode = mode.upper().strip()
@@ -88,9 +133,7 @@ class CalculationService:
         # Prepare line keyword arguments
         prepared_lines = []
         for line in lines:
-            item_kw = dict(line)
-            item_kw.setdefault("trip_rate", trip_rate)
-            item_kw.setdefault("gst_pct", gst_pct)
+            item_kw = cls._prepare_calc_kwargs(line, default_trip=trip_rate, default_gst=gst_pct)
             prepared_lines.append(item_kw)
 
         if normalized_mode == "REFERENCE":

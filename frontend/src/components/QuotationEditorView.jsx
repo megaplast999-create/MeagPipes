@@ -2,18 +2,84 @@ import React, { useState, useEffect } from 'react';
 import { quotationsAPI, logisticsAPI, APIError } from '../api/client';
 import { formatNumber } from '../utils/format';
 
+const PRODUCT_STANDARDS = ['IS-3589-2001', 'API 5L', 'ASTM A139', 'IS 1239 Part-1', 'IS 1161'];
+const PIPE_FAMILIES = ['HSAW', 'HFW'];
+const DIAMETER_BASES = ['ID', 'OD'];
+const CUSTOM_PIPE_SIZE_OPTIONS = ['NO', 'YES'];
+
+const STANDARD_SIZES = {
+  'HSAW-ID': [1226, 1300, 1350, 1400],
+  'HSAW-OD': [457, 508, 610, 762, 914, 1016, 1219, 1422, 1524, 1829, 2134, 2540],
+  'HFW-OD': [168.3, 219.1, 273.1, 323.9, 355.6, 406.4, 457.2, 508],
+  'HFW-ID': [168.3, 219.1, 273.1, 323.9, 355.6, 406.4, 457.2, 508],
+};
+
+const STANDARD_THICKNESSES = {
+  HSAW: [6.4, 7.1, 7.9, 8.4, 9.5, 11.1, 12.7, 15.9, 19.1, 25.4],
+  HFW: [3.5, 4.0, 4.5, 5.0, 5.6, 6.4, 7.1, 8.0, 8.8, 10.0, 12.5, 14.2, 16.0],
+};
+
+const STEEL_GRADES = {
+  HSAW: [
+    'Fe 410',
+    'IS 3589 Fe 330',
+    'IS 3589 Fe 450',
+    'API 5L B',
+    'X42 PSL1',
+    'X52 PSL1',
+    'X60 PSL1',
+    'X65 PSL1',
+    'X70 PSL1',
+    'X52 PSL2',
+    'X65 PSL2',
+    'X70 PSL2',
+    'X80M PSL2',
+  ],
+  HFW: [
+    'Fe 410',
+    'IS 3589 Fe 330',
+    'IS 3589 Fe 450',
+    'IS 1239 Part-1',
+    'IS 1161 YST210',
+    'IS 1161 YST240',
+    'IS 1161 YST310',
+    'API 5L A25',
+    'API 5L B',
+    'API 5L X42',
+    'API 5L X52',
+    'API 5L X60',
+    'API 5L X65',
+    'API 5L X70',
+    'API 5L X80M PSL2',
+    'API 5CT H40',
+    'API 5CT J55',
+    'API 5CT K55',
+  ],
+};
+
+const EXTERNAL_COATINGS = ['Bare', '3LPE', '3LPP', 'FBE', 'DFBE', 'PU', 'Zinc Rich Epoxy'];
+const INTERNAL_COATINGS = ['None', 'Liquid Epoxy', 'Food Grade Epoxy', 'Solvent-Free Epoxy', 'PU', 'Zinc Rich Epoxy', 'Cement Lining'];
+const QUANTITY_UNITS = ['Metres', 'MT', 'Nos'];
+const PRICE_UNITS = ['₹/m', '₹/MT'];
+
 const DEFAULT_LINE = {
   line_number: 1,
+  product_standard: 'IS-3589-2001',
+  pipe_family: 'HSAW',
+  basis: 'ID',
+  custom_pipe_size: 'NO',
   size_mm: 1226.0,
   thickness_mm: 8.4,
-  basis: 'ID',
+  steel_grade: 'Fe 410',
+  external_coating: 'Bare',
+  internal_coating: 'None',
   quantity: 2000,
   unit: 'Metres',
   pipe_length_m: 12.0,
   pipes_per_trailer: 4.0,
-  has_external: true,
-  has_internal: true,
-  steel_rate: 62000.0,
+  has_external: false,
+  has_internal: false,
+  steel_rate: 61000.0,
   grade_extra: 0.0,
   yield_pct: 2.0,
   conversion: 4000.0,
@@ -26,6 +92,7 @@ const DEFAULT_LINE = {
   gst_pct: 18.0,
   manual_fc: 0.0,
   manual_selling_price: 0.0,
+  price_unit: '₹/m',
   override_reason: '',
 };
 
@@ -172,6 +239,14 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
     });
   };
 
+  const handleLineMultipleChange = (index, updates) => {
+    setLines((prev) => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], ...updates };
+      return copy;
+    });
+  };
+
   const validateForm = () => {
     const errors = {};
     if (!enquiryNo.trim()) errors.enquiryNo = 'Enquiry number is required';
@@ -203,32 +278,45 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
       distance_km: Number(distanceKm) || 0,
       trip_rate: Number(tripRate) || 0,
       calculation_mode: calculationMode,
-      lines: lines.map((l, idx) => ({
-        line_number: idx + 1,
-        size_mm: Number(l.size_mm),
-        thickness_mm: Number(l.thickness_mm),
-        basis: l.basis.toUpperCase(),
-        quantity: Number(l.quantity),
-        unit: l.unit === 'MT' ? 'MT' : l.unit === 'Nos' ? 'Nos' : 'Metres',
-        pipe_length_m: Number(l.pipe_length_m) || 12.0,
-        pipes_per_trailer: Number(l.pipes_per_trailer) || 4.0,
-        has_external: Boolean(l.has_external),
-        has_internal: Boolean(l.has_internal),
-        steel_rate: Number(l.steel_rate) || 0,
-        grade_extra: Number(l.grade_extra) || 0,
-        yield_pct: Number(l.yield_pct) || 0,
-        conversion: Number(l.conversion) || 0,
-        testing: Number(l.testing) || 0,
-        margin: Number(l.margin) || 0,
-        ext_rate: Number(l.ext_rate) || 0,
-        int_rate: Number(l.int_rate) || 0,
-        handling: Number(l.handling) || 0,
-        financial_pct: Number(l.financial_pct) || 0,
-        gst_pct: Number(l.gst_pct) || 0,
-        manual_fc: Number(l.manual_fc) || 0,
-        manual_selling_price: Number(l.manual_selling_price) || 0,
-        override_reason: l.override_reason ? String(l.override_reason).slice(0, 255) : '',
-      })),
+      lines: lines.map((l, idx) => {
+        const ext = l.external_coating || 'Bare';
+        const intCoating = l.internal_coating || 'None';
+        const hasExternal = !['BARE', 'NONE', ''].includes(String(ext).toUpperCase().trim());
+        const hasInternal = !['NONE', 'BARE', ''].includes(String(intCoating).toUpperCase().trim());
+        return {
+          line_number: idx + 1,
+          size_mm: Number(l.size_mm),
+          thickness_mm: Number(l.thickness_mm),
+          basis: (l.basis || 'ID').toUpperCase(),
+          quantity: Number(l.quantity),
+          unit: l.unit === 'MT' ? 'MT' : l.unit === 'Nos' ? 'Nos' : 'Metres',
+          pipe_length_m: Number(l.pipe_length_m) || 12.0,
+          pipes_per_trailer: Number(l.pipes_per_trailer) || 4.0,
+          has_external: hasExternal,
+          has_internal: hasInternal,
+          steel_rate: Number(l.steel_rate) || 61000.0,
+          grade_extra: Number(l.grade_extra) || 0,
+          yield_pct: Number(l.yield_pct) || 2.0,
+          conversion: Number(l.conversion) || 4000.0,
+          testing: Number(l.testing) || 0,
+          margin: Number(l.margin) || 0,
+          ext_rate: Number(l.ext_rate) || 500.0,
+          int_rate: Number(l.int_rate) || 250.0,
+          handling: Number(l.handling) || 100.0,
+          financial_pct: Number(l.financial_pct) || 1.0,
+          gst_pct: Number(l.gst_pct) || 18.0,
+          manual_fc: Number(l.manual_fc) || 0.0,
+          manual_selling_price: Number(l.manual_selling_price) || 0.0,
+          price_unit: l.price_unit || '₹/m',
+          override_reason: l.override_reason ? String(l.override_reason).slice(0, 255) : '',
+          product_standard: l.product_standard || 'IS-3589-2001',
+          pipe_family: l.pipe_family || 'HSAW',
+          steel_grade: l.steel_grade || 'Fe 410',
+          external_coating: ext,
+          internal_coating: intCoating,
+          custom_pipe_size: l.custom_pipe_size || 'NO',
+        };
+      }),
     };
   };
 
@@ -583,69 +671,155 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
                   </div>
                 </div>
 
-                {/* Primary Specifications Grid */}
+                {/* Primary Specifications Grid - All 13 Excel Options */}
                 <div className="line-grid-primary">
+                  {/* Row 1: Standards, Family, Sizing Basis & Custom Sizing */}
                   <div className="form-group">
-                    <label>Nominal Size (mm) *</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min="1"
-                      className="input"
-                      value={line.size_mm}
-                      onChange={(e) => handleLineChange(idx, 'size_mm', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Wall Thickness (mm) *</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      min="0.1"
-                      className="input"
-                      value={line.thickness_mm}
-                      onChange={(e) => handleLineChange(idx, 'thickness_mm', e.target.value)}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label>Sizing Basis</label>
+                    <label>Product Standard</label>
                     <select
                       className="input select-input"
-                      value={line.basis}
-                      onChange={(e) => handleLineChange(idx, 'basis', e.target.value)}
+                      value={line.product_standard || 'IS-3589-2001'}
+                      onChange={(e) => handleLineChange(idx, 'product_standard', e.target.value)}
                     >
-                      <option value="ID">Inner Diameter (ID)</option>
-                      <option value="OD">Outer Diameter (OD)</option>
+                      {PRODUCT_STANDARDS.map((std) => (
+                        <option key={std} value={std}>{std}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div className="form-group">
-                    <label>Quantity *</label>
-                    <input
-                      type="number"
-                      step="1"
-                      min="1"
-                      className="input"
-                      value={line.quantity}
-                      onChange={(e) => handleLineChange(idx, 'quantity', e.target.value)}
-                      required
-                    />
+                    <label>Pipe Family</label>
+                    <select
+                      className="input select-input"
+                      value={line.pipe_family || 'HSAW'}
+                      onChange={(e) => {
+                        const fam = e.target.value;
+                        const b = line.basis || 'ID';
+                        const key = `${fam}-${b}`;
+                        const sizes = STANDARD_SIZES[key] || [1226];
+                        const thks = STANDARD_THICKNESSES[fam] || [8.4];
+                        const grades = STEEL_GRADES[fam] || ['Fe 410'];
+                        handleLineMultipleChange(idx, {
+                          pipe_family: fam,
+                          size_mm: sizes[0],
+                          thickness_mm: thks[0],
+                          steel_grade: grades[0],
+                        });
+                      }}
+                    >
+                      {PIPE_FAMILIES.map((fam) => (
+                        <option key={fam} value={fam}>{fam}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="form-group">
-                    <label>Unit</label>
+                    <label>Diameter Basis</label>
                     <select
                       className="input select-input"
-                      value={line.unit}
-                      onChange={(e) => handleLineChange(idx, 'unit', e.target.value)}
+                      value={line.basis || 'ID'}
+                      onChange={(e) => {
+                        const b = e.target.value;
+                        const fam = line.pipe_family || 'HSAW';
+                        const key = `${fam}-${b}`;
+                        const sizes = STANDARD_SIZES[key] || [1226];
+                        handleLineMultipleChange(idx, {
+                          basis: b,
+                          size_mm: sizes[0],
+                        });
+                      }}
                     >
-                      <option value="Metres">Metres</option>
-                      <option value="MT">MT</option>
-                      <option value="Nos">Nos</option>
+                      <option value="ID">ID (Inner Diameter)</option>
+                      <option value="OD">OD (Outer Diameter)</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Custom Pipe Size</label>
+                    <select
+                      className="input select-input"
+                      value={line.custom_pipe_size || 'NO'}
+                      onChange={(e) => handleLineChange(idx, 'custom_pipe_size', e.target.value)}
+                    >
+                      <option value="NO">NO (Standard Master Sizes)</option>
+                      <option value="YES">YES (Custom Dimensions)</option>
+                    </select>
+                  </div>
+
+                  {/* Row 2: Dimensions & Material Grade */}
+                  <div className="form-group">
+                    <label>Size (mm) *</label>
+                    {line.custom_pipe_size === 'YES' ? (
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        max="5000"
+                        className="input"
+                        value={line.size_mm}
+                        onChange={(e) => handleLineChange(idx, 'size_mm', Number(e.target.value))}
+                        required
+                      />
+                    ) : (
+                      <select
+                        className="input select-input"
+                        value={line.size_mm}
+                        onChange={(e) => handleLineChange(idx, 'size_mm', Number(e.target.value))}
+                      >
+                        {(() => {
+                          const key = `${line.pipe_family || 'HSAW'}-${line.basis || 'ID'}`;
+                          const sizes = STANDARD_SIZES[key] || [1226];
+                          const curr = Number(line.size_mm);
+                          const allSizes = sizes.includes(curr) ? sizes : [curr, ...sizes];
+                          return allSizes.map((s) => (
+                            <option key={s} value={s}>{s} mm</option>
+                          ));
+                        })()}
+                      </select>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Wall Thickness (mm) *</label>
+                    {line.custom_pipe_size === 'YES' ? (
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        max="100"
+                        className="input"
+                        value={line.thickness_mm}
+                        onChange={(e) => handleLineChange(idx, 'thickness_mm', Number(e.target.value))}
+                        required
+                      />
+                    ) : (
+                      <select
+                        className="input select-input"
+                        value={line.thickness_mm}
+                        onChange={(e) => handleLineChange(idx, 'thickness_mm', Number(e.target.value))}
+                      >
+                        {(() => {
+                          const thks = STANDARD_THICKNESSES[line.pipe_family || 'HSAW'] || [8.4];
+                          const curr = Number(line.thickness_mm);
+                          const allThks = thks.includes(curr) ? thks : [curr, ...thks];
+                          return allThks.map((t) => (
+                            <option key={t} value={t}>{t} mm</option>
+                          ));
+                        })()}
+                      </select>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Steel Grade</label>
+                    <select
+                      className="input select-input"
+                      value={line.steel_grade || 'Fe 410'}
+                      onChange={(e) => handleLineChange(idx, 'steel_grade', e.target.value)}
+                    >
+                      {(STEEL_GRADES[line.pipe_family || 'HSAW'] || STEEL_GRADES.HSAW).map((g) => (
+                        <option key={g} value={g}>{g}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -657,66 +831,118 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
                       min="6"
                       max="13"
                       className="input"
-                      value={line.pipe_length_m}
-                      onChange={(e) => handleLineChange(idx, 'pipe_length_m', e.target.value)}
+                      value={line.pipe_length_m || 12.0}
+                      onChange={(e) => handleLineChange(idx, 'pipe_length_m', Number(e.target.value))}
                     />
                   </div>
 
+                  {/* Row 3: Coatings & Quantities */}
                   <div className="form-group">
-                    <label>Pipes / Trailer</label>
+                    <label>External Coating</label>
+                    <select
+                      className="input select-input"
+                      value={line.external_coating || 'Bare'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const hasExt = !['BARE', 'NONE', ''].includes(val.toUpperCase().trim());
+                        handleLineMultipleChange(idx, {
+                          external_coating: val,
+                          has_external: hasExt,
+                        });
+                      }}
+                    >
+                      {EXTERNAL_COATINGS.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Internal Coating</label>
+                    <select
+                      className="input select-input"
+                      value={line.internal_coating || 'None'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const hasInt = !['NONE', 'BARE', ''].includes(val.toUpperCase().trim());
+                        handleLineMultipleChange(idx, {
+                          internal_coating: val,
+                          has_internal: hasInt,
+                        });
+                      }}
+                    >
+                      {INTERNAL_COATINGS.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>Quantity *</label>
                     <input
                       type="number"
                       step="1"
                       min="1"
                       className="input"
-                      value={line.pipes_per_trailer}
-                      onChange={(e) => handleLineChange(idx, 'pipes_per_trailer', e.target.value)}
+                      value={line.quantity}
+                      onChange={(e) => handleLineChange(idx, 'quantity', Number(e.target.value))}
+                      required
                     />
                   </div>
 
-                  <div className="form-group-checkboxes">
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={line.has_external}
-                        onChange={(e) => handleLineChange(idx, 'has_external', e.target.checked)}
-                      />
-                      <span>External Coating (3LPE)</span>
-                    </label>
-
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={line.has_internal}
-                        onChange={(e) => handleLineChange(idx, 'has_internal', e.target.checked)}
-                      />
-                      <span>Internal Coating (Epoxy)</span>
-                    </label>
+                  <div className="form-group">
+                    <label>Quantity Unit</label>
+                    <select
+                      className="input select-input"
+                      value={line.unit || 'Metres'}
+                      onChange={(e) => handleLineChange(idx, 'unit', e.target.value)}
+                    >
+                      {QUANTITY_UNITS.map((u) => (
+                        <option key={u} value={u}>{u}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                {/* Dedicated Primary Price & Commercial Section (Matching Excel QUOTE sheet) */}
-                <div className="line-price-entry-card" style={{ marginTop: '1rem', padding: '0.75rem 1rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)', borderRadius: '6px' }}>
-                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
-                    💰 Commercial Price Entry & Steel Costing (Line #{line.line_number})
-                  </h4>
-                  <div className="form-grid-3">
+                {/* Dedicated Primary Price & Commercial Section (Matching Excel QUOTE sheet rows 31-33) */}
+                <div className="line-price-entry-card" style={{ marginTop: '1rem', padding: '1rem 1.25rem', background: 'rgba(255, 255, 255, 0.02)', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span>💰 Commercial Price Entry & Freight Logistics</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-muted)' }}>(Line #{line.line_number})</span>
+                    </h4>
+                  </div>
+
+                  <div className="line-grid-primary">
                     <div className="form-group">
-                      <label>Selling Price Override (₹)</label>
+                      <label>Manual Selling Price (Optional)</label>
                       <input
                         type="number"
                         step="100"
                         min="0"
                         className="input"
                         value={line.manual_selling_price || 0}
-                        onChange={(e) => handleLineChange(idx, 'manual_selling_price', e.target.value)}
+                        onChange={(e) => handleLineChange(idx, 'manual_selling_price', Number(e.target.value))}
                         placeholder="0.00 (Leave 0 for Auto-Formula)"
                       />
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: '0.75rem', color: Number(line.manual_selling_price) > 0 ? '#10b981' : 'var(--text-muted)' }}>
                         {Number(line.manual_selling_price) > 0
-                          ? `Manual unit price locked at ₹${Number(line.manual_selling_price).toLocaleString()} / ${line.unit}`
+                          ? `✓ Unit price locked at ₹${Number(line.manual_selling_price).toLocaleString()} (${line.price_unit || '₹/m'})`
                           : 'Leave 0 to calculate unit price from cost formula'}
                       </span>
+                    </div>
+
+                    <div className="form-group">
+                      <label>Price Unit</label>
+                      <select
+                        className="input select-input"
+                        value={line.price_unit || '₹/m'}
+                        onChange={(e) => handleLineChange(idx, 'price_unit', e.target.value)}
+                      >
+                        {PRICE_UNITS.map((pu) => (
+                          <option key={pu} value={pu}>{pu}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="form-group">
@@ -727,25 +953,26 @@ export function QuotationEditorView({ quotationId, onNavigate, onViewResults, sh
                         min="0"
                         className="input"
                         value={line.steel_rate}
-                        onChange={(e) => handleLineChange(idx, 'steel_rate', e.target.value)}
+                        onChange={(e) => handleLineChange(idx, 'steel_rate', Number(e.target.value))}
                       />
                     </div>
 
                     <div className="form-group">
-                      <label>Margin (₹/MT)</label>
+                      <label>Pipes / Trailer</label>
                       <input
                         type="number"
-                        step="100"
-                        min="0"
+                        step="1"
+                        min="1"
+                        max="20"
                         className="input"
-                        value={line.margin}
-                        onChange={(e) => handleLineChange(idx, 'margin', e.target.value)}
+                        value={line.pipes_per_trailer || 4}
+                        onChange={(e) => handleLineChange(idx, 'pipes_per_trailer', Number(e.target.value))}
                       />
                     </div>
                   </div>
 
                   {Number(line.manual_selling_price) > 0 && (
-                    <div className="form-group" style={{ marginTop: '0.5rem' }}>
+                    <div className="form-group" style={{ marginTop: '0.75rem' }}>
                       <label>Price Override Reason *</label>
                       <input
                         type="text"
