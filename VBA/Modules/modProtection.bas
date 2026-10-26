@@ -2,7 +2,7 @@ Attribute VB_Name = "modProtection"
 Option Explicit
 
 ' Global toggle: Sheet protection disabled per user instruction
-Public Const ENABLE_SHEET_PROTECTION As Boolean = False
+Public Const ENABLE_SHEET_PROTECTION As Boolean = True
 
 ' ============================================================
 ' Mega Pipes Quotation System
@@ -44,18 +44,22 @@ Public Sub ConfigureCellLocking()
     Set wsQuote = ThisWorkbook.Worksheets("QUOTE")
     wsQuote.UsedRange.Locked = True
     
-    ' Unlock editable header inputs: Customer (B5) through Price Basis (B17)
-    wsQuote.Range("B5:B17").Locked = False
+    ' Unlock editable header inputs: Customer (B8) through Price Basis (B17)
+    wsQuote.Range("B8:B17").Locked = False
     
-    ' Unlock editable product item inputs (B21:B31)
-    wsQuote.Range("B21:B31").Locked = False
+    ' Unlock editable product item inputs (B20:B33 and C31)
+    wsQuote.Range("B20:B33").Locked = False
+    wsQuote.Range("C31").Locked = False
     
-    ' Keep Enquiry Number (B4) and Summary card (D3:E14) locked
+    ' Keep Enquiry Number (B4) and Summary card (D3:E17) locked
     wsQuote.Range("B4").Locked = True
-    wsQuote.Range("D3:E14").Locked = True
+    wsQuote.Range("D3:E17").Locked = True
+    
+    ' Keep Quote Lines display table locked against manual edits
+    wsQuote.Range("D19:I34").Locked = True
     
     ' Unlock feedback banner cell
-    wsQuote.Range("A33").Locked = False
+    wsQuote.Range("A33:I34").Locked = False
     
     ' 2. QUOTE_LINES Sheet: Unlock user input columns in tblQuoteLines
     Set wsLines = ThisWorkbook.Worksheets("QUOTE_LINES")
@@ -64,27 +68,30 @@ Public Sub ConfigureCellLocking()
     wsLines.UsedRange.Locked = True
     
     ' Unlock user data-entry columns
-    UnlockColumn tblLines, "Product"
+    UnlockColumn tblLines, "ProductID"
     UnlockColumn tblLines, "Family"
     UnlockColumn tblLines, "Basis"
     UnlockColumn tblLines, "SizeMM"
-    UnlockColumn tblLines, "WT_MM"
-    UnlockColumn tblLines, "Grade"
+    UnlockColumn tblLines, "ThicknessMM"
+    UnlockColumn tblLines, "GradeID"
     UnlockColumn tblLines, "Quantity"
     UnlockColumn tblLines, "QuantityUnit"
-    UnlockColumn tblLines, "LengthM"
-    UnlockColumn tblLines, "SupplyingPlant"
-    UnlockColumn tblLines, "ExternalCoating"
-    UnlockColumn tblLines, "InternalCoating"
+    UnlockColumn tblLines, "PipeLengthM"
+    UnlockColumn tblLines, "PlantID"
+    UnlockColumn tblLines, "CoatingExternalID"
+    UnlockColumn tblLines, "CoatingInternalID"
+    UnlockColumn tblLines, "ManualSellingPrice"
+    UnlockColumn tblLines, "OverrideReason"
+    UnlockColumn tblLines, "IsCustomSize"
     
     ' Lock calculation and status columns
     LockColumn tblLines, "LineID"
     LockColumn tblLines, "PipeCount"
-    LockColumn tblLines, "TotalMetres"
-    LockColumn tblLines, "TotalMT"
+    LockColumn tblLines, "Metres"
+    LockColumn tblLines, "WeightMT"
     LockColumn tblLines, "CalculatedODMM"
     LockColumn tblLines, "CalculatedIDMM"
-    LockColumn tblLines, "UnitRateINR"
+    LockColumn tblLines, "UnitPrice"
     LockColumn tblLines, "LineTotal"
     LockColumn tblLines, "Status"
     
@@ -154,6 +161,93 @@ Public Sub ProtectAllSheets(Optional ByVal userInterfaceOnly As Boolean = True)
     For Each ws In ThisWorkbook.Worksheets
         ProtectSheet ws, userInterfaceOnly
     Next ws
+End Sub
+
+
+' ============================================================
+' Protection of Calculated Output Sheets (OFFER and SYNOPSIS)
+' ============================================================
+
+Public Sub ProtectCalculatedSheets(Optional ByVal userInterfaceOnly As Boolean = True)
+    If Not ENABLE_SHEET_PROTECTION Then Exit Sub
+    
+    Dim prevAlerts As Boolean, prevScreen As Boolean
+    prevAlerts = Application.DisplayAlerts
+    prevScreen = Application.ScreenUpdating
+    Application.DisplayAlerts = False
+    Application.ScreenUpdating = False
+    
+    Dim pwd As String
+    pwd = SheetPassword()
+    
+    ' 1. Protect OFFER Sheet: Lock all calculated cells and protect sheet
+    Dim wsOff As Worksheet
+    On Error Resume Next
+    Set wsOff = ThisWorkbook.Worksheets("OFFER")
+    On Error GoTo 0
+    
+    If Not wsOff Is Nothing Then
+        wsOff.UsedRange.Locked = True
+        wsOff.Protect Password:=pwd, _
+                      DrawingObjects:=True, _
+                      Contents:=True, _
+                      Scenarios:=True, _
+                      UserInterfaceOnly:=userInterfaceOnly, _
+                      AllowFormattingCells:=True, _
+                      AllowFormattingColumns:=True, _
+                      AllowFormattingRows:=True, _
+                      AllowSorting:=True, _
+                      AllowFiltering:=True
+        wsOff.EnableSelection = xlNoRestrictions
+    End If
+    
+    ' 2. Protect SYNOPSIS Sheet: Lock all calculated cells and protect sheet
+    Dim wsSyn As Worksheet
+    On Error Resume Next
+    Set wsSyn = ThisWorkbook.Worksheets("SYNOPSIS")
+    On Error GoTo 0
+    
+    If Not wsSyn Is Nothing Then
+        wsSyn.UsedRange.Locked = True
+        wsSyn.Protect Password:=pwd, _
+                      DrawingObjects:=True, _
+                      Contents:=True, _
+                      Scenarios:=True, _
+                      UserInterfaceOnly:=userInterfaceOnly, _
+                      AllowFormattingCells:=True, _
+                      AllowFormattingColumns:=True, _
+                      AllowFormattingRows:=True, _
+                      AllowSorting:=True, _
+                      AllowFiltering:=True
+        wsSyn.EnableSelection = xlNoRestrictions
+    End If
+    
+    Application.DisplayAlerts = prevAlerts
+    Application.ScreenUpdating = prevScreen
+End Sub
+
+Public Sub UnprotectCalculatedSheetsForMacro()
+    Dim prevAlerts As Boolean
+    prevAlerts = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    
+    Dim pwd As String
+    pwd = SheetPassword()
+    
+    Dim wsOff As Worksheet, wsSyn As Worksheet
+    On Error Resume Next
+    Set wsOff = ThisWorkbook.Worksheets("OFFER")
+    Set wsSyn = ThisWorkbook.Worksheets("SYNOPSIS")
+    On Error GoTo 0
+    
+    If Not wsOff Is Nothing Then
+        UnprotectSheet wsOff, pwd
+    End If
+    If Not wsSyn Is Nothing Then
+        UnprotectSheet wsSyn, pwd
+    End If
+    
+    Application.DisplayAlerts = prevAlerts
 End Sub
 
 Public Sub UnprotectAllSheets(Optional ByVal pwd As String = "")

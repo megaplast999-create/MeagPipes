@@ -536,6 +536,7 @@ Public Sub WriteOfferSheet(Optional ByVal forceLegacy As Boolean = False)
     End If
     
     ' Clear OFFER sheet
+    modProtection.UnprotectSheet wsOffer
     wsOffer.Cells.Clear
     
     ' Header block
@@ -903,16 +904,24 @@ Public Function ExportPDF(Optional ByVal targetFolder As String = "") As String
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
     
+    Dim prevVis As Long
+    prevVis = wsOffer.Visible
+    If wsOffer.Visible <> xlSheetVisible Then wsOffer.Visible = xlSheetVisible
+    
+    On Error Resume Next
     With wsOffer.PageSetup
         .Orientation = xlPortrait
         .Zoom = False
         .FitToPagesWide = 1
         .FitToPagesTall = False
     End With
+    On Error GoTo 0
     
     wsOffer.ExportAsFixedFormat Type:=xlTypePDF, FileName:=fullPath, _
         Quality:=xlQualityStandard, IncludeDocProperties:=True, _
         IgnorePrintAreas:=False, OpenAfterPublish:=False
+        
+    If wsOffer.Visible <> prevVis Then wsOffer.Visible = prevVis
         
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
@@ -1303,49 +1312,103 @@ Public Function StageCustomerExcel( _
     Set custWsOffer = custWb.Worksheets(1)
     custWsOffer.Name = "OFFER"
     
-    ' Copy OFFER sheet UsedRange values & formats
-    wsOffer.UsedRange.Copy
-    custWsOffer.Range("A1").PasteSpecial xlPasteValuesAndNumberFormats
+    ' Copy full OFFER sheet layout, cells, numbers, formulas & formats
+    wsOffer.Cells.Copy
+    custWsOffer.Range("A1").PasteSpecial xlPasteAll
     custWsOffer.Range("A1").PasteSpecial xlPasteFormats
     Application.CutCopyMode = False
     
-    ' Re-apply column widths
-    For c = 1 To 8
+    For c = 1 To 10
         custWsOffer.Columns(c).ColumnWidth = wsOffer.Columns(c).ColumnWidth
     Next c
     
-    ' Add Synopsis Sheet (Customer Facing Summary)
+    ' Enhance OFFER line totals and total row with dynamic formulas
+    Dim rLine As Long, totRowOffer As Long
+    totRowOffer = 0
+    For rLine = 12 To 50
+        If Trim$(UCase$(CStr(custWsOffer.Range("A" & rLine).Value))) = "TOTAL" Then
+            totRowOffer = rLine
+            Exit For
+        End If
+    Next rLine
+    
+    If totRowOffer > 12 Then
+        For rLine = 12 To totRowOffer - 1
+            If Val(custWsOffer.Range("F" & rLine).Value) > 0 Or Val(custWsOffer.Range("G" & rLine).Value) > 0 Then
+                custWsOffer.Range("H" & rLine).Formula = "=ROUND(F" & rLine & "*G" & rLine & ",0)"
+            End If
+        Next rLine
+        custWsOffer.Range("F" & totRowOffer).Formula = "=SUM(F12:F" & (totRowOffer - 1) & ")"
+        custWsOffer.Range("H" & totRowOffer).Formula = "=SUM(H12:H" & (totRowOffer - 1) & ")"
+    End If
+    
+    ' Add Synopsis Sheet (Full customer-facing technical summary with preserved layout & formulas)
+    Dim wsSynSource As Worksheet
+    On Error Resume Next
+    Set wsSynSource = ThisWorkbook.Worksheets("SYNOPSIS")
+    If wsSynSource Is Nothing Then Set wsSynSource = ThisWorkbook.Worksheets("Synopsis")
+    On Error GoTo 0
+    
+    If wsSynSource Is Nothing Then
+        modSynopsis.BuildSynopsisSheet
+        On Error Resume Next
+        Set wsSynSource = ThisWorkbook.Worksheets("SYNOPSIS")
+        If wsSynSource Is Nothing Then Set wsSynSource = ThisWorkbook.Worksheets("Synopsis")
+        On Error GoTo 0
+    End If
+    
     Set custWsSyn = custWb.Worksheets.Add(After:=custWsOffer)
     custWsSyn.Name = "Synopsis"
     
-    custWsSyn.Range("A2").Value = "MEGA PIPES QUOTATION SYNOPSIS"
-    custWsSyn.Range("A2").Font.Bold = True
-    custWsSyn.Range("A2").Font.Size = 14
+    If Not wsSynSource Is Nothing Then
+        wsSynSource.Cells.Copy
+        custWsSyn.Range("A1").PasteSpecial xlPasteAll
+        custWsSyn.Range("A1").PasteSpecial xlPasteFormats
+        Application.CutCopyMode = False
+        
+        For c = 1 To 18
+            custWsSyn.Columns(c).ColumnWidth = wsSynSource.Columns(c).ColumnWidth
+        Next c
+    End If
     
-    custWsSyn.Range("A4").Value = "Offer Number": custWsSyn.Range("B4").Value = wsOffer.Range("C5").Value
-    custWsSyn.Range("A5").Value = "Offer Date": custWsSyn.Range("B5").Value = wsOffer.Range("G5").Value
-    custWsSyn.Range("A6").Value = "Purchaser": custWsSyn.Range("B6").Value = wsOffer.Range("C7").Value
-    custWsSyn.Range("A7").Value = "Manufacturer": custWsSyn.Range("B7").Value = wsOffer.Range("C9").Value
-    custWsSyn.Range("A8").Value = "Total Quantity": custWsSyn.Range("B8").Value = wsOffer.Range("F16").Value
-    custWsSyn.Range("A9").Value = "Total Amount (Excl. GST)": custWsSyn.Range("B9").Value = wsOffer.Range("H16").Value
-    custWsSyn.Range("A10").Value = "Amount in Words": custWsSyn.Range("B10").Value = wsOffer.Range("A17").Value
-    custWsSyn.Range("A11").Value = "GST Terms": custWsSyn.Range("B11").Value = wsOffer.Range("A18").Value
-    
-    custWsSyn.Range("A4:A11").Font.Bold = True
-    custWsSyn.Columns("A:A").ColumnWidth = 24
-    custWsSyn.Columns("B:B").ColumnWidth = 60
-    
-    ' Strict confidentiality sanitization: delete all names, links, connections
+    ' Strict confidentiality sanitization: delete all external defined names and links
     For Each nm In custWb.Names
         On Error Resume Next
         nm.Delete
         On Error GoTo 0
     Next nm
     
-    ' Values-only guarantee: flatten every cell to value
+    Dim lnks As Variant, li As Long
+    On Error Resume Next
+    lnks = custWb.LinkSources(xlExcelLinks)
+    If Not IsEmpty(lnks) Then
+        For li = 1 To UBound(lnks)
+            custWb.BreakLink Name:=CStr(lnks(li)), Type:=xlLinkTypeExcelLinks
+        Next li
+    End If
+    On Error GoTo 0
+    
+    ' Exported-file editability requirement:
+    ' 1. Remove worksheet protection from EVERY worksheet (password-free)
+    ' 2. Unlock ALL cells across every worksheet
     For Each wsItem In custWb.Worksheets
-        wsItem.UsedRange.Value = wsItem.UsedRange.Value
+        On Error Resume Next
+        wsItem.Unprotect ""
+        If wsItem.ProtectContents Then wsItem.Unprotect "MegaPipes2026"
+        If wsItem.ProtectContents Then wsItem.Unprotect "admin"
+        If wsItem.ProtectContents Then wsItem.Unprotect "MegaPipes"
+        wsItem.Cells.Locked = False
+        wsItem.Cells.FormulaHidden = False
+        On Error GoTo 0
     Next wsItem
+    
+    ' 3. Ensure workbook structure protection is disabled
+    On Error Resume Next
+    custWb.Unprotect ""
+    If custWb.ProtectStructure Then custWb.Unprotect "MegaPipes2026"
+    If custWb.ProtectStructure Then custWb.Unprotect "admin"
+    If custWb.ProtectStructure Then custWb.Unprotect "MegaPipes"
+    On Error GoTo 0
     
     custWb.SaveAs FileName:=stagedFullPath, FileFormat:=xlOpenXMLWorkbook
     custWb.Close SaveChanges:=False
@@ -1429,22 +1492,62 @@ Public Function ValidateStagedCustomerExcel(ByVal stagedFilePath As String, ByRe
         Exit Function
     End If
     
-    ' 3. Zero formulas check across all cells in both sheets
-    Dim cell As Range
+    ' 3. Formula safety & external link check:
+    ' Formulas must be self-contained within customer workbook (no external workbook references or broken formulas)
+    Dim cell As Range, fText As String
     For Each ws In chkWb.Worksheets
         For Each cell In ws.UsedRange
             If cell.HasFormula Then
-                Dim cellAddr As String
-                cellAddr = ws.Name & "!" & cell.Address
-                chkWb.Close SaveChanges:=False
-                Application.DisplayAlerts = prevAlerts
-                Application.ScreenUpdating = prevScreen
-                outErr = "Formula detected in customer workbook at " & cellAddr & ". Customer exports must be 100% values-only."
-                ValidateStagedCustomerExcel = False
-                Exit Function
+                fText = cell.Formula
+                If InStr(1, fText, "[", vbTextCompare) > 0 Or InStr(1, fText, ".xlsm", vbTextCompare) > 0 Then
+                    chkWb.Close SaveChanges:=False
+                    Application.DisplayAlerts = prevAlerts
+                    Application.ScreenUpdating = prevScreen
+                    outErr = "External workbook link detected in customer formula at " & ws.Name & "!" & cell.Address & ": " & fText
+                    ValidateStagedCustomerExcel = False
+                    Exit Function
+                End If
+                If InStr(1, fText, "#REF!", vbTextCompare) > 0 Or InStr(1, fText, "#NAME?", vbTextCompare) > 0 Then
+                    chkWb.Close SaveChanges:=False
+                    Application.DisplayAlerts = prevAlerts
+                    Application.ScreenUpdating = prevScreen
+                    outErr = "Broken formula detected in customer workbook at " & ws.Name & "!" & cell.Address & ": " & fText
+                    ValidateStagedCustomerExcel = False
+                    Exit Function
+                End If
             End If
         Next cell
     Next ws
+    
+    ' 4. Verify all worksheets are unprotected and cells unlocked
+    For Each ws In chkWb.Worksheets
+        If ws.ProtectContents Then
+            chkWb.Close SaveChanges:=False
+            Application.DisplayAlerts = prevAlerts
+            Application.ScreenUpdating = prevScreen
+            outErr = "Worksheet " & ws.Name & " is protected in exported customer file; must be password-free and unprotected."
+            ValidateStagedCustomerExcel = False
+            Exit Function
+        End If
+        If ws.Range("A1").Locked Then
+            chkWb.Close SaveChanges:=False
+            Application.DisplayAlerts = prevAlerts
+            Application.ScreenUpdating = prevScreen
+            outErr = "Cells in worksheet " & ws.Name & " are locked; customer export must have all cells unlocked."
+            ValidateStagedCustomerExcel = False
+            Exit Function
+        End If
+    Next ws
+    
+    ' 5. Verify workbook structure is unprotected
+    If chkWb.ProtectStructure Then
+        chkWb.Close SaveChanges:=False
+        Application.DisplayAlerts = prevAlerts
+        Application.ScreenUpdating = prevScreen
+        outErr = "Workbook structure is protected in exported customer file; must be unprotected."
+        ValidateStagedCustomerExcel = False
+        Exit Function
+    End If
     
     ' 4. Verify no internal pricing keywords leaked into text
     Dim badWords As Variant
@@ -1482,6 +1585,82 @@ ValErr:
     Application.DisplayAlerts = prevAlerts
     Application.ScreenUpdating = prevScreen
     ValidateStagedCustomerExcel = False
+End Function
+
+
+Public Function ValidateQuotationBeforeExport(ByRef outErrMsg As String) As Boolean
+    Dim wsQ As Worksheet
+    Dim wsOff As Worksheet
+    Dim wsSyn As Worksheet
+    Dim tblLines As ListObject
+    Dim validLines As Long, rL As ListRow
+    
+    On Error Resume Next
+    Set wsQ = ThisWorkbook.Worksheets("QUOTE")
+    Set wsOff = ThisWorkbook.Worksheets("OFFER")
+    Set wsSyn = ThisWorkbook.Worksheets("SYNOPSIS")
+    Set tblLines = ThisWorkbook.Worksheets("QUOTE_LINES").ListObjects("tblQuoteLines")
+    On Error GoTo 0
+    
+    If wsQ Is Nothing Then
+        outErrMsg = "QUOTE worksheet not found."
+        ValidateQuotationBeforeExport = False
+        Exit Function
+    End If
+    
+    ' 1. Check Quote Number
+    If Len(Trim$(CStr(wsQ.Range("B4").Value))) = 0 Then
+        outErrMsg = "No active quotation number allocated. Please start or open a quotation first."
+        ValidateQuotationBeforeExport = False
+        Exit Function
+    End If
+    
+    ' 2. Check Customer
+    If Len(Trim$(CStr(wsQ.Range("B8").Value))) = 0 Then
+        outErrMsg = "Customer is required. Please select or enter a Customer in B8 before exporting."
+        ValidateQuotationBeforeExport = False
+        Exit Function
+    End If
+    
+    ' 3. Check Quote Lines count
+    validLines = 0
+    If Not tblLines Is Nothing Then
+        For Each rL In tblLines.ListRows
+            If Len(Trim$(CStr(rL.Range.Cells(1, tblLines.ListColumns("ProductID").Index).Value))) > 0 Then
+                If Val(rL.Range.Cells(1, tblLines.ListColumns("Quantity").Index).Value) > 0 Then
+                    validLines = validLines + 1
+                End If
+            End If
+        Next rL
+    End If
+    If validLines = 0 Then
+        outErrMsg = "No valid quote items found. Please add line items and click 'CALCULATE QUOTATION' before exporting."
+        ValidateQuotationBeforeExport = False
+        Exit Function
+    End If
+    
+    ' 4. Check that OFFER and SYNOPSIS are generated and visible
+    If wsOff Is Nothing Or wsSyn Is Nothing Then
+        outErrMsg = "OFFER or SYNOPSIS worksheet is missing. Please click 'CALCULATE QUOTATION' first."
+        ValidateQuotationBeforeExport = False
+        Exit Function
+    End If
+    
+    If wsOff.Visible <> xlSheetVisible Or wsSyn.Visible <> xlSheetVisible Then
+        outErrMsg = "Quotation outputs are not current or have not been calculated." & vbCrLf & vbCrLf & _
+                    "Please click 'CALCULATE QUOTATION' to calculate and verify outputs before exporting."
+        ValidateQuotationBeforeExport = False
+        Exit Function
+    End If
+    
+    ' 5. Verify OFFER contains valid calculated content
+    If Len(Trim$(CStr(wsOff.Range("C5").Value))) = 0 Or Val(wsOff.Range("F16").Value) <= 0 Then
+        outErrMsg = "OFFER sheet contains empty or uncalculated values. Please click 'CALCULATE QUOTATION' before exporting."
+        ValidateQuotationBeforeExport = False
+        Exit Function
+    End If
+    
+    ValidateQuotationBeforeExport = True
 End Function
 
 Public Function ExportCustomerExcelDual( _
@@ -2003,12 +2182,26 @@ Public Function RunExportSelfTests() As String
             Exit Function
         End If
         
-        ' Verify no formulas
+        ' Verify unprotected and unlocked
+        If wsCheck.ProtectContents Then
+            testWb.Close SaveChanges:=False
+            RunExportSelfTests = "FAIL: Customer Excel sheet " & wsCheck.Name & " is protected"
+            Exit Function
+        End If
+        If wsCheck.Range("A1").Locked Then
+            testWb.Close SaveChanges:=False
+            RunExportSelfTests = "FAIL: Customer Excel sheet " & wsCheck.Name & " cells are locked"
+            Exit Function
+        End If
+        
+        ' Verify no external links in formulas
         For Each cellCheck In wsCheck.UsedRange
             If cellCheck.HasFormula Then
-                testWb.Close SaveChanges:=False
-                RunExportSelfTests = "FAIL: Formula detected in Customer Excel " & wsCheck.Name & "!" & cellCheck.Address
-                Exit Function
+                If InStr(1, cellCheck.Formula, "[", vbTextCompare) > 0 Or InStr(1, cellCheck.Formula, ".xlsm", vbTextCompare) > 0 Then
+                    testWb.Close SaveChanges:=False
+                    RunExportSelfTests = "FAIL: External link in Customer Excel " & wsCheck.Name & "!" & cellCheck.Address
+                    Exit Function
+                End If
             End If
         Next cellCheck
     Next wsCheck

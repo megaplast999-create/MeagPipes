@@ -48,8 +48,11 @@ Public Sub OnWorkbookOpen()
     ' Hide commercial output sheets until quotation is calculated
     HideOutputSheets
     
-    ' Ensure no sheet protection prevents editing
+    ' Ensure no sheet protection prevents editing on input sheets
     modProtection.UnprotectAllSheets
+    
+    ' Re-apply UserInterfaceOnly protection to calculated output sheets
+    modProtection.ProtectCalculatedSheets True
     
     ' Build and refresh the START screen
     BuildStartScreen
@@ -449,14 +452,14 @@ Public Sub SetupQuoteSheetUI()
     ws.Range("E14").NumberFormat = "@"
     ws.Range("E14").HorizontalAlignment = xlCenter
     
-    ws.Range("D15:E17").Merge
+    If Not ws.Range("D15:E17").MergeCells Then ws.Range("D15:E17").Merge
     With ws.Range("D15")
-        .Value = "COMMERCIAL STATUS:" & vbCrLf & "QUOTATION CONSOLE READY"
+        .Value = "DISTANCE INFO:" & vbCrLf & "Click 'CALCULATE QUOTATION' to see nearest plant & competitor distances."
         .Font.Name = "Calibri"
         .Font.Size = 9
-        .Font.Bold = True
-        .Font.Color = UI_GREEN_DARK
-        .Interior.Color = RGB(238, 248, 238)
+        .Font.Bold = False
+        .Font.Color = RGB(110, 110, 110)
+        .Interior.Color = RGB(248, 250, 248)
         .HorizontalAlignment = xlCenter
         .VerticalAlignment = xlCenter
         .WrapText = True
@@ -1302,8 +1305,9 @@ Public Sub UI_AddItem()
         
         modQuote.RecalculateQuote
         RefreshQuoteLinesDisplay
+        HideOutputSheets
         
-        SetFeedbackBanner "Line " & targetEditId & " updated successfully! Quotation recalculated.", UI_GREEN_DARK
+        SetFeedbackBanner "Line " & targetEditId & " updated successfully! Quotation recalculated. Click 'CALCULATE QUOTATION' when ready.", UI_GREEN_DARK
         Application.EnableEvents = prevEvents
         Application.ScreenUpdating = prevScreen
         Exit Sub
@@ -1367,6 +1371,7 @@ Public Sub UI_AddItem()
     ' Recalculate Quote and refresh UI
     modQuote.RecalculateQuote
     RefreshQuoteLinesDisplay
+    HideOutputSheets
     
     Dim totLines As Long
     totLines = activeCount + 1
@@ -1510,8 +1515,9 @@ Public Sub UI_RemoveItem()
     
     modQuote.RecalculateQuote
     RefreshQuoteLinesDisplay
+    HideOutputSheets
     
-    SetFeedbackBanner "Line " & targetId & " removed from quotation.", UI_GREEN_DARK
+    SetFeedbackBanner "Line " & targetId & " removed from quotation. Click 'CALCULATE QUOTATION' when ready.", UI_GREEN_DARK
     Application.ScreenUpdating = True
     Exit Sub
 
@@ -2171,6 +2177,9 @@ Public Sub UI_CalculateQuotation()
     
     Application.ScreenUpdating = False
     
+    ' Unprotect calculated sheets for macro writing
+    modProtection.UnprotectCalculatedSheetsForMacro
+    
     ' 3. Recalculate quotation using existing approved engine
     modQuote.RecalculateQuote
     
@@ -2182,7 +2191,13 @@ Public Sub UI_CalculateQuotation()
     ' 5. Refresh display table on QUOTE sheet
     RefreshQuoteLinesDisplay
     
-    ' 6. Reveal OFFER and SYNOPSIS sheets now that calculation and generation succeeded
+    ' 5b. Show distance note panel (nearest MPPL plant & nearest competitor)
+    ShowDistanceNoteOnQuoteSheet
+    
+    ' 6. Lock calculated sheets and protect against manual editing
+    modProtection.ProtectCalculatedSheets True
+    
+    ' 7. Reveal OFFER and SYNOPSIS sheets now that calculation and generation succeeded
     ShowOutputSheets
     
     Dim grandTotal As String
@@ -2200,6 +2215,7 @@ Public Sub UI_CalculateQuotation()
 ErrorHandler:
     On Error Resume Next
     HideOutputSheets
+    modProtection.ProtectCalculatedSheets True
     Application.ScreenUpdating = True
     SetFeedbackBanner "Calculation error: " & Err.Description, UI_RED
     SafeMsgBox "Calculation failed: " & Err.Description & vbCrLf & vbCrLf & _
@@ -2447,6 +2463,13 @@ Public Sub UI_ExportCustomerExcel()
     On Error GoTo ErrorHandler
     Dim qNum As String
     Dim resStr As String
+    Dim valExpErr As String
+    
+    ' Validate calculation status before export
+    If Not modExport.ValidateQuotationBeforeExport(valExpErr) Then
+        SafeMsgBox valExpErr, vbExclamation, "Mega Pipes — Calculation Required Before Export"
+        Exit Sub
+    End If
     
     qNum = Trim$(CStr(ThisWorkbook.Worksheets("QUOTE").Range("B4").Value))
     If Len(qNum) = 0 Then
@@ -2757,3 +2780,362 @@ ErrorHandler:
     Application.ScreenUpdating = True
     SafeMsgBox "Could not refresh distances: " & Err.Description, vbExclamation
 End Sub
+
+' ============================================================
+' DISTANCE NOTE PANEL (shown on QUOTE sheet after calculation)
+' Writes to D15:E17 - nearest MPPL plant & nearest competitor
+' ============================================================
+' ============================================================
+' DISTANCE NOTE PANEL — shown on QUOTE sheet after calculation
+' Writes to D15:E17.
+'
+' Rules enforced:
+'   - Delivery PIN extracted via modCompare.ExtractPIN (first
+'     consecutive 6-digit run).  No hardcoded destination fallback.
+'   - All cache matches require Status = "VALID" (case-insensitive)
+'     and exact CustomerPIN equality (not substring containment).
+'   - No P01/P02 hardcoded fallback distances.
+'   - No DefaultKM column reference.
+'   - Partial MPPL comparisons are labelled as partial.
+'   - Source and CalculatedDate from the cache row are displayed.
+'   - City is appended only when not already present in PlantName.
+' ============================================================
+
+Private Sub ShowDistanceNoteOnQuoteSheet()
+    Dim ws         As Worksheet
+    Dim wsPlants   As Worksheet
+    Dim wsDist     As Worksheet
+    Dim tblP       As ListObject
+    Dim tblDist    As ListObject
+    Dim rowObj     As ListRow
+    Dim dRow       As ListRow
+
+    Dim deliveryPlace As String
+    Dim deliveryPIN   As String
+    Dim productId     As String
+
+    Dim eligible       As Variant
+    Dim i              As Long
+    Dim pId            As String
+    Dim dPlant         As String
+    Dim dPin           As String
+    Dim dStatus        As String
+
+    ' MPPL nearest-plant tracking
+    Dim bestPlantId    As String
+    Dim bestPlantName  As String
+    Dim bestKm         As Double
+    Dim bestSrc        As String
+    Dim bestDate       As String
+    Dim validPlantCount As Long
+    Dim totalEligible   As Long
+    Dim rawDate         As Variant
+
+    ' Competitor tracking
+    Dim nearestCompName As String
+    Dim nearestCompKm   As Double
+    Dim nearestCompSrc  As String
+    Dim nearestCompDate As String
+    Dim anyCompCached   As Boolean
+
+    ' Line builders
+    Dim mpplLine As String
+    Dim compLine As String
+    Dim panelText As String
+    Dim srcLabel  As String
+
+    On Error GoTo ErrHandler
+
+    Set ws = ThisWorkbook.Worksheets("QUOTE")
+    modProtection.UnprotectSheet ws
+
+    ' ── 1. Read delivery address ──────────────────────────────
+    deliveryPlace = Trim$(CStr(ws.Range("B10").Value))
+    If Len(deliveryPlace) = 0 Then _
+        deliveryPlace = Trim$(CStr(ws.Range("B11").Value))
+
+    ' ── 2. Extract PIN via modCompare.ExtractPIN ──────────────
+    '    (first consecutive 6-digit run; resets on non-digit)
+    deliveryPIN = ""
+    If Len(deliveryPlace) > 0 Then
+        On Error Resume Next
+        deliveryPIN = modCompare.ExtractPIN(deliveryPlace)
+        On Error GoTo ErrHandler
+    End If
+
+    If Len(deliveryPIN) = 0 Then
+        ' No PIN found — show message, never display Bagodar distances
+        WriteDistancePanelCells ws, _
+            "Delivery PIN required — distances unavailable.", _
+            "Enter a delivery address containing a 6-digit PIN in B10 (or B11).", _
+            True
+        Exit Sub
+    End If
+
+    ' ── 3. Product type ───────────────────────────────────────
+    productId = Trim$(CStr(ws.Range("B7").Value))
+    If Len(productId) = 0 Then productId = "P02"
+
+    ' ── 4. Open shared data tables ───────────────────────────
+    Set wsPlants = ThisWorkbook.Worksheets("PLANTS")
+    Set tblP = wsPlants.ListObjects("tblPlants")
+
+    On Error Resume Next
+    Set wsDist = ThisWorkbook.Worksheets("DISTANCE_CACHE")
+    If Not wsDist Is Nothing Then
+        Set tblDist = wsDist.ListObjects("tblDistanceCache")
+    End If
+    On Error GoTo ErrHandler
+
+    ' ── 5. Eligible MPPL plants ──────────────────────────────
+    On Error Resume Next
+    eligible = modPlants.GetEligiblePlants(productId)
+    On Error GoTo ErrHandler
+
+    If Not IsArray(eligible) Then
+        ReDim eligible(0 To 1)
+        eligible(0) = "P01" : eligible(1) = "P02"
+    End If
+    If UBound(eligible) < LBound(eligible) Then
+        ReDim eligible(0 To 1)
+        eligible(0) = "P01" : eligible(1) = "P02"
+    End If
+    totalEligible = UBound(eligible) - LBound(eligible) + 1
+
+    bestKm = 1E+15
+    validPlantCount = 0
+
+    ' ── 6. Find nearest MPPL plant with VALID exact-match cache ──
+    For i = LBound(eligible) To UBound(eligible)
+        pId = CStr(eligible(i))
+
+        If Not tblDist Is Nothing Then
+            For Each dRow In tblDist.ListRows
+                dPlant = Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("PlantID").Index).Value))
+                dPin   = Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("CustomerPIN").Index).Value))
+                dStatus = UCase$(Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("Status").Index).Value)))
+
+                If StrComp(dPlant, pId, vbTextCompare) = 0 And _
+                   StrComp(dPin, deliveryPIN, vbTextCompare) = 0 And _
+                   dStatus = "VALID" Then
+
+                    Dim foundKm As Double
+                    foundKm = Val(dRow.Range.Cells(1, tblDist.ListColumns("DistanceKM").Index).Value)
+
+                    validPlantCount = validPlantCount + 1
+
+                    If foundKm < bestKm Then
+                        bestKm = foundKm
+                        bestPlantId = pId
+                        bestSrc = Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("Source").Index).Value))
+                        rawDate = dRow.Range.Cells(1, tblDist.ListColumns("CalculatedDate").Index).Value
+                        bestDate = IIf(IsDate(rawDate), Format$(CDate(rawDate), "dd/mm/yy"), "")
+                    End If
+                    Exit For
+                End If
+            Next dRow
+        End If
+    Next i
+
+    ' ── 7. Build MPPL display line ────────────────────────────
+    If validPlantCount = 0 Then
+        mpplLine = "MPPL road distance unavailable for PIN " & deliveryPIN & " — no valid cache record."
+    Else
+        bestPlantName = GetCleanPlantName(tblP, bestPlantId)
+        srcLabel = ""
+        If Len(bestSrc) > 0 Then srcLabel = bestSrc
+        If Len(bestDate) > 0 Then
+            srcLabel = srcLabel & IIf(Len(srcLabel) > 0, ", ", "") & bestDate
+        End If
+
+        mpplLine = bestPlantName & ": " & Format$(bestKm, "#,##0") & " KM"
+        If Len(srcLabel) > 0 Then mpplLine = mpplLine & " [" & srcLabel & "]"
+
+        If validPlantCount < totalEligible Then
+            mpplLine = mpplLine & _
+                " (partial — " & CStr(totalEligible - validPlantCount) & _
+                " eligible plant(s) have no valid cache record for PIN " & deliveryPIN & ")"
+        End If
+    End If
+
+    ' ── 8. Find nearest competitor with VALID exact-match cache ──
+    nearestCompKm = 1E+15
+    anyCompCached = False
+
+    For Each rowObj In tblP.ListRows
+        Dim pType   As String
+        Dim pActive As String
+        pType   = UCase$(Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("PlantType").Index).Value)))
+        pActive = UCase$(Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("Active").Index).Value)))
+
+        If pType = "COMPETITOR" And (pActive = "YES" Or Len(pActive) = 0) Then
+            pId = Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("PlantID").Index).Value))
+
+            If Not tblDist Is Nothing Then
+                For Each dRow In tblDist.ListRows
+                    dPlant  = Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("PlantID").Index).Value))
+                    dPin    = Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("CustomerPIN").Index).Value))
+                    dStatus = UCase$(Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("Status").Index).Value)))
+
+                    If StrComp(dPlant, pId, vbTextCompare) = 0 And _
+                       StrComp(dPin, deliveryPIN, vbTextCompare) = 0 And _
+                       dStatus = "VALID" Then
+
+                        Dim cKm As Double
+                        cKm = Val(dRow.Range.Cells(1, tblDist.ListColumns("DistanceKM").Index).Value)
+                        anyCompCached = True
+
+                        If cKm < nearestCompKm Then
+                            nearestCompKm   = cKm
+                            nearestCompName = GetCleanPlantName(tblP, pId)
+                            nearestCompSrc  = Trim$(CStr(dRow.Range.Cells(1, tblDist.ListColumns("Source").Index).Value))
+                            rawDate = dRow.Range.Cells(1, tblDist.ListColumns("CalculatedDate").Index).Value
+                            nearestCompDate = IIf(IsDate(rawDate), Format$(CDate(rawDate), "dd/mm/yy"), "")
+                        End If
+                        Exit For
+                    End If
+                Next dRow
+            End If
+        End If
+    Next rowObj
+
+    ' ── 9. Build competitor display line ──────────────────────
+    If Not anyCompCached Then
+        compLine = "Competitor distances not cached for this destination PIN (" & deliveryPIN & ")."
+    Else
+        srcLabel = ""
+        If Len(nearestCompSrc) > 0 Then srcLabel = nearestCompSrc
+        If Len(nearestCompDate) > 0 Then
+            srcLabel = srcLabel & IIf(Len(srcLabel) > 0, ", ", "") & nearestCompDate
+        End If
+
+        compLine = nearestCompName & ": " & Format$(nearestCompKm, "#,##0") & " KM"
+        If Len(srcLabel) > 0 Then compLine = compLine & " [" & srcLabel & "]"
+    End If
+
+    ' ── 10. Compose and write panel ───────────────────────────
+    panelText = Chr(10) & "Nearest MPPL Plant  (PIN " & deliveryPIN & "):" & Chr(10) & _
+                mpplLine & Chr(10) & Chr(10) & _
+                "Nearest Competitor  (PIN " & deliveryPIN & "):" & Chr(10) & _
+                compLine
+
+    WriteDistancePanelCells ws, panelText, "", False
+    Exit Sub
+
+ErrHandler:
+    On Error Resume Next
+    WriteDistancePanelError ws
+End Sub
+
+' ── Private helper: extract clean plant name, city appended only ──
+' if not already present in PlantName.
+Private Function GetCleanPlantName(ByRef tblP As ListObject, ByVal plantId As String) As String
+    Dim rowObj As ListRow
+    Dim pName  As String
+    Dim pCity  As String
+
+    For Each rowObj In tblP.ListRows
+        If StrComp(Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("PlantID").Index).Value)), _
+                   plantId, vbTextCompare) = 0 Then
+            pName = Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("PlantName").Index).Value))
+            pCity = ""
+            On Error Resume Next
+            pCity = Trim$(CStr(rowObj.Range.Cells(1, tblP.ListColumns("City").Index).Value))
+            On Error GoTo 0
+            ' Append city only when it is not already embedded in the name
+            If Len(pCity) > 0 And InStr(1, pName, pCity, vbTextCompare) = 0 Then
+                pName = pName & " (" & pCity & ")"
+            End If
+            GetCleanPlantName = pName
+            Exit Function
+        End If
+    Next rowObj
+
+    GetCleanPlantName = plantId   ' Fall back to ID string if plant not found
+End Function
+
+' ── Private helper: write the panel content to D15:E17 ──────────
+Private Sub WriteDistancePanelCells(ByRef ws As Worksheet, _
+                                    ByVal mainText As String, _
+                                    ByVal subText As String, _
+                                    ByVal isWarning As Boolean)
+    Dim panelRange As Range
+    Set panelRange = ws.Range("D15:E17")
+
+    If panelRange.MergeCells Then panelRange.UnMerge
+    panelRange.ClearContents
+    panelRange.Merge
+
+    Dim displayText As String
+    If Len(subText) > 0 Then
+        displayText = mainText & Chr(10) & subText
+    Else
+        displayText = mainText
+    End If
+
+    With ws.Range("D15")
+        .Value = displayText
+        .Font.Name = "Calibri"
+        .Font.Size = 8.5
+        .Font.Bold = False
+        If isWarning Then
+            .Font.Color = RGB(120, 60, 0)
+            .Interior.Color = RGB(255, 243, 205)    ' Amber — warning
+        Else
+            .Font.Color = RGB(16, 44, 96)            ' Navy
+            .Interior.Color = RGB(219, 234, 254)     ' Light blue — info
+        End If
+        .HorizontalAlignment = xlLeft
+        .VerticalAlignment = xlTop
+        .WrapText = True
+        .IndentLevel = 1
+    End With
+
+    Dim leftColor As Long
+    leftColor = IIf(isWarning, RGB(176, 108, 0), RGB(37, 99, 235))
+
+    With panelRange.Borders(xlEdgeLeft)
+        .LineStyle = xlContinuous
+        .Weight = xlThick
+        .Color = leftColor
+    End With
+    With panelRange.Borders(xlEdgeTop)
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = IIf(isWarning, RGB(253, 200, 100), RGB(147, 197, 253))
+    End With
+    With panelRange.Borders(xlEdgeBottom)
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = IIf(isWarning, RGB(253, 200, 100), RGB(147, 197, 253))
+    End With
+    With panelRange.Borders(xlEdgeRight)
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = IIf(isWarning, RGB(253, 200, 100), RGB(147, 197, 253))
+    End With
+
+    panelRange.Locked = False
+End Sub
+
+' ── Private helper: error fallback — writes neutral placeholder ──
+Private Sub WriteDistancePanelError(ByRef ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    On Error Resume Next
+    Dim panelRange As Range
+    Set panelRange = ws.Range("D15:E17")
+    If panelRange.MergeCells Then panelRange.UnMerge
+    panelRange.Merge
+    With ws.Range("D15")
+        .Value = "DISTANCE INFO: (error — run Calculate again to refresh)"
+        .Font.Color = RGB(110, 110, 110)
+        .Interior.Color = RGB(248, 250, 248)
+        .WrapText = True
+        .HorizontalAlignment = xlCenter
+        .VerticalAlignment = xlCenter
+        .Font.Size = 8.5
+        .IndentLevel = 0
+    End With
+    panelRange.Borders(xlEdgeLeft).LineStyle = xlNone
+End Sub
+

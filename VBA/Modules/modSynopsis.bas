@@ -516,8 +516,8 @@ Public Sub BuildSynopsisSheet()
     Application.PrintCommunication = True
     On Error GoTo ErrorHandler
     
-    ' Ensure unlocked cells for user safety
-    ws.Range("A1:P" & (noteRow + 5)).Locked = False
+    ' Lock all calculated cells against manual user editing
+    ws.Range("A1:P" & (noteRow + 5)).Locked = True
     
     Application.EnableEvents = prevEvents
     Application.ScreenUpdating = prevScreen
