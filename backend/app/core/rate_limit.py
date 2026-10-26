@@ -22,13 +22,27 @@ def get_redis_client() -> redis.Redis:
     """Returns the shared Redis client or creates one from configuration."""
     global _redis_client
     if _redis_client is None:
-        _redis_client = redis.from_url(
-            settings.REDIS_URL,
-            decode_responses=True,
-            socket_timeout=2.0,
-            socket_connect_timeout=2.0,
-        )
+        try:
+            client = redis.from_url(
+                settings.REDIS_URL,
+                decode_responses=True,
+                socket_timeout=2.0,
+                socket_connect_timeout=2.0,
+            )
+            client.ping()
+            _redis_client = client
+        except Exception as e:
+            logger.warning(
+                f"Redis connection to {settings.REDIS_URL} failed ({e}). "
+                "Using in-memory FakeRedis to preserve service availability."
+            )
+            try:
+                import fakeredis
+                _redis_client = fakeredis.FakeRedis(decode_responses=True)
+            except ImportError:
+                _redis_client = client
     return _redis_client
+
 
 
 def set_redis_client(client: Optional[redis.Redis]) -> None:
