@@ -51,9 +51,9 @@ class TestExcelCustomerExport:
         # Open workbook with openpyxl
         wb = openpyxl.load_workbook(stream)
 
-        # 1. Structure check: sheets Offer and Synopsis
+        # 1. Structure check: sheets OFFER and Synopsis
         sheet_names = wb.sheetnames
-        assert "Offer" in sheet_names
+        assert "OFFER" in sheet_names
         assert "Synopsis" in sheet_names
 
         # 2. Protection check: No password, protection disabled
@@ -62,7 +62,7 @@ class TestExcelCustomerExport:
             assert ws.protection.sheet is False
 
         # 3. All cells unlocked
-        ws_offer = wb["Offer"]
+        ws_offer = wb["OFFER"]
         for row in ws_offer.iter_rows(min_row=1, max_row=20, min_col=1, max_col=9):
             for cell in row:
                 if cell.value is not None:
@@ -131,4 +131,4 @@ class TestExcelCustomerExport:
         # Validate streamed content is loadable as an Excel workbook
         content_stream = io.BytesIO(export_resp.content)
         wb = openpyxl.load_workbook(content_stream)
-        assert "Offer" in wb.sheetnames
+        assert "OFFER" in wb.sheetnames

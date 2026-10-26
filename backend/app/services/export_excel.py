@@ -15,6 +15,52 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Protection, Si
 from openpyxl.utils import get_column_letter
 
 
+def number_to_indian_words(amount: float) -> str:
+    """Converts a monetary amount into standard Indian currency words (Crores, Lakhs, Thousands)."""
+    num = int(amount)
+    if num == 0:
+        return "Rupees Zero Only"
+
+    crore = num // 10000000
+    num = num % 10000000
+
+    lakh = num // 100000
+    num = num % 100000
+
+    thousand = num // 1000
+    num = num % 1000
+
+    hundred = num // 100
+    remainder = num % 100
+
+    parts = []
+
+    def convert_two_digits(n: int) -> str:
+        units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+                 "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+                 "Seventeen", "Eighteen", "Nineteen"]
+        tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+        if n < 20:
+            return units[n]
+        t = n // 10
+        u = n % 10
+        return f"{tens[t]} {units[u]}".strip()
+
+    if crore > 0:
+        parts.append(f"{convert_two_digits(crore)} Crore")
+    if lakh > 0:
+        parts.append(f"{convert_two_digits(lakh)} Lakh")
+    if thousand > 0:
+        parts.append(f"{convert_two_digits(thousand)} Thousand")
+    if hundred > 0:
+        parts.append(f"{convert_two_digits(hundred)} Hundred")
+    if remainder > 0:
+        parts.append(convert_two_digits(remainder))
+
+    words_str = " ".join(parts).strip()
+    return f"Rupees {words_str} Only"
+
+
 class ExcelExportService:
     """Generates customer-ready, unlocked, standalone Excel quotations."""
 
@@ -52,9 +98,9 @@ class ExcelExportService:
     ) -> io.BytesIO:
         """Builds a complete, unlocked, standalone customer quotation workbook with Offer and Synopsis sheets."""
         wb = openpyxl.Workbook()
-        # Default sheet -> Offer
+        # Default sheet -> OFFER
         ws_offer = wb.active
-        ws_offer.title = "Offer"
+        ws_offer.title = "OFFER"
         ws_synopsis = wb.create_sheet(title="Synopsis")
 
         cls._populate_offer_sheet(ws_offer, quotation_data, calculation_results)
@@ -198,6 +244,16 @@ class ExcelExportService:
         ws[f"I{grand_total_row}"].number_format = "₹#,##0"
         ws[f"I{grand_total_row}"].fill = cls.TOTAL_FILL
         ws[f"I{grand_total_row}"].border = cls.BORDER_DOUBLE_BOTTOM
+
+        # Amount in Words and GST Terms Note
+        words_row = grand_total_row + 2
+        subtotal_val = calc.get("subtotal_excl_gst", 0.0)
+        ws[f"A{words_row}"] = f"Total Amount in Words: {number_to_indian_words(subtotal_val)}"
+        ws[f"A{words_row}"].font = Font(name=cls.FONT_NAME, size=11, bold=True, italic=True)
+
+        gst_note_row = words_row + 1
+        ws[f"A{gst_note_row}"] = "All taxes and duties like GST shall be extra at actuals. The prevailing rate at the time of dispatch shall be levied. Current Rate of GST is 18%."
+        ws[f"A{gst_note_row}"].font = cls.FONT_REGULAR
 
         # Auto-fit column widths
         for col in ws.columns:
